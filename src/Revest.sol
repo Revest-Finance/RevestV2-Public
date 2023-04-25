@@ -35,13 +35,14 @@ contract Revest is IRevest, RevestAccessControl, ReentrancyGuard {
     /// Point at which FNFTs should point to the new token vault
 
     uint public erc20Fee; // out of 1000
-    uint private constant erc20multiplierPrecision = 1000;
+    uint public constant erc20multiplierPrecision = 1000;
     uint public flatWeiFee;
-    uint private constant MAX_INT = 2**256 - 1;
+    uint public constant MAX_INT = 2**256 - 1;
 
-    mapping(address => bool) private approved;
+    mapping(address => bool) public approved;
     mapping(address => bool) public whitelisted;
-    mapping(bytes32 => IRevest.FNFTConfig) private fnfts;
+    mapping(bytes32 => IRevest.FNFTConfig) public fnfts;
+    mapping(address handler => mapping(uint nftId => uint numfnfts)) public numfnfts;
     
     /**
      * @dev Primary constructor to create the Revest controller contract
@@ -69,25 +70,39 @@ contract Revest is IRevest, RevestAccessControl, ReentrancyGuard {
         address[] memory recipients,
         uint[] memory quantities,
         IRevest.FNFTConfig memory fnftConfig
-    ) external payable override nonReentrant returns (bytes32 salt) {
+    ) external payable override nonReentrant returns (bytes32 salt, bytes32 lockId) {
         IFNFTHandler fnftHandler = getFNFTHandler();
+
+        uint fnftNum;
 
         //If the handler is the Revest FNFT Contract get the new FNFT ID
         if (handler == address(fnftHandler)) {
             fnftId = fnftHandler.getNextId();
         }
 
-        salt = keccak256(abi.encode(fnftId, handler));
+        else {
+            //Each NFT for a handler as an identifier, so that you can mint multiple fnfts to the same nft
+            fnftNum = numfnfts[handler][fnftId]++;
+        }
+
+        /*
+        * The hash will always be unique and non-overwritable
+        * If you mint to the revest handler then fnftId will be an incrementing number
+        * If you mint to any other handler, then the numfnfts mapping will be incremented everytime
+        * This allows you to mint multiple fnfts to the same nft with different identifiers
+        */
+        salt = keccak256(abi.encode(fnftId, handler, fnftNum));
+        require(fnfts[salt].depositAmount == 0, "E007");//TODO: Double check that Error #
        
         // Get or create lock based on time, assign lock to ID
         {
             IRevest.LockParam memory timeLock;
             timeLock.lockType = IRevest.LockType.TimeLock;
             timeLock.timeLockExpiry = endTime;
-            getLockManager().createLock(salt, timeLock);
+            lockId = getLockManager().createLock(salt, timeLock);
         }
 
-        doMint(recipients, quantities, fnftId, handler, fnftConfig, msg.value);
+        doMint(recipients, quantities, fnftId, handler, fnftNum, fnftConfig, msg.value);
 
         //TODO: Fix Events
         emit FNFTTimeLockMinted(fnftConfig.asset, _msgSender(), fnftId, endTime, quantities, fnftConfig);
@@ -102,15 +117,29 @@ contract Revest is IRevest, RevestAccessControl, ReentrancyGuard {
         address[] memory recipients,
         uint[] memory quantities,
         IRevest.FNFTConfig memory fnftConfig
-    ) external payable override nonReentrant returns (bytes32 lockId) {
+    ) external payable override nonReentrant returns (bytes32 salt, bytes32 lockId) {
         IFNFTHandler fnftHandler = getFNFTHandler();
+
+        uint fnftNum;
 
         //If the handler is the Revest FNFT Contract get the new FNFT ID
         if (handler == address(fnftHandler)) {
             fnftId = fnftHandler.getNextId();
         }
 
-        bytes32 salt = keccak256(abi.encode(fnftId, handler));
+        else {
+            //Each NFT for a handler as an identifier, so that you can mint multiple fnfts to the same nft
+            fnftNum = numfnfts[handler][fnftId]++;
+        }
+
+        /*
+        * The hash will always be unique and non-overwritable
+        * If you mint to the revest handler then fnftId will be an incrementing number
+        * If you mint to any other handler, then the numfnfts mapping will be incremented everytime
+        * This allows you to mint multiple fnfts to the same nft with different identifiers
+        */
+        salt = keccak256(abi.encode(fnftId, handler, fnftNum));
+        require(fnfts[salt].depositAmount == 0, "E007");//TODO: Double check that Error code
 
         {
             IRevest.LockParam memory addressLock;
@@ -125,24 +154,25 @@ contract Revest is IRevest, RevestAccessControl, ReentrancyGuard {
                 IAddressLock(trigger).createLock(fnftId, uint(lockId), arguments);
             }
         }
-        // This is a public call to a third-party contract. Must be done after everything else.
-        doMint(recipients, quantities, fnftId, handler, fnftConfig, msg.value);
+
+        doMint(recipients, quantities, fnftId, handler, fnftNum, fnftConfig, msg.value);
 
         emit FNFTAddressLockMinted(fnftConfig.asset, _msgSender(), fnftId, trigger, quantities, fnftConfig);
 
     }
 
-    function withdrawFNFT(uint fnftId, address handler, uint quantity) external override nonReentrant {
-        bytes32 salt = keccak256(abi.encode(fnftId, handler));
+    function withdrawFNFT(uint fnftId, address handler, uint fnftNum, uint quantity) external override nonReentrant {
+        bytes32 salt = keccak256(abi.encode(fnftId, handler, fnftNum));
+
         address asset = fnfts[salt].asset;
-        _withdrawFNFT(salt, fnftId, asset, quantity);
+        _withdrawFNFT(fnftId, handler, fnftNum, asset, quantity);
     }
 
     /// Advanced FNFT withdrawals removed for the time being – no active implementations
     /// Represents slightly increased surface area – may be utilized in Resolve
 
-    function unlockFNFT(address handler, uint fnftId) external override nonReentrant  {
-        bytes32 salt = keccak256(abi.encode(fnftId, handler));
+    function unlockFNFT(address handler, uint fnftId, uint fnftNum) external override nonReentrant  {
+        bytes32 salt = keccak256(abi.encode(fnftId, handler, fnftNum));
 
         // Works for value locks or time locks
         IRevest.LockType lock = getLockManager().lockTypes(salt);
@@ -159,8 +189,11 @@ contract Revest is IRevest, RevestAccessControl, ReentrancyGuard {
     function extendFNFTMaturity(
         uint fnftId,
         address handler,
+        uint fnftNum,
         uint endTime
     ) external override nonReentrant returns (uint) {
+        bytes32 salt = keccak256(abi.encode(fnftId, handler, fnftNum));
+
         IFNFTHandler fnftHandler = getFNFTHandler();
         uint supply = fnftHandler.getSupply(fnftId);
         uint balance = fnftHandler.getBalance(_msgSender(), fnftId);
@@ -169,8 +202,6 @@ contract Revest is IRevest, RevestAccessControl, ReentrancyGuard {
         require(fnftId < fnftHandler.getNextId(), "E007");
         require(balance == supply , "E022");
 
-        bytes32 salt = keccak256(abi.encode(fnftId, handler));
-        
         IRevest.FNFTConfig memory config = getFNFT(salt);
         ILockManager manager = getLockManager();
         // If it can't have its maturity extended, revert
@@ -205,10 +236,11 @@ contract Revest is IRevest, RevestAccessControl, ReentrancyGuard {
     function depositAdditionalToFNFT(
         uint fnftId,
         address handler,
+        uint fnftNum,
         uint amount,
         uint quantity
     ) external override nonReentrant returns (uint) {
-        bytes32 salt = keccak256(abi.encode(fnftId, handler));
+        bytes32 salt = keccak256(abi.encode(fnftId, handler, fnftNum));
 
         address vault = addressesProvider.getTokenVault();
         IRevest.FNFTConfig memory fnft = getFNFT(salt);
@@ -261,17 +293,25 @@ contract Revest is IRevest, RevestAccessControl, ReentrancyGuard {
     //
 
     // Private function for use in withdrawing FNFTs, allow us to make universal use of reentrancy guard 
-    function _withdrawFNFT(bytes32 salt, uint fnftId, address _token, uint quantity) private {
-        address fnftHandler = addressesProvider.getRevestFNFT();
+    function _withdrawFNFT(uint fnftId, address handler, uint fnftNum, address _token, uint quantity) private {
+        bytes32 salt = keccak256(abi.encode(fnftId, handler, fnftNum));
 
         // Check if this many FNFTs exist in the first place for the given ID
         require(quantity > 0, "E003");
+
         // Burn the FNFTs being exchanged
-        IFNFTHandler(fnftHandler).burn(_msgSender(), fnftId, quantity);
+        if (handler == address(getFNFTHandler())) {
+            IFNFTHandler(handler).burn(_msgSender(), fnftId, quantity);
+        }
+
         require(getLockManager().unlockFNFT(salt, fnftId, _msgSender()), 'E082');
+
+        //TODO: State Cleanup
+
         address vault = addressesProvider.getTokenVault();
 
         ITokenVault(vault).withdrawToken(salt, _token, quantity, _msgSender());
+
         emit FNFTWithdrawn(_msgSender(), fnftId, quantity);
     }
 
@@ -280,10 +320,11 @@ contract Revest is IRevest, RevestAccessControl, ReentrancyGuard {
         uint[] memory quantities,
         uint fnftId,
         address handler,
+        uint fnftNum,
         IRevest.FNFTConfig memory fnftConfig,
         uint weiValue
     ) internal {
-        bytes32 salt = keccak256(abi.encode(fnftId, handler));
+        bytes32 salt = keccak256(abi.encode(fnftId, handler, fnftNum));
 
         bool isSingular;
         uint totalQuantity = quantities[0];
@@ -347,7 +388,7 @@ contract Revest is IRevest, RevestAccessControl, ReentrancyGuard {
         
         
         // Create the FNFT and update accounting within TokenVault
-        createFNFT(fnftId, handler, fnftConfig, totalQuantity, _msgSender());
+        createFNFT(salt, fnftId, handler, fnftNum, fnftConfig, totalQuantity);
 
         // Now, we move the funds to token vault from the message sender
         if(fnftConfig.asset != address(0)){
@@ -358,24 +399,57 @@ contract Revest is IRevest, RevestAccessControl, ReentrancyGuard {
 
         //Mint FNFTs but only if the handler is the Revest FNFT Handler
         if (handler == address(getFNFTHandler())) {
-            if(!isSingular) {
-                getFNFTHandler().mintBatchRec(recipients, quantities, fnftId, totalQuantity, '');
-            } else {
+            if(isSingular) {
                 getFNFTHandler().mint(recipients[0], fnftId, quantities[0], '');
+            } else {
+                getFNFTHandler().mintBatchRec(recipients, quantities, fnftId, totalQuantity, '');
             }
         }
 
     }
 
-    function createFNFT(uint fnftId, 
+    function createFNFT(bytes32 salt,
+            uint fnftId, 
             address handler, 
+            uint fnftNum,
             IRevest.FNFTConfig memory fnftConfig, 
-            uint quantity,
-            address recipient) internal {
+            uint quantity
+            ) internal {
+            
+            fnfts[salt].asset =  fnftConfig.asset;
+            fnfts[salt].depositAmount =  fnftConfig.depositAmount;
+            fnfts[salt].fnftNum = fnftNum;
+            fnfts[salt].fnftId = fnftId;
+            fnfts[salt].handler = handler;
+            fnfts[salt].quantity = quantity;
 
-            //TODO: Implement
 
-        }
+            if(fnftConfig.depositMul != 0) {
+                fnfts[salt].depositMul = fnftConfig.depositMul;
+            }
+            
+            if(fnftConfig.split != 0) {
+                fnfts[salt].split = fnftConfig.split;
+            }
+
+            if(fnftConfig.maturityExtension) {
+                fnfts[salt].maturityExtension = fnftConfig.maturityExtension;
+            }
+
+            if(fnftConfig.pipeToContract != address(0)) {
+                fnfts[salt].pipeToContract = fnftConfig.pipeToContract;
+            }
+
+            if(fnftConfig.isMulti) {
+                fnfts[salt].isMulti = fnftConfig.isMulti;
+                fnfts[salt].depositStopTime = fnftConfig.depositStopTime;
+            }
+
+            if(fnftConfig.nontransferrable){
+                fnfts[salt].nontransferrable = fnftConfig.nontransferrable;
+            }
+
+        }//createFNFT
 
 
     function getFNFT(bytes32 fnftId) public view returns (IRevest.FNFTConfig memory) {

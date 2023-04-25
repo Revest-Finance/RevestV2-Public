@@ -63,10 +63,14 @@ interface IRevest {
     struct FNFTConfig {
         address asset; // The token being stored
         address pipeToContract; // Indicates if FNFT will pipe to another contract
+        address handler;
+        uint fnftNum;// The FNFT number - Still packs into 3 storage slots with the 2 addresses
         uint depositAmount; // How many tokens
         uint depositMul; // Deposit multiplier
         uint split; // Number of splits remaining
-        uint depositStopTime; //
+        uint depositStopTime;//
+        uint quantity;// How many FNFTs
+        uint fnftId;//the ID of the NFT the FNFT was minted to
         bool maturityExtension; // Maturity extensions remaining
         bool isMulti; //
         bool nontransferrable; // False by default (transferrable) //
@@ -106,7 +110,7 @@ interface IRevest {
         address[] memory recipients,
         uint[] memory quantities,
         IRevest.FNFTConfig memory fnftConfig
-    ) external payable returns (bytes32);
+    ) external payable returns (bytes32, bytes32);
 
 
     function mintAddressLock(
@@ -117,15 +121,16 @@ interface IRevest {
         address[] memory recipients,
         uint[] memory quantities,
         IRevest.FNFTConfig memory fnftConfig
-    ) external payable returns (bytes32);
+    ) external payable returns (bytes32, bytes32);
 
-    function withdrawFNFT(uint tokenUID, address handler, uint quantity) external;
+    function withdrawFNFT(uint fnftId, address handler, uint fnftNum, uint quantity) external;
 
-    function unlockFNFT(address handler, uint tokenUID) external;
+    function unlockFNFT(address handler, uint fnftId, uint fnftNum) external;
 
     function depositAdditionalToFNFT(
         uint fnftId,
         address handler,
+        uint fnftNum,
         uint amount,
         uint quantity
     ) external returns (uint);
@@ -133,6 +138,7 @@ interface IRevest {
     function extendFNFTMaturity(
         uint fnftId,
         address handler,
+        uint fnftNum,
         uint endTime
     ) external returns (uint);
 
