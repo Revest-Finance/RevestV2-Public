@@ -21,6 +21,12 @@ interface IOutputReceiver is IRegistryProvider, IERC165 {
 
     event WithdrawERC1155OutputReceiver(address indexed caller, address indexed token, uint tokenId, uint amountTokens, uint indexed fnftId, bytes extraData);
 
+    event TransferERC20OutputReceiver(address indexed transferTo, address indexed transferFrom, address indexed token, uint amountTokens, uint fnftId, bytes extraData);
+
+    event TransferERC721OutputReceiver(address indexed transferTo, address indexed transferFrom, address indexed token, uint[] tokenIds, uint fnftId, bytes extraData);
+
+    event TransferERC1155OutputReceiver(address indexed transferTo, address indexed transferFrom, address indexed token, uint tokenId, uint amountTokens, uint fnftId, bytes extraData);
+
     function receiveRevestOutput(
         uint fnftId,
         address asset,
@@ -63,4 +69,14 @@ interface IOutputReceiver is IRegistryProvider, IERC165 {
 
     // This function should only ever be called when a split or additional deposit has occurred 
     function handleFNFTRemaps(uint fnftId, uint[] memory newFNFTIds, address caller, bool cleanup) external;
+
+
+    function onTransferFNFT(
+        uint fnftId, 
+        address operator,
+        address from,
+        address to,
+        uint quantity, 
+        bytes memory data
+    ) external;
 }

@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: GNU-GPL v3.0 or later
 
 import "@solmate/utils/SafeTransferLib.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 pragma solidity ^0.8.12;
 
-contract RevestSmartWallet {
+contract RevestSmartWallet is ReentrancyGuard {
     using SafeTransferLib for ERC20;
+    using SafeTransferLib for address;
 
     address private immutable MASTER;
 
@@ -18,8 +20,15 @@ contract RevestSmartWallet {
         _;
     }
 
-    function withdraw(address token, uint value, address recipient) external onlyMaster {
-        ERC20(token).safeTransfer(recipient, value);
+    function withdraw(address token, uint value, address recipient) external nonReentrant onlyMaster {
+        if (token == address(0)) {
+            recipient.safeTransferETH(value);
+            _cleanMemory();
+            return;
+        }
+        else {
+            ERC20(token).safeTransfer(recipient, value);
+        }
         _cleanMemory();
     }
 
@@ -30,7 +39,7 @@ contract RevestSmartWallet {
      * @param calldatas Encoded calldata for each function
      * @dev Calldata must be properly encoded and function selectors must be on the whitelist for this method to function. Functions cannot transfer tokens out
      */
-    function proxyCall(address[] memory targets, uint256[] memory values, bytes[] memory calldatas) external onlyMaster returns(bytes[] memory outputs) {
+    function proxyCall(address[] memory targets, uint256[] memory values, bytes[] memory calldatas) external nonReentrant onlyMaster returns(bytes[] memory outputs) {
         for (uint256 i = 0; i < targets.length; i++) {
             (bool success, bytes memory result) = targets[i].call{value: values[i]}(calldatas[i]);
             require(success, "ER022");
@@ -38,12 +47,6 @@ contract RevestSmartWallet {
         }
         
         // Must manually cleanup since this returns something
-        _cleanMemory();
-    }
-
-    /// Credit to doublesharp for the brilliant gas-saving concept
-    /// Self-destructing clone pattern
-    function cleanMemory() external onlyMaster {
         _cleanMemory();
     }
 

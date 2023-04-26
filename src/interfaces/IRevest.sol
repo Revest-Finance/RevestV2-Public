@@ -60,6 +60,27 @@ interface IRevest {
         address smartWallet
     );
 
+    event WithdrawERC20(
+        address indexed token, 
+        address indexed user, 
+        uint indexed fnftId, 
+        uint tokenAmount, 
+        address smartWallet
+    );
+
+    event CreateFNFT(
+        bytes32 salt,
+        uint indexed fnftId, 
+        address indexed from
+    );
+    
+    event RedeemFNFT(
+        bytes32 indexed salt,
+        uint indexed fnftId, 
+        address indexed from
+    );
+
+
     struct FNFTConfig {
         address asset; // The token being stored
         address pipeToContract; // Indicates if FNFT will pipe to another contract
@@ -149,6 +170,8 @@ interface IRevest {
     function getFlatWeiFee() external view returns (uint);
 
     function getERC20Fee() external view returns (uint);
+
+    function getFNFT(bytes32 salt) external view returns (FNFTConfig memory);
 
 
 }

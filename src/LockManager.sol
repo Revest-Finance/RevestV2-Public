@@ -5,20 +5,19 @@ pragma solidity ^0.8.12;
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
 
 import "./interfaces/IRevest.sol";
 import "./interfaces/ILockManager.sol";
 import "./interfaces/IAddressLock.sol";
 
 
-contract LockManager is ILockManager, ReentrancyGuard, Ownable {
+contract LockManager is ILockManager, ReentrancyGuard {
     using ERC165Checker for address;
 
     bytes4 public constant ADDRESS_LOCK_INTERFACE_ID = type(IAddressLock).interfaceId;
     mapping(bytes32 => IRevest.Lock) public locks; // maps lockId to locks
 
-    constructor() Ownable() {}
+    constructor() {}
 
 
     function getLock(bytes32 lockId) external view override returns (IRevest.Lock memory) {
@@ -27,7 +26,7 @@ contract LockManager is ILockManager, ReentrancyGuard, Ownable {
     }
 
     /// NB: The onlyRevest call here dramatically increases gas – should be onlyRevestController
-    function createLock(bytes32 salt, IRevest.LockParam memory lock) external override onlyOwner returns (bytes32 lockId) {
+    function createLock(bytes32 salt, IRevest.LockParam memory lock) external override returns (bytes32 lockId) {
         lockId = keccak256(abi.encode(salt, msg.sender));
 
         // Extensive validation on creation
@@ -63,7 +62,7 @@ contract LockManager is ILockManager, ReentrancyGuard, Ownable {
      * lockId - the ID of the FNFT to unlock
      * @return true if the caller is valid and the lock has been unlocked, false otherwise
      */
-    function unlockFNFT(bytes32 salt, uint fnftId, address sender) external override onlyOwner returns (bool) {
+    function unlockFNFT(bytes32 salt, uint fnftId, address sender) external override returns (bool) {
         bytes32 lockId = keccak256(abi.encode(salt, msg.sender));
 
         //Allows reduction to 1 SSTORE at the end as opposed to many
