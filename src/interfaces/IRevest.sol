@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GNU-GPL v3.0 or later
+import "./IAllowanceTransfer.sol";
 
 pragma solidity >=0.8.0;
 
@@ -123,6 +124,16 @@ interface IRevest {
         bool unlocked;
     }
 
+    struct MintParameters {
+        address handler;
+        uint fnftId;
+        uint fnftNum;
+        uint endTime;
+        address[] recipients;
+        uint[] quantities;
+        FNFTConfig fnftConfig;
+    }
+
 
     function mintTimeLock(
         address handler,
@@ -130,7 +141,9 @@ interface IRevest {
         uint endTime,
         address[] memory recipients,
         uint[] memory quantities,
-        IRevest.FNFTConfig memory fnftConfig
+        IRevest.FNFTConfig memory fnftConfig,
+        IAllowanceTransfer.PermitBatch calldata permits,
+        bytes calldata _signature
     ) external payable returns (bytes32, bytes32);
 
 
@@ -141,7 +154,9 @@ interface IRevest {
         bytes memory arguments,
         address[] memory recipients,
         uint[] memory quantities,
-        IRevest.FNFTConfig memory fnftConfig
+        IRevest.FNFTConfig memory fnftConfig,
+        IAllowanceTransfer.PermitBatch calldata permits,
+        bytes calldata _signature
     ) external payable returns (bytes32, bytes32);
 
     function withdrawFNFT(uint fnftId, address handler, uint fnftNum, uint quantity) external;
@@ -152,8 +167,7 @@ interface IRevest {
         uint fnftId,
         address handler,
         uint fnftNum,
-        uint[] memory amount,
-        uint quantity
+        uint[] memory amounts
     ) external returns (uint);
 
     function extendFNFTMaturity(
