@@ -25,18 +25,19 @@ contract TokenVault is ITokenVault {
 
     function withdrawToken(
         bytes32 salt,
-        address token,
-        uint quantity,
+        address[] memory tokens,
+        uint[] memory quantities,
         address recipient //TODO: Can replace user with just send back to msg.sender?
     ) external override {
+        require(tokens.length == quantities.length);
 
         //Clone the wallet
         address walletAddr = Clones.cloneDeterministic(TEMPLATE, keccak256(abi.encode(salt, msg.sender)));
         
         //Withdraw the token, selfDestructs itself after
-        RevestSmartWallet(walletAddr).withdraw(token, quantity, recipient);
+        RevestSmartWallet(walletAddr).withdraw(tokens, quantities, recipient);
 
-        emit WithdrawERC20(token, recipient, salt, quantity, walletAddr);
+        emit WithdrawERC20(tokens, recipient, salt, quantities, walletAddr);
     }
 
 

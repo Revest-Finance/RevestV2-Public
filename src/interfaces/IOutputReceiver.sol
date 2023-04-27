@@ -29,9 +29,9 @@ interface IOutputReceiver is IRegistryProvider, IERC165 {
 
     function receiveRevestOutput(
         uint fnftId,
-        address asset,
+        address[] memory assets,
         address payable owner,
-        uint quantity
+        uint quantities
     ) external;
 
     function getCustomMetadata(uint fnftId) external view returns (string memory);
@@ -44,7 +44,7 @@ interface IOutputReceiver is IRegistryProvider, IERC165 {
 
     function handleTimelockExtensions(uint fnftId, uint expiration, address caller) external;
 
-    function handleAdditionalDeposit(uint fnftId, uint amountToDeposit, uint quantity, address caller) external;
+    function handleAdditionalDeposit(uint fnftId, uint[] memory amounts, uint quantity, address caller) external;
 
     function handleSplitOperation(uint fnftId, uint[] memory proportions, uint quantity, address caller) external;
 

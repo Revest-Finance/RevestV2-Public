@@ -4,7 +4,7 @@ pragma solidity >=0.8.0;
 
 interface IRevest {
     event FNFTTimeLockMinted(
-        address indexed asset,
+        address[] indexed assets,
         address indexed from,
         uint indexed fnftId,
         uint endTime,
@@ -13,7 +13,7 @@ interface IRevest {
     );
 
     event FNFTAddressLockMinted(
-        address indexed asset,
+        address[] indexed assets,
         address indexed from,
         uint indexed fnftId,
         address trigger,
@@ -49,22 +49,22 @@ interface IRevest {
         address indexed from,
         uint indexed newFNFTId,
         uint indexed quantity,
-        uint amount
+        uint[] amounts
     );
 
     event DepositERC20(
-        address indexed token, 
+        address[] indexed tokens, 
         address indexed user, 
         uint indexed fnftId, 
-        uint tokenAmount, 
+        uint[] tokenAmounts, 
         address smartWallet
     );
 
     event WithdrawERC20(
-        address indexed token, 
+        address[] indexed tokens, 
         address indexed user, 
         uint indexed fnftId, 
-        uint tokenAmount, 
+        uint[] tokenAmounts, 
         address smartWallet
     );
 
@@ -82,11 +82,11 @@ interface IRevest {
 
 
     struct FNFTConfig {
-        address asset; // The token being stored
         address pipeToContract; // Indicates if FNFT will pipe to another contract
         address handler;
-        uint fnftNum;// The FNFT number - Still packs into 3 storage slots with the 2 addresses
-        uint depositAmount; // How many tokens
+        address[] assets; // The token being stored
+        uint[] assetAmounts; // The amount of each token being stored
+        uint fnftNum;// The FNFT number
         uint depositMul; // Deposit multiplier
         uint split; // Number of splits remaining
         uint depositStopTime;//
@@ -152,7 +152,7 @@ interface IRevest {
         uint fnftId,
         address handler,
         uint fnftNum,
-        uint amount,
+        uint[] memory amount,
         uint quantity
     ) external returns (uint);
 
