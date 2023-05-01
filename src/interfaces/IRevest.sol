@@ -167,7 +167,9 @@ interface IRevest {
         uint fnftId,
         address handler,
         uint fnftNum,
-        uint[] memory amounts
+        uint[] memory amounts,
+        IAllowanceTransfer.PermitBatch calldata permits,
+        bytes calldata _signature
     ) external returns (uint);
 
     function extendFNFTMaturity(

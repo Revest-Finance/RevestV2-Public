@@ -8,6 +8,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/interfaces/IERC721.sol";
 import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import "@solmate/utils/SafeTransferLib.sol";
+import "@solmate/utils/FixedPointMathLib.sol";
 
 import "./interfaces/IRevest.sol";
 import "./interfaces/IAddressRegistry.sol";
@@ -19,7 +20,6 @@ import "./interfaces/IAllowanceTransfer.sol";
 import "./utils/RevestAccessControl.sol";
 
 import "./lib/IWETH.sol";
-import "./lib/FixedPointMathLib.sol";
 
 /**
  * This is the entrypoint for the frontend, as well as third-party Revest integrations.
@@ -36,8 +36,6 @@ contract Revest is IRevest, RevestAccessControl, ReentrancyGuard {
     bytes4 public constant FNFTHANDLER_INTERFACE_ID = type(IFNFTHandler).interfaceId;
     bytes4 public constant ERC721_INTERFACE_ID = type(IERC721).interfaceId;
 
-    bytes32 constant PERMIT_TYPEHASH =
-        keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
 
     address immutable WETH;
 
@@ -55,8 +53,8 @@ contract Revest is IRevest, RevestAccessControl, ReentrancyGuard {
     mapping(address handler => mapping(uint nftId => uint numfnfts)) public numfnfts;
     mapping(address oldStaking => address newStaking) public migrations;
 
-    mapping(bytes4 selector => bool allowed) public blacklistedFunctions;
-    
+    mapping(bytes4 selector => bool blackListed) public blacklistedFunctions;
+     
     /**
      * @dev Primary constructor to create the Revest controller contract
      */
@@ -91,7 +89,7 @@ contract Revest is IRevest, RevestAccessControl, ReentrancyGuard {
         IAllowanceTransfer.PermitBatch calldata permits,
         bytes calldata _signature
     ) external payable override nonReentrant returns (bytes32 salt, bytes32 lockId) {
-        setPermitAllowance(permits, _signature);
+        if (_signature.length != 0) setPermitAllowance(permits, _signature);
 
         uint fnftNum;
 
@@ -154,7 +152,7 @@ contract Revest is IRevest, RevestAccessControl, ReentrancyGuard {
         IAllowanceTransfer.PermitBatch calldata permits,
         bytes calldata _signature
     ) external payable override nonReentrant returns (bytes32 salt, bytes32 lockId) {
-        setPermitAllowance(permits, _signature);
+        if (_signature.length != 0) setPermitAllowance(permits, _signature);
 
         require(fnftConfig.assetAmounts.length == fnftConfig.assets.length, "E004");
         uint fnftNum;
@@ -318,13 +316,16 @@ contract Revest is IRevest, RevestAccessControl, ReentrancyGuard {
         uint fnftId,
         address handler,
         uint fnftNum,
-        uint[] memory amounts
+        uint[] memory amounts,
+        IAllowanceTransfer.PermitBatch calldata permits,
+        bytes calldata _signature
     ) external override nonReentrant returns (uint) {
+        if (_signature.length != 0) setPermitAllowance(permits, _signature);
+
         bytes32 salt = keccak256(abi.encode(fnftId, handler, fnftNum));
 
         require(fnfts[salt].quantity != 0);
 
-        address vault = addressesProvider.getTokenVault();
         IRevest.FNFTConfig memory fnft = fnfts[salt];
 
         if (handler.supportsInterface(FNFTHANDLER_INTERFACE_ID)) {
@@ -352,39 +353,41 @@ contract Revest is IRevest, RevestAccessControl, ReentrancyGuard {
 
         // Transfer the ERC20 fee to the admin address, leave it at that
         
-
-        address smartWallet = ITokenVault(vault).getFNFTAddress(salt);
-
+        address smartWallet = ITokenVault(addressesProvider.getTokenVault()).getFNFTAddress(salt, address(this));
         uint totalERC20Deposit;
-        for(uint x = 0; x < amounts.length; ) {
-            uint deposit = supply * amounts[x];
-            totalERC20Deposit += deposit;
 
-            // Transfer to the smart wallet
-            if(fnft.assets[x] != address(0) && amounts[x] != 0) {
-                //TODO: Permit Transfers
-                //TODO: SafeCast?
+        // Prevents a stack too deep error
+        {
+            for(uint x = 0; x < amounts.length; ) {
+                uint deposit = supply * amounts[x];
+                totalERC20Deposit += deposit;
 
-                //Permit takes uint160 as an argument so we need to safely downcast
-                PERMIT2.transferFrom(_msgSender(), smartWallet, deposit.toUint160(), fnft.assets[x]);
+                // Transfer to the smart wallet
+                if(fnft.assets[x] != address(0) && amounts[x] != 0) {
+                    //TODO: Permit Transfers
 
-                emit DepositERC20(fnft.assets, _msgSender(), fnftId, amounts, smartWallet);
+                    //Permit takes uint160 as an argument so we need to safely downcast
+                    PERMIT2.transferFrom(_msgSender(), smartWallet, deposit.toUint160(), fnft.assets[x]);
 
-                if(!whitelisted[_msgSender()]) {
-                    //TODO: Fee Taking
-                    uint totalERC20Fee = erc20Fee.mulDivDown(deposit, erc20multiplierPrecision);
-                    if(totalERC20Fee > 0) {
-                        // NB: The user has control of where this external call goes (fnft.asset)
-                        PERMIT2.transferFrom(_msgSender(), addressesProvider.getAdmin(), totalERC20Fee.toUint160(), fnft.assets[x]);
-                    }
+                    emit DepositERC20(fnft.assets, _msgSender(), fnftId, amounts, smartWallet);
 
-                }//if !Whitelisted
-            }//if (amount != zero)
+                    if(!whitelisted[_msgSender()]) {
+                        //TODO: Fee Taking
+                        uint totalERC20Fee = erc20Fee.mulDivDown(deposit, erc20multiplierPrecision);
+                        if(totalERC20Fee > 0) {
+                            // NB: The user has control of where this external call goes (fnft.asset)
+                            PERMIT2.transferFrom(_msgSender(), addressesProvider.getAdmin(), totalERC20Fee.toUint160(), fnft.assets[x]);
+                        }
 
-            unchecked {
-                ++x;
-            }
-        }//for
+                    }//if !Whitelisted
+                }//if (amount != zero)
+
+                unchecked {
+                    ++x;
+                }
+            }//for
+
+        }
 
         require(totalERC20Deposit != 0, "E003");//You Must deposit something to the FNFT
 
@@ -454,7 +457,7 @@ contract Revest is IRevest, RevestAccessControl, ReentrancyGuard {
                     depositsWETH = true;
                 }
 
-                address smartWallet = ITokenVault(vault).getFNFTAddress(salt);
+                address smartWallet = ITokenVault(vault).getFNFTAddress(salt, address(this));
                 // NB: The user has control of where this external call goes (fnftConfig.asset)
                 //TODO: Transfers with Permit
                 PERMIT2.transferFrom(_msgSender(), smartWallet, (totalQuantity * params.fnftConfig.assetAmounts[x]).toUint160(), params.fnftConfig.assets[x]);
@@ -527,7 +530,7 @@ contract Revest is IRevest, RevestAccessControl, ReentrancyGuard {
         uint[] memory amountsToWithdraw;
         address[] memory assets = fnft.assets;
 
-        address smartWallAdd = getTokenVault().getFNFTAddress(salt);
+        address smartWallAdd = getTokenVault().getFNFTAddress(salt, address(this));
 
         uint supplyBefore = 1;
         if (fnft.handler.supportsInterface(FNFTHANDLER_INTERFACE_ID)) {
@@ -556,13 +559,50 @@ contract Revest is IRevest, RevestAccessControl, ReentrancyGuard {
 
         address destination = (pipeTo == address(0)) ? user : pipeTo;
         getTokenVault().withdrawToken(salt, assets, amountsToWithdraw, destination);
+
         
         if(pipeTo.supportsInterface(OUTPUT_RECEIVER_INTERFACE_ID)) {
             IOutputReceiver(pipeTo).receiveRevestOutput(fnftId, assets, payable(user), quantity);
         }
-       
+
         emit RedeemFNFT(salt, fnftId, user);
         
+    }
+
+    function proxyCall(uint fnftId, address handler, uint fnftNum, 
+                        address[] memory targets, 
+                        uint[] memory values, 
+                        bytes[] memory calldatas) 
+        external returns (bytes[] memory) {
+        bytes32 salt = keccak256(abi.encode(fnftId, handler, fnftNum));
+
+        if (handler.supportsInterface(FNFTHANDLER_INTERFACE_ID)) {
+            IFNFTHandler FNFTHandler = IFNFTHandler(handler);
+
+            //You Must own the entire supply to call a function on the FNFT
+            require(FNFTHandler.getSupply(fnftId) != 0);
+            require(FNFTHandler.getBalance(msg.sender, fnftId) == FNFTHandler.getSupply(fnftId), "E007");
+        }
+
+        else if (handler.supportsInterface(ERC721_INTERFACE_ID)) {
+            //Only the NFT owner can call a function on the NFT
+            require(IERC721(handler).ownerOf(fnftId) == msg.sender);
+        }
+
+        else {
+            revert("E001");
+        }
+
+        for(uint x = 0; x < targets.length; ) {
+            require(!blacklistedFunctions[bytes4(calldatas[x])], "E081");
+
+            unchecked {
+                ++x;
+            }
+        }
+
+        return ITokenVault(getTokenVault()).proxyCall(salt, targets, values, calldatas);
+
     }
 
     function createFNFT(bytes32 salt,
@@ -620,9 +660,10 @@ contract Revest is IRevest, RevestAccessControl, ReentrancyGuard {
         erc20Fee = erc20;
     }
 
-    function blackListFunction(bytes4 selector) external onlyOwner {
-        blacklistedFunctions[selector] = true;
+    function changeSelectorVisibility(bytes4 selector, bool designation) external onlyOwner {
+        blacklistedFunctions[selector] = designation;
     }
+
 
     function getFlatWeiFee() external view override returns (uint) {
         return flatWeiFee;
