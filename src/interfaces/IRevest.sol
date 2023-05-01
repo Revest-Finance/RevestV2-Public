@@ -80,14 +80,10 @@ interface IRevest {
         address handler;
         address asset; // The token being stored
         uint depositAmount; // The amount of each token being stored
-        uint fnftNum;// The FNFT number
-        uint depositMul; // Deposit multiplier
-        uint split; // Number of splits remaining
-        uint depositStopTime;//
+        uint nonce;// The FNFT number
         uint quantity;// How many FNFTs
         uint fnftId;//the ID of the NFT the FNFT was minted to
         bool maturityExtension; // Maturity extensions remaining
-        bool isMulti; //
         bool nontransferrable; // False by default (transferrable) //
     }
 
@@ -120,7 +116,7 @@ interface IRevest {
     struct MintParameters {
         address handler;
         uint fnftId;
-        uint fnftNum;
+        uint nonce;
         uint endTime;
         address[] recipients;
         uint[] quantities;
@@ -151,33 +147,25 @@ interface IRevest {
         bytes calldata _signature
     ) external payable returns (bytes32, bytes32);
 
-    function withdrawFNFT(uint fnftId, address handler, uint fnftNum, uint quantity) external;
+    function withdrawFNFT(bytes32 salt) external;
 
-    function unlockFNFT(address handler, uint fnftId, uint fnftNum) external;
+    function unlockFNFT(bytes32 salt) external;
 
     function depositAdditionalToFNFT(
-        uint fnftId,
-        address handler,
-        uint fnftNum,
+        bytes32 salt,
         uint amount,
         IAllowanceTransfer.PermitBatch calldata permits,
         bytes calldata _signature
     ) external returns (uint);
 
     function extendFNFTMaturity(
-        uint fnftId,
-        address handler,
-        uint fnftNum,
+        bytes32 salt,
         uint endTime
     ) external returns (uint);
 
     function setFlatWeiFee(uint wethFee) external;
 
     function setERC20Fee(uint erc20) external;
-
-    function getFlatWeiFee() external view returns (uint);
-
-    function getERC20Fee() external view returns (uint);
 
     function getFNFT(bytes32 salt) external view returns (FNFTConfig memory);
 

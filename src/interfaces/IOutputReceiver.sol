@@ -46,31 +46,6 @@ interface IOutputReceiver is IRegistryProvider, IERC165 {
 
     function handleAdditionalDeposit(uint fnftId, uint amount, uint quantity, address caller) external;
 
-    function handleSplitOperation(uint fnftId, uint[] memory proportions, uint quantity, address caller) external;
-
-
-    // Future proofing for secondary callbacks during withdrawal
-    // Could just use triggerOutputReceiverUpdate and call withdrawal function
-    // But deliberately using reentry is poor form and reminds me too much of OAuth 2.0 
-    function receiveSecondaryCallback(
-        uint fnftId,
-        address payable owner,
-        uint quantity,
-        IRevest.FNFTConfig memory config,
-        bytes memory args
-    ) external payable;
-
-    // Allows for similar function to address lock, updating state while still locked
-    // Called by the user directly
-    function triggerOutputReceiverUpdate(
-        uint fnftId,
-        bytes memory args
-    ) external;
-
-    // This function should only ever be called when a split or additional deposit has occurred 
-    function handleFNFTRemaps(uint fnftId, uint[] memory newFNFTIds, address caller, bool cleanup) external;
-
-
     function onTransferFNFT(
         uint fnftId, 
         address operator,
