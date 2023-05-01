@@ -7,12 +7,12 @@ import "./IRevest.sol";
 interface ITokenVault {
 
     /// Emitted when an FNFT is withdraw  to denote what tokens have been withdrawn
-    event WithdrawERC20(address[] indexed tokens, address indexed user, bytes32 indexed salt, uint[] tokenAmounts, address smartWallet);
+    event WithdrawERC20(address token, address indexed user, bytes32 indexed salt, uint amount, address smartWallet);
 
     function withdrawToken(
         bytes32 salt,
-        address[] memory token,
-        uint[] memory quantities,
+        address token,
+        uint quantity,
         address recipient //TODO: Can replace user with just send back to msg.sender but less optimized
     ) external;
 

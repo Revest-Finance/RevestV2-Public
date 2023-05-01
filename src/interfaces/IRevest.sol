@@ -5,7 +5,7 @@ pragma solidity >=0.8.0;
 
 interface IRevest {
     event FNFTTimeLockMinted(
-        address[] indexed assets,
+        address indexed asset,
         address indexed from,
         uint indexed fnftId,
         uint endTime,
@@ -14,7 +14,7 @@ interface IRevest {
     );
 
     event FNFTAddressLockMinted(
-        address[] indexed assets,
+        address indexed asset,
         address indexed from,
         uint indexed fnftId,
         address trigger,
@@ -26,13 +26,6 @@ interface IRevest {
         address indexed from,
         uint indexed fnftId,
         uint indexed quantity
-    );
-
-    event FNFTSplit(
-        address indexed from,
-        uint[] indexed newFNFTId,
-        uint[] indexed proportions,
-        uint quantity
     );
 
     event FNFTUnlocked(
@@ -50,22 +43,22 @@ interface IRevest {
         address indexed from,
         uint indexed newFNFTId,
         uint indexed quantity,
-        uint[] amounts
+        uint mount
     );
 
     event DepositERC20(
-        address[] indexed tokens, 
+        address indexed token, 
         address indexed user, 
         uint indexed fnftId, 
-        uint[] tokenAmounts, 
+        uint tokenAmount, 
         address smartWallet
     );
 
     event WithdrawERC20(
-        address[] indexed tokens, 
+        address indexed token, 
         address indexed user, 
         uint indexed fnftId, 
-        uint[] tokenAmounts, 
+        uint tokenAmount, 
         address smartWallet
     );
 
@@ -85,8 +78,8 @@ interface IRevest {
     struct FNFTConfig {
         address pipeToContract; // Indicates if FNFT will pipe to another contract
         address handler;
-        address[] assets; // The token being stored
-        uint[] assetAmounts; // The amount of each token being stored
+        address asset; // The token being stored
+        uint depositAmount; // The amount of each token being stored
         uint fnftNum;// The FNFT number
         uint depositMul; // Deposit multiplier
         uint split; // Number of splits remaining
@@ -134,7 +127,6 @@ interface IRevest {
         FNFTConfig fnftConfig;
     }
 
-
     function mintTimeLock(
         address handler,
         uint fnftId,
@@ -167,7 +159,7 @@ interface IRevest {
         uint fnftId,
         address handler,
         uint fnftNum,
-        uint[] memory amounts,
+        uint amount,
         IAllowanceTransfer.PermitBatch calldata permits,
         bytes calldata _signature
     ) external returns (uint);
