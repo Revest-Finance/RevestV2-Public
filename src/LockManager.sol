@@ -19,14 +19,12 @@ contract LockManager is ILockManager, ReentrancyGuard {
 
     constructor() {}
 
-
     function getLock(bytes32 lockId) external view override returns (IRevest.Lock memory) {
         bytes32 salt = keccak256(abi.encode(lockId, msg.sender));
         return locks[salt];
     }
 
-    /// NB: The onlyRevest call here dramatically increases gas – should be onlyRevestController
-    function createLock(bytes32 salt, IRevest.LockParam memory lock) external override returns (bytes32 lockId) {
+    function createLock(bytes32 salt, IRevest.LockParam memory lock) external override nonReentrant returns (bytes32 lockId) {
         lockId = keccak256(abi.encode(salt, msg.sender));
 
         // Extensive validation on creation
@@ -62,7 +60,7 @@ contract LockManager is ILockManager, ReentrancyGuard {
      * lockId - the ID of the FNFT to unlock
      * @return true if the caller is valid and the lock has been unlocked, false otherwise
      */
-    function unlockFNFT(bytes32 salt, uint fnftId, address sender) external override returns (bool) {
+    function unlockFNFT(bytes32 salt, uint fnftId, address sender) external override nonReentrant returns (bool) {
         bytes32 lockId = keccak256(abi.encode(salt, msg.sender));
 
         //Allows reduction to 1 SSTORE at the end as opposed to many

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GNU-GPL v3.0 or later
 import "./IAllowanceTransfer.sol";
 
-pragma solidity >=0.8.0;
+pragma solidity ^0.8.12;
 
 interface IRevest {
     event FNFTTimeLockMinted(
@@ -74,7 +74,6 @@ interface IRevest {
         address indexed from
     );
 
-
     struct FNFTConfig {
         address pipeToContract; // Indicates if FNFT will pipe to another contract
         address handler;
@@ -84,13 +83,8 @@ interface IRevest {
         uint quantity;// How many FNFTs
         uint fnftId;//the ID of the NFT the FNFT was minted to
         bool maturityExtension; // Maturity extensions remaining
-        bool nontransferrable; // False by default (transferrable) //
-    }
-
-    // Refers to the global balance for an ERC20, encompassing possibly many FNFTs
-    struct TokenTracker {
-        uint lastBalance;
-        uint lastMul;
+        bool useETH;
+        bool nontransferrable;
     }
 
     enum LockType {
@@ -163,11 +157,8 @@ interface IRevest {
         uint endTime
     ) external returns (uint);
 
-    function setFlatWeiFee(uint wethFee) external;
-
-    function setERC20Fee(uint erc20) external;
+    function setFee(uint _fee) external;
 
     function getFNFT(bytes32 salt) external view returns (FNFTConfig memory);
-
 
 }

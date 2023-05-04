@@ -8,17 +8,16 @@ import "./interfaces/ITokenVault.sol";
 
 import "@openzeppelin/contracts/proxy/Clones.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-contract TokenVault is ITokenVault {
+contract TokenVault is ITokenVault, ReentrancyGuard {
     /// Address to use for EIP-1167 smart-wallet creation calls
     address public immutable TEMPLATE;
 
     constructor(
     ) {
-        RevestSmartWallet wallet = new RevestSmartWallet();
-        TEMPLATE = address(wallet);
+        TEMPLATE = address(new RevestSmartWallet());
     }
-
 
     //You can get rid of the deposit function and just have the controller send tokens there directly
 
@@ -27,7 +26,7 @@ contract TokenVault is ITokenVault {
         address token,
         uint quantity,
         address recipient //TODO: Can replace user with just send back to msg.sender but less optimized
-    ) external override {
+    ) external override nonReentrant {
         //Clone the wallet
         address walletAddr = Clones.cloneDeterministic(TEMPLATE, keccak256(abi.encode(salt, msg.sender)));
         
@@ -38,7 +37,8 @@ contract TokenVault is ITokenVault {
     }
 
 
-    function proxyCall(bytes32 salt, address[] memory targets, uint256[] memory values, bytes[] memory calldatas) external returns(bytes[] memory outputs) {
+    function proxyCall(bytes32 salt, address[] memory targets, uint256[] memory values, bytes[] memory calldatas) external 
+    nonReentrant returns(bytes[] memory outputs) {
         address walletAddr = Clones.cloneDeterministic(TEMPLATE, keccak256(abi.encode(salt, msg.sender)));
 
         //Proxy the calls through and selfDestruct itself when finished

@@ -21,15 +21,7 @@ contract RevestSmartWallet is ReentrancyGuard {
     }
 
     function withdraw(address token, uint value, address recipient) external nonReentrant onlyMaster {
-        if (token == address(0)) {
-            recipient.safeTransferETH(value);
-        }
-        
-        else {
-            ERC20(token).safeTransfer(recipient, value);
-        }
-
-        
+        ERC20(token).safeTransfer(recipient, value);
         _cleanMemory();
     }
 
