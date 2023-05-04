@@ -115,6 +115,7 @@ interface IRevest {
         address[] recipients;
         uint[] quantities;
         FNFTConfig fnftConfig;
+        bool usePermit2;
     }
 
     function mintTimeLock(
