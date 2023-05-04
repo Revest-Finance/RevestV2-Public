@@ -114,6 +114,4 @@ contract LockManager is ILockManager, ReentrancyGuard {
         return locks[salt].lockType;
     }
 
- 
-
 }

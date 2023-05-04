@@ -248,7 +248,7 @@ contract Revest is IRevest, RevestAccessControl, ReentrancyGuard {
             require(fnftId < fnftHandler.getNextId(), "E007");
 
             require(fnftId < IFNFTHandler(handler).getNextId(), "E007");
-            uint supply = fnftHandler.getSupply(fnftId);
+            uint supply = fnftHandler.totalSupply(fnftId);
 
             uint balance = fnftHandler.getBalance(_msgSender(), fnftId);
 
@@ -312,7 +312,7 @@ contract Revest is IRevest, RevestAccessControl, ReentrancyGuard {
         //If the handler is an NFT then supply is 1
         uint supply = 1;
         if (handler.supportsInterface(FNFTHANDLER_INTERFACE_ID)) {
-            supply = IFNFTHandler(handler).getSupply(fnftId);
+            supply = IFNFTHandler(handler).totalSupply(fnftId);
         }
 
         // Transfer the ERC20 fee to the admin address, leave it at that
@@ -438,7 +438,7 @@ contract Revest is IRevest, RevestAccessControl, ReentrancyGuard {
 
         uint supplyBefore = 1;
         if (fnft.handler.supportsInterface(FNFTHANDLER_INTERFACE_ID)) {
-            supplyBefore = getFNFTHandler().getSupply(fnftId) + quantity;
+            supplyBefore = getFNFTHandler().totalSupply(fnftId) + quantity;
         }
 
         amountToWithdraw = quantity.mulDivDown(IERC20(asset).balanceOf(smartWallAdd), supplyBefore);
@@ -478,7 +478,7 @@ contract Revest is IRevest, RevestAccessControl, ReentrancyGuard {
             IFNFTHandler FNFTHandler = IFNFTHandler(fnft.handler);
 
             //You Must own the entire supply to call a function on the FNFT
-            uint supply = FNFTHandler.getSupply(fnft.fnftId);
+            uint supply = FNFTHandler.totalSupply(fnft.fnftId);
             require(supply != 0 && FNFTHandler.getBalance(msg.sender, fnft.fnftId) == supply, "E007");
         }
 

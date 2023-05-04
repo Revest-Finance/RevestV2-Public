@@ -3,30 +3,42 @@
 pragma solidity ^0.8.12;
 
 import '@openzeppelin/contracts/utils/introspection/ERC165Checker.sol';
-import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 import "./interfaces/IRevest.sol";
 import "./interfaces/IAddressRegistry.sol";
-import "./interfaces/ILockManager.sol";
-import "./interfaces/ITokenVault.sol";
-import "./interfaces/IAddressLock.sol";
 import "./utils/RevestAccessControl.sol";
 
 import "./interfaces/IFNFTHandler.sol";
 import "./interfaces/IMetadataHandler.sol";
 import "./interfaces/IOutputReceiver.sol";
 
-contract FNFTHandler is ERC1155, AccessControl, RevestAccessControl, IFNFTHandler {
+contract FNFTHandler is ERC1155, RevestAccessControl, IFNFTHandler {
 
     using ERC165Checker for address;
+    using ECDSA for bytes32;
 
-    bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
+    struct permitApprovalInfo {
+        address owner;
+        address operator;
+        uint id;
+        uint amount;
+        uint256 deadline;
+    }
 
     bytes4 public constant OUTPUT_RECEIVER_INTERFACE_ID = type(IOutputReceiver).interfaceId;
+    
+    //Permit Signature Stuff
+    bytes32 public constant DOMAIN_TYPEHASH = keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
+    bytes32 public constant SETAPPROVALFORALL_TYPEHASH = keccak256("SetApprovalForAll(address owner,address operator, bool approved, uint id, uint amount, uint256 deadline, uint nonce)");
+    bytes32 immutable DOMAIN_SEPARATOR;
+    mapping(address signer => uint256 nonce) public nonces;
+
 
     mapping(uint => uint) public supply;
+
 
     // Modified to start at 1 to make use of TokenVaultV2 far simpler
     uint public fnftsCreated = 1;
@@ -36,15 +48,16 @@ contract FNFTHandler is ERC1155, AccessControl, RevestAccessControl, IFNFTHandle
      * Grants ADMIN and MINTER_ROLE to whoever creates the contract
      */
     constructor(address provider) ERC1155("") RevestAccessControl(provider) {
-        _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
-        _setupRole(PAUSER_ROLE, _msgSender());
+        DOMAIN_SEPARATOR = keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes("Revest_FNFTHandler")), block.chainid, address(this)));
     }
 
     /**
      * @dev See {IERC165-supportsInterface}.
      */
-    function supportsInterface(bytes4 interfaceId) public view virtual override (AccessControl, ERC1155) returns (bool) {
-        return super.supportsInterface(interfaceId);
+    function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
+        return interfaceId == type(IFNFTHandler).interfaceId || //IFNFTHandler
+                interfaceId == type(IERC1155Supply).interfaceId || //IERC1155Supply
+                super.supportsInterface(interfaceId); //ERC1155
     }
 
     function mint(address account, uint id, uint amount, bytes memory data) external override onlyRevestController {
@@ -63,32 +76,50 @@ contract FNFTHandler is ERC1155, AccessControl, RevestAccessControl, IFNFTHandle
 
     function mintBatch(address to, uint[] memory ids, uint[] memory amounts, bytes memory data) external override onlyRevestController {}
 
-    function setURI(string memory newuri) external override onlyRevestController {
-        _setURI(newuri);
-    }
-
     function burn(address account, uint id, uint amount) external override onlyRevestController {
         supply[id] -= amount;
         _burn(account, id, amount);
-    }
-
-    // NB: In its current state, this function is not used anywhere; it is also not safe
-    function burnBatch(address account, uint[] memory ids, uint[] memory amounts) external override onlyRevestController {
-        _burnBatch(account, ids, amounts);
     }
 
     function getBalance(address account, uint id) external view override returns (uint) {
         return balanceOf(account, id);
     }
 
-    function getSupply(uint fnftId) public view override returns (uint) {
+    function totalSupply(uint fnftId) public view override returns (uint) {
         return supply[fnftId];
     }
+
+    function exists(uint256 id) external view returns (bool) {
+        //According to the spec this should return if a token id "exists, previously existed, or may exist"
+        //It's unclear whether or not this should return true for a token that has been burned, so i went with "currently exists"
+        return supply[id] != 0;
+    } 
 
     function getNextId() public view override returns (uint) {
         return fnftsCreated;
     }
 
+    function transferFromWithPermit(
+        permitApprovalInfo memory info,
+        bytes memory signature
+    ) external {
+        uint nonce = nonces[info.owner]++;
+
+        bytes32 digest = keccak256(
+            abi.encodePacked(
+                "\x19\x01",
+                DOMAIN_SEPARATOR,
+                keccak256(abi.encode(SETAPPROVALFORALL_TYPEHASH, info.owner, info.operator, true, info.id, info.amount, info.deadline, nonce))
+            )
+        );
+
+        (address signer, ) = digest.tryRecover(signature);
+        require(signer != address(0) && signer == info.owner, "ECDSA: invalid signature");
+        require(info.deadline >= block.timestamp, "ERC1155: signature expired");
+
+        _setApprovalForAll(info.owner, info.operator, true);
+        _safeTransferFrom(info.owner, info.operator, info.id, info.amount, "");
+    }
 
     // OVERIDDEN ERC-1155 METHODS
 
@@ -100,38 +131,23 @@ contract FNFTHandler is ERC1155, AccessControl, RevestAccessControl, IFNFTHandle
         uint[] memory amounts,
         bytes memory data
     ) internal override {
-        super._beforeTokenTransfer(operator, from, to, ids, amounts, data);
         // Loop because all batch transfers must be checked
         // Will only execute once on singular transfer
-        if (from != address(0) ) {
+        if (from != address(0)) {
             address revest = addressesProvider.getRevest();
 
-            //salt = keccak256(abi.encode(fnftId, handler, fnftNum));
-            //handler is this and fnftNum is always zero for an 1155
-            bytes32 salt = keccak256(abi.encode(ids[0], address(this), 0));
+            for(uint x = 0; x < ids.length; x++) {
+                bytes32 salt = keccak256(abi.encode(ids[x], address(this), 0));
 
-            IRevest.FNFTConfig memory config = IRevest(revest).getFNFT(salt);
-            if(config.pipeToContract != address(0) && config.pipeToContract.supportsInterface(OUTPUT_RECEIVER_INTERFACE_ID)) {
-                IOutputReceiver(config.pipeToContract).onTransferFNFT(ids[0], operator, from, to, amounts[0], data);
-            }
-            bool canTransfer = !config.nontransferrable;
-            // Only check if not from minter
-            // And not being burned
-            if(ids.length > 1) {
-                uint i = 1;
-                while (canTransfer && i < ids.length) {
-                    require(amounts[i] > 0, "Trying to transfer zero tokens");
-                    config = IRevest(revest).getFNFT(salt);
-                    if(config.pipeToContract != address(0) && config.pipeToContract.supportsInterface(OUTPUT_RECEIVER_INTERFACE_ID)) {
-                        IOutputReceiver(config.pipeToContract).onTransferFNFT(ids[i], operator, from, to, amounts[i], data);
-                    }
-                    canTransfer = !config.nontransferrable;
-                    i += 1;
-
+                require(amounts[x] != 0, "Cannot transfer non-zero amount");
+                IRevest.FNFTConfig memory config = IRevest(revest).getFNFT(salt);
+                
+                if(config.pipeToContract != address(0) && config.pipeToContract.supportsInterface(OUTPUT_RECEIVER_INTERFACE_ID)) {
+                    IOutputReceiver(config.pipeToContract).onTransferFNFT(ids[x], operator, from, to, amounts[x], data);
                 }
+
+                require(!config.nontransferrable || to == address(0));
             }
-            canTransfer = to == address(0) ? true : canTransfer;
-            require(canTransfer, "E046");
         }
     }
 
