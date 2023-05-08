@@ -41,7 +41,6 @@ contract Revest is IRevest, ReentrancyGuard, Ownable {
 
     address immutable WETH;
     ITokenVault immutable tokenVault;
-    address immutable FEE_RECIPIENT;
     IRewardsHandler rewardsHandler;
 
     //Deployed omni-chain to same address
@@ -60,12 +59,10 @@ contract Revest is IRevest, ReentrancyGuard, Ownable {
     constructor(
         address weth,
         address _tokenVault,
-        address _FEE_RECIPIENT,
         address _rewardsHandler
     ) Ownable() {
         WETH = weth;
         tokenVault = ITokenVault(_tokenVault); 
-        FEE_RECIPIENT = _FEE_RECIPIENT;
         rewardsHandler = IRewardsHandler(_rewardsHandler);
     }
 
@@ -348,10 +345,10 @@ contract Revest is IRevest, ReentrancyGuard, Ownable {
                 uint totalERC20Fee = fee.mulDivDown(deposit, BASIS_POINTS);
                 if(totalERC20Fee != 0) {
                     if (_signature.length != 0) {
-                        PERMIT2.transferFrom(_msgSender(), FEE_RECIPIENT, totalERC20Fee.toUint160(), fnft.asset);
+                        PERMIT2.transferFrom(_msgSender(), address(rewardsHandler), totalERC20Fee.toUint160(), fnft.asset);
                     }
                     else {
-                        ERC20(fnft.asset).safeTransferFrom(_msgSender(), FEE_RECIPIENT, totalERC20Fee);
+                        ERC20(fnft.asset).safeTransferFrom(_msgSender(), address(rewardsHandler), totalERC20Fee);
                     }
                 }
             }//if !Whitelisted
@@ -433,21 +430,19 @@ contract Revest is IRevest, ReentrancyGuard, Ownable {
             if(totalFee != 0) {
                 if (fnftConfig.asset == address(0)) {
                     require(msg.value == (totalQuantity * fnftConfig.depositAmount) + totalFee, "E004");
-                    FEE_RECIPIENT.safeTransferETH(totalFee);
+                    address(rewardsHandler).safeTransferETH(totalFee);
                 }
 
                 else {
                     if (usePermit2) {
-                        PERMIT2.transferFrom(_msgSender(), FEE_RECIPIENT, totalFee.toUint160(), fnftConfig.asset);
+                        PERMIT2.transferFrom(_msgSender(), address(rewardsHandler), totalFee.toUint160(), fnftConfig.asset);
                     }
 
                     else {
-                        ERC20(fnftConfig.asset).safeTransferFrom(_msgSender(), FEE_RECIPIENT, totalFee);
+                        ERC20(fnftConfig.asset).safeTransferFrom(_msgSender(), address(rewardsHandler), totalFee);
                     }
                 }
-
-
-                IRewardsHandler(rewardsHandler).receiveFee(fnftConfig.asset, totalFee);
+                rewardsHandler.receiveFee(fnftConfig.asset, totalFee);
             }
         }
     }
