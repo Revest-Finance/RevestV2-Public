@@ -6,16 +6,16 @@ import '@openzeppelin/contracts/utils/introspection/ERC165Checker.sol';
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
 import "./interfaces/IRevest.sol";
 import "./interfaces/IAddressRegistry.sol";
-import "./utils/RevestAccessControl.sol";
 
 import "./interfaces/IFNFTHandler.sol";
 import "./interfaces/IMetadataHandler.sol";
 import "./interfaces/IOutputReceiver.sol";
 
-contract FNFTHandler is ERC1155, RevestAccessControl, IFNFTHandler {
+contract FNFTHandler is ERC1155, Ownable, IFNFTHandler {
 
     using ERC165Checker for address;
     using ECDSA for bytes32;
@@ -43,12 +43,15 @@ contract FNFTHandler is ERC1155, RevestAccessControl, IFNFTHandler {
     // Modified to start at 1 to make use of TokenVaultV2 far simpler
     uint public fnftsCreated = 1;
 
+    IMetadataHandler immutable metadataHandler;
+
     /**
      * @dev Primary constructor to create an instance of NegativeEntropy
      * Grants ADMIN and MINTER_ROLE to whoever creates the contract
      */
-    constructor(address provider) ERC1155("") RevestAccessControl(provider) {
+    constructor(address _metadataHandler) ERC1155("") Ownable() {
         DOMAIN_SEPARATOR = keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes("Revest_FNFTHandler")), block.chainid, address(this)));
+        metadataHandler = IMetadataHandler(_metadataHandler);
     }
 
     /**
@@ -60,13 +63,13 @@ contract FNFTHandler is ERC1155, RevestAccessControl, IFNFTHandler {
                 super.supportsInterface(interfaceId); //ERC1155
     }
 
-    function mint(address account, uint id, uint amount, bytes memory data) external override onlyRevestController {
+    function mint(address account, uint id, uint amount, bytes memory data) external override onlyOwner {
         supply[id] += amount;
         fnftsCreated += 1;
         _mint(account, id, amount, data);
     }
 
-    function mintBatchRec(address[] calldata recipients, uint[] calldata quantities, uint id, uint newSupply, bytes memory data) external override onlyRevestController {
+    function mintBatchRec(address[] calldata recipients, uint[] calldata quantities, uint id, uint newSupply, bytes memory data) external override onlyOwner {
         supply[id] += newSupply;
         fnftsCreated += 1;
         for(uint i = 0; i < quantities.length; i++) {
@@ -74,9 +77,9 @@ contract FNFTHandler is ERC1155, RevestAccessControl, IFNFTHandler {
         }
     }
 
-    function mintBatch(address to, uint[] memory ids, uint[] memory amounts, bytes memory data) external override onlyRevestController {}
+    function mintBatch(address to, uint[] memory ids, uint[] memory amounts, bytes memory data) external override onlyOwner {}
 
-    function burn(address account, uint id, uint amount) external override onlyRevestController {
+    function burn(address account, uint id, uint amount) external override onlyOwner {
         supply[id] -= amount;
         _burn(account, id, amount);
     }
@@ -134,7 +137,7 @@ contract FNFTHandler is ERC1155, RevestAccessControl, IFNFTHandler {
         // Loop because all batch transfers must be checked
         // Will only execute once on singular transfer
         if (from != address(0)) {
-            address revest = addressesProvider.getRevest();
+            address revest = owner();
 
             for(uint x = 0; x < ids.length; x++) {
                 bytes32 salt = keccak256(abi.encode(ids[x], address(this), 0));
@@ -151,9 +154,8 @@ contract FNFTHandler is ERC1155, RevestAccessControl, IFNFTHandler {
         }
     }
 
-
     function uri(uint fnftId) public view override returns (string memory) {
-        return IMetadataHandler(addressesProvider.getMetadataHandler()).getTokenURI(fnftId);
+        return metadataHandler.getTokenURI(fnftId);
     }
 
     function renderTokenURI(
@@ -163,7 +165,7 @@ contract FNFTHandler is ERC1155, RevestAccessControl, IFNFTHandler {
         string memory baseRenderURI,
         string[] memory parameters
     ) {
-        return IMetadataHandler(addressesProvider.getMetadataHandler()).getRenderTokenURI(tokenId, owner);
+        return metadataHandler.getRenderTokenURI(tokenId, owner);
     }
 
 }

@@ -78,6 +78,7 @@ interface IRevest {
         address pipeToContract; // Indicates if FNFT will pipe to another contract
         address handler;
         address asset; // The token being stored
+        address lockManager;
         uint depositAmount; // The amount of each token being stored
         uint nonce;// The FNFT number
         uint quantity;// How many FNFTs
