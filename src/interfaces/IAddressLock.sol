@@ -2,7 +2,6 @@
 
 pragma solidity ^0.8.12;
 
-import "./IRegistryProvider.sol";
 import '@openzeppelin/contracts/utils/introspection/IERC165.sol';
 
 /**
@@ -10,7 +9,7 @@ import '@openzeppelin/contracts/utils/introspection/IERC165.sol';
  * @dev Address locks MUST be non-upgradeable to be considered for trusted status
  * @author Revest
  */
-interface IAddressLock is IRegistryProvider, IERC165{
+interface IAddressLock is IERC165{
 
     /// Creates a lock to the specified lockID
     /// @param fnftId the fnftId to map this lock to. Not recommended for typical locks, as it will break on splitting

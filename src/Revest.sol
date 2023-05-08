@@ -66,10 +66,6 @@ contract Revest is IRevest, ReentrancyGuard, Ownable {
         rewardsHandler = IRewardsHandler(_rewardsHandler);
     }
 
-    function setPermitAllowance(IAllowanceTransfer.PermitBatch calldata _permit, bytes calldata _signature) internal {
-        PERMIT2.permit(_msgSender(), _permit, _signature);
-    }
-
     /**
      * @dev creates a single time-locked NFT with <quantity> number of copies with <amount> of <asset> stored for each copy
      * asset - the address of the underlying ERC20 token for this bond
@@ -87,7 +83,8 @@ contract Revest is IRevest, ReentrancyGuard, Ownable {
         IAllowanceTransfer.PermitBatch calldata permits,
         bytes calldata _signature
     ) external payable override nonReentrant returns (bytes32 salt, bytes32 lockId) {
-        if (_signature.length != 0) setPermitAllowance(permits, _signature);
+        if (_signature.length != 0) PERMIT2.permit(_msgSender(), permits, _signature);
+
 
         uint nonce;
 
@@ -144,7 +141,7 @@ contract Revest is IRevest, ReentrancyGuard, Ownable {
         IAllowanceTransfer.PermitBatch calldata permits,
         bytes calldata _signature
     ) external payable override nonReentrant returns (bytes32 salt, bytes32 lockId) {
-        if (_signature.length != 0) setPermitAllowance(permits, _signature);
+        if (_signature.length != 0) PERMIT2.permit(_msgSender(), permits, _signature);
 
         uint nonce;
         //If the handler is the Revest FNFT Contract get the new FNFT ID
@@ -309,7 +306,7 @@ contract Revest is IRevest, ReentrancyGuard, Ownable {
         uint fnftId = fnft.fnftId;
         address handler = fnft.handler;
 
-        if (_signature.length != 0) setPermitAllowance(permits, _signature);
+        if (_signature.length != 0) PERMIT2.permit(_msgSender(), permits, _signature);
 
         require(fnft.quantity != 0);
 

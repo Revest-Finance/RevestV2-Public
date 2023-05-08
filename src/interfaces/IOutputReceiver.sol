@@ -2,13 +2,12 @@
 
 pragma solidity ^0.8.12;
 
-import "./IRegistryProvider.sol";
 import '@openzeppelin/contracts/utils/introspection/IERC165.sol';
 
 /**
  * @title Provider interface for Revest FNFTs
  */
-interface IOutputReceiver is IRegistryProvider, IERC165 {
+interface IOutputReceiver is IERC165 {
     event DepositERC20OutputReceiver(address indexed mintTo, address indexed token, uint amountTokens, uint indexed fnftId, bytes extraData);
 
     event DepositERC721OutputReceiver(address indexed mintTo, address indexed token, uint[] tokenIds, uint indexed fnftId, bytes extraData);
