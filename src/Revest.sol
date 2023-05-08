@@ -83,8 +83,7 @@ contract Revest is IRevest, ReentrancyGuard, Ownable {
         IAllowanceTransfer.PermitBatch calldata permits,
         bytes calldata _signature
     ) external payable override nonReentrant returns (bytes32 salt, bytes32 lockId) {
-        if (_signature.length != 0) PERMIT2.permit(_msgSender(), permits, _signature);
-
+        if (_signature.length != 0) PERMIT2.permit(msg.sender, permits, _signature);
 
         uint nonce;
 
@@ -105,7 +104,7 @@ contract Revest is IRevest, ReentrancyGuard, Ownable {
         // Get or create lock based on time, assign lock to ID
         {   
             salt = keccak256(abi.encode(fnftId, handler, nonce));
-            require(fnfts[salt].quantity == 0, "E007");//TODO: Double check that Error #
+            require(fnfts[salt].quantity == 0, "E006");
 
             IRevest.LockParam memory timeLock;
             timeLock.lockType = IRevest.LockType.TimeLock;
@@ -126,7 +125,7 @@ contract Revest is IRevest, ReentrancyGuard, Ownable {
         ));
 
         //TODO: Fix Events
-        emit FNFTTimeLockMinted(fnftConfig.asset, _msgSender(), fnftId, endTime, quantities, fnftConfig);
+        emit FNFTTimeLockMinted(fnftConfig.asset, msg.sender, fnftId, endTime, quantities, fnftConfig);
 
     }
 
@@ -141,7 +140,7 @@ contract Revest is IRevest, ReentrancyGuard, Ownable {
         IAllowanceTransfer.PermitBatch calldata permits,
         bytes calldata _signature
     ) external payable override nonReentrant returns (bytes32 salt, bytes32 lockId) {
-        if (_signature.length != 0) PERMIT2.permit(_msgSender(), permits, _signature);
+        if (_signature.length != 0) PERMIT2.permit(msg.sender, permits, _signature);
 
         uint nonce;
         //If the handler is the Revest FNFT Contract get the new FNFT ID
@@ -160,7 +159,7 @@ contract Revest is IRevest, ReentrancyGuard, Ownable {
        
         {
             salt = keccak256(abi.encode(fnftId, handler, nonce));
-            require(fnfts[salt].quantity == 0, "E007");//TODO: Double check that Error code
+            require(fnfts[salt].quantity == 0, "E006");//TODO: Double check that Error code
 
             IRevest.LockParam memory addressLock;
             addressLock.addressLock = trigger;
@@ -187,7 +186,7 @@ contract Revest is IRevest, ReentrancyGuard, Ownable {
             _signature.length == 0
         ));
 
-        emit FNFTAddressLockMinted(fnftConfig.asset, _msgSender(), fnftId, trigger, quantities, fnftConfig);
+        emit FNFTAddressLockMinted(fnftConfig.asset, msg.sender, fnftId, trigger, quantities, fnftConfig);
     }
 
     function withdrawFNFT(bytes32 salt) external override nonReentrant {
@@ -198,17 +197,17 @@ contract Revest is IRevest, ReentrancyGuard, Ownable {
 
         // Burn the FNFTs being exchanged
         if (fnft.handler.supportsInterface(FNFTHANDLER_INTERFACE_ID)) {
-            IFNFTHandler(fnft.handler).burn(_msgSender(), fnft.fnftId, fnft.quantity);
+            IFNFTHandler(fnft.handler).burn(msg.sender, fnft.fnftId, fnft.quantity);
         }
 
         //Checks-effects because unlockFNFT has an external call which could be used for reentrancy
         fnfts[salt].quantity -= fnft.quantity;
 
-        require(ILockManager(fnft.lockManager).unlockFNFT(salt, fnft.fnftId, _msgSender()), 'E082');
+        ILockManager(fnft.lockManager).unlockFNFT(salt, fnft.fnftId, msg.sender);
 
-        withdrawToken(salt, fnft.fnftId, fnft.quantity, _msgSender());
+        withdrawToken(salt, fnft.fnftId, fnft.quantity, msg.sender);
 
-        emit FNFTWithdrawn(_msgSender(), fnft.fnftId, fnft.quantity);
+        emit FNFTWithdrawn(msg.sender, fnft.fnftId, fnft.quantity);
     }
 
     /// Advanced FNFT withdrawals removed for the time being – no active implementations
@@ -218,12 +217,10 @@ contract Revest is IRevest, ReentrancyGuard, Ownable {
         IRevest.FNFTConfig memory fnft = fnfts[salt];
 
         // Works for value locks or time locks
-        IRevest.LockType lock = ILockManager(fnft.lockManager).lockTypes(salt);
-        require(lock == IRevest.LockType.AddressLock, "E008");
-        require(ILockManager(fnft.lockManager).unlockFNFT(salt, fnft.fnftId, _msgSender()), "E056");
+        ILockManager(fnft.lockManager).unlockFNFT(salt, fnft.fnftId, msg.sender);
 
         //TODO: Fix Events
-        emit FNFTUnlocked(_msgSender(), fnft.fnftId);
+        emit FNFTUnlocked(msg.sender, fnft.fnftId);
     }
 
    //TODO: I just removed Splitting cause we never re-enabled it
@@ -240,7 +237,7 @@ contract Revest is IRevest, ReentrancyGuard, Ownable {
         //Require that the FNFT exists
         require(fnft.quantity != 0); 
 
-        require(endTime > block.timestamp, 'E002');
+        require(endTime > block.timestamp, 'E007');
 
         if (handler.supportsInterface(ERC721_INTERFACE_ID)) {
             //Only the NFT owner can extend the lock on the NFT
@@ -250,15 +247,14 @@ contract Revest is IRevest, ReentrancyGuard, Ownable {
         else if (handler.supportsInterface(FNFTHANDLER_INTERFACE_ID)) {
             IFNFTHandler fnftHandler = IFNFTHandler(handler);
 
-            require(fnftId < fnftHandler.getNextId(), "E007");
+            require(fnftId < fnftHandler.getNextId(), "E003");
 
-            require(fnftId < IFNFTHandler(handler).getNextId(), "E007");
             uint supply = fnftHandler.totalSupply(fnftId);
 
-            uint balance = fnftHandler.getBalance(_msgSender(), fnftId);
+            uint balance = fnftHandler.getBalance(msg.sender, fnftId);
 
             //To extend the maturity you must own the entire supply so you can't extend someone eles's lock time
-            require(supply != 0 && balance == supply , "E022");
+            require(supply != 0 && balance == supply , "E008");
         }
 
         else {
@@ -270,10 +266,10 @@ contract Revest is IRevest, ReentrancyGuard, Ownable {
         // If it can't have its maturity extended, revert
         // Will also return false on non-time lock locks
         require(fnft.maturityExtension &&
-            manager.lockTypes(salt) == IRevest.LockType.TimeLock, "E029");
+            manager.lockTypes(salt) == IRevest.LockType.TimeLock, "E009");
 
         // If desired maturity is below existing date, reject operation
-        require(manager.getLock(salt).timeLockExpiry < endTime, "E030");
+        require(manager.getLock(salt).timeLockExpiry < endTime, "E010");
 
         // Update the lock
         IRevest.LockParam memory lock;
@@ -284,10 +280,10 @@ contract Revest is IRevest, ReentrancyGuard, Ownable {
 
         // Callback to IOutputReceiverV3
         if(fnft.pipeToContract != address(0) && fnft.pipeToContract.supportsInterface(OUTPUT_RECEIVER_INTERFACE_ID)) {
-            IOutputReceiver(fnft.pipeToContract).handleTimelockExtensions(fnftId, endTime, _msgSender());
+            IOutputReceiver(fnft.pipeToContract).handleTimelockExtensions(fnftId, endTime, msg.sender);
         }
 
-        emit FNFTMaturityExtended(_msgSender(), fnftId, endTime);
+        emit FNFTMaturityExtended(msg.sender, fnftId, endTime);
 
         return fnftId;
     }
@@ -306,12 +302,12 @@ contract Revest is IRevest, ReentrancyGuard, Ownable {
         uint fnftId = fnft.fnftId;
         address handler = fnft.handler;
 
-        if (_signature.length != 0) PERMIT2.permit(_msgSender(), permits, _signature);
+        if (_signature.length != 0) PERMIT2.permit(msg.sender, permits, _signature);
 
         require(fnft.quantity != 0);
 
         if (handler.supportsInterface(FNFTHANDLER_INTERFACE_ID)) {
-            require(fnftId < IFNFTHandler(handler).getNextId(), "E007");
+            require(fnftId < IFNFTHandler(handler).getNextId(), "E003");
         }
 
         //If the handler is an NFT then supply is 1
@@ -328,24 +324,24 @@ contract Revest is IRevest, ReentrancyGuard, Ownable {
         // Transfer to the smart wallet
         if(fnft.asset != address(0) && amount != 0) {
             if (_signature.length != 0) {
-                PERMIT2.transferFrom(_msgSender(), smartWallet, deposit.toUint160(), fnft.asset);
+                PERMIT2.transferFrom(msg.sender, smartWallet, deposit.toUint160(), fnft.asset);
             }
 
             else {
-                ERC20(fnft.asset).safeTransferFrom(_msgSender(), smartWallet, deposit);
+                ERC20(fnft.asset).safeTransferFrom(msg.sender, smartWallet, deposit);
             }
 
-            emit DepositERC20(fnft.asset, _msgSender(), fnftId, amount, smartWallet);
+            emit DepositERC20(fnft.asset, msg.sender, fnftId, amount, smartWallet);
 
             if(fee != 0) {
                 //TODO: Fee Taking
                 uint totalERC20Fee = fee.mulDivDown(deposit, BASIS_POINTS);
                 if(totalERC20Fee != 0) {
                     if (_signature.length != 0) {
-                        PERMIT2.transferFrom(_msgSender(), address(rewardsHandler), totalERC20Fee.toUint160(), fnft.asset);
+                        PERMIT2.transferFrom(msg.sender, address(rewardsHandler), totalERC20Fee.toUint160(), fnft.asset);
                     }
                     else {
-                        ERC20(fnft.asset).safeTransferFrom(_msgSender(), address(rewardsHandler), totalERC20Fee);
+                        ERC20(fnft.asset).safeTransferFrom(msg.sender, address(rewardsHandler), totalERC20Fee);
                     }
                 }
             }//if !Whitelisted
@@ -353,10 +349,10 @@ contract Revest is IRevest, ReentrancyGuard, Ownable {
 
         //You don't need to check for address(0) since address(0) does not include support interface        
         if(fnft.pipeToContract.supportsInterface(OUTPUT_RECEIVER_INTERFACE_ID)) {
-            IOutputReceiver(fnft.pipeToContract).handleAdditionalDeposit(fnftId, deposit, supply, _msgSender());
+            IOutputReceiver(fnft.pipeToContract).handleAdditionalDeposit(fnftId, deposit, supply, msg.sender);
         }
 
-        emit FNFTAddionalDeposited(_msgSender(), fnftId, supply, amount);
+        emit FNFTAddionalDeposited(msg.sender, fnftId, supply, amount);
     }
 
     //
@@ -371,7 +367,7 @@ contract Revest is IRevest, ReentrancyGuard, Ownable {
         bool isSingular;
         uint totalQuantity = params.quantities[0];
         {
-            require(params.recipients.length == params.quantities.length, "recipients and quantities arrays must match");
+            require(params.recipients.length == params.quantities.length, "E011");
             // Calculate total quantity
             isSingular = params.recipients.length == 1;
             if(!isSingular) {
@@ -379,7 +375,7 @@ contract Revest is IRevest, ReentrancyGuard, Ownable {
                     totalQuantity += params.quantities[i];
                 }
             }
-            require(totalQuantity > 0, "E003");
+            require(totalQuantity > 0, "E012");
         }
 
         // Take fees
@@ -398,11 +394,11 @@ contract Revest is IRevest, ReentrancyGuard, Ownable {
         // Now, we move the funds to token vault from the message sender
         address smartWallet = tokenVault.getFNFTAddress(salt, address(this));
         if (params.usePermit2) {
-            PERMIT2.transferFrom(_msgSender(), smartWallet, (totalQuantity * params.fnftConfig.depositAmount).toUint160(), params.fnftConfig.asset);
+            PERMIT2.transferFrom(msg.sender, smartWallet, (totalQuantity * params.fnftConfig.depositAmount).toUint160(), params.fnftConfig.asset);
         }
 
         else {
-            ERC20(params.fnftConfig.asset).safeTransferFrom(_msgSender(), smartWallet, totalQuantity * params.fnftConfig.depositAmount);
+            ERC20(params.fnftConfig.asset).safeTransferFrom(msg.sender, smartWallet, totalQuantity * params.fnftConfig.depositAmount);
         }
 
         //Mint FNFTs but only if the handler is the Revest FNFT Handler
@@ -414,7 +410,7 @@ contract Revest is IRevest, ReentrancyGuard, Ownable {
             }
         }
 
-        emit CreateFNFT(salt, params.fnftId, _msgSender());
+        emit CreateFNFT(salt, params.fnftId, msg.sender);
     }
 
     function takeFees(IRevest.FNFTConfig memory fnftConfig, uint totalQuantity, bool usePermit2) internal {
@@ -432,11 +428,11 @@ contract Revest is IRevest, ReentrancyGuard, Ownable {
 
                 else {
                     if (usePermit2) {
-                        PERMIT2.transferFrom(_msgSender(), address(rewardsHandler), totalFee.toUint160(), fnftConfig.asset);
+                        PERMIT2.transferFrom(msg.sender, address(rewardsHandler), totalFee.toUint160(), fnftConfig.asset);
                     }
 
                     else {
-                        ERC20(fnftConfig.asset).safeTransferFrom(_msgSender(), address(rewardsHandler), totalFee);
+                        ERC20(fnftConfig.asset).safeTransferFrom(msg.sender, address(rewardsHandler), totalFee);
                     }
                 }
                 rewardsHandler.receiveFee(fnftConfig.asset, totalFee);
@@ -515,7 +511,7 @@ contract Revest is IRevest, ReentrancyGuard, Ownable {
         }
 
         for(uint x = 0; x < targets.length; ) {
-            require(!blacklistedFunctions[bytes4(calldatas[x])], "E081");
+            require(!blacklistedFunctions[bytes4(calldatas[x])], "E013");
 
             unchecked {
                 ++x;

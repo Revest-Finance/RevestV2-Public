@@ -17,8 +17,6 @@ contract LockManager is ILockManager, ReentrancyGuard {
     bytes4 public constant ADDRESS_LOCK_INTERFACE_ID = type(IAddressLock).interfaceId;
     mapping(bytes32 => IRevest.Lock) public locks; // maps lockId to locks
 
-    constructor() {}
-
     function getLock(bytes32 lockId) external view override returns (IRevest.Lock memory) {
         bytes32 salt = keccak256(abi.encode(lockId, msg.sender));
         return locks[salt];
@@ -28,24 +26,23 @@ contract LockManager is ILockManager, ReentrancyGuard {
         lockId = keccak256(abi.encode(salt, msg.sender));
 
         // Extensive validation on creation
-        require(lock.lockType != IRevest.LockType.DoesNotExist, "E058");
         IRevest.Lock memory newLock = locks[lockId];
 
         newLock.lockType = lock.lockType;
         newLock.creationTime = block.timestamp;
 
         if(lock.lockType == IRevest.LockType.TimeLock) {
-            require(lock.timeLockExpiry > block.timestamp, "E002");
+            require(lock.timeLockExpiry > block.timestamp, "E015");
             newLock.timeLockExpiry = lock.timeLockExpiry;
         }
        
         else if (lock.lockType == IRevest.LockType.AddressLock) {
-            require(lock.addressLock != address(0), "E004");
+            require(lock.addressLock != address(0), "E016");
             newLock.addressLock = lock.addressLock;
         }
 
         else {
-            require(false, "Invalid type");
+            revert("E017");
         }
 
         //Use a single SSTORE
@@ -58,35 +55,37 @@ contract LockManager is ILockManager, ReentrancyGuard {
      * if address, only if it is called by the address given permissions to
      * if value, only if value is correct for unlocking
      * lockId - the ID of the FNFT to unlock
-     * @return true if the caller is valid and the lock has been unlocked, false otherwise
      */
-    function unlockFNFT(bytes32 salt, uint fnftId, address sender) external override nonReentrant returns (bool) {
+    function unlockFNFT(bytes32 salt, uint fnftId, address sender) external override nonReentrant {
         bytes32 lockId = keccak256(abi.encode(salt, msg.sender));
 
         //Allows reduction to 1 SSTORE at the end as opposed to many
         IRevest.Lock memory tempLock = locks[lockId];
-        IRevest.LockType lockType = tempLock.lockType;
-        if (lockType == IRevest.LockType.TimeLock) {
-            if(!tempLock.unlocked && tempLock.timeLockExpiry <= block.timestamp) {
-                tempLock.unlocked = true;
-                tempLock.timeLockExpiry = 0;
-            }
+
+        //If already unlocked, no state changes needed
+        if (tempLock.unlocked) return;
+
+        if (tempLock.lockType == IRevest.LockType.TimeLock) {
+            require(tempLock.timeLockExpiry <= block.timestamp, "E015");
+            tempLock.timeLockExpiry = 0;
         }
       
-        else if (lockType == IRevest.LockType.AddressLock) {
-            address addLock = tempLock.addressLock;
-            if (!tempLock.unlocked && (sender == addLock ||
-                    (addLock.supportsInterface(ADDRESS_LOCK_INTERFACE_ID) && IAddressLock(addLock).isUnlockable(fnftId, uint(lockId))))
-                ) {
-                tempLock.unlocked = true;
+        else if (tempLock.lockType == IRevest.LockType.AddressLock) {
+            require((sender == tempLock.addressLock) ||
+                    (tempLock.addressLock.supportsInterface(ADDRESS_LOCK_INTERFACE_ID) 
+                    && IAddressLock(tempLock.addressLock).isUnlockable(fnftId, uint(lockId))));
+
                 tempLock.addressLock = address(0);
-            }
         }
+
+        else {
+            revert("E017");
+        }
+
+        tempLock.unlocked = true;
 
         //Reduce to 1 SSTORE
         locks[lockId] = tempLock;
-
-        return tempLock.unlocked;
     }
 
     /**
@@ -96,16 +95,20 @@ contract LockManager is ILockManager, ReentrancyGuard {
         bytes32 lockId = keccak256(abi.encode(salt, msg.sender));
         
         IRevest.Lock memory lock = locks[lockId];
+
+        if (lock.unlocked) return true;
+
         if (lock.lockType == IRevest.LockType.TimeLock) {
-            return lock.unlocked || lock.timeLockExpiry < block.timestamp;
+            return lock.timeLockExpiry < block.timestamp;
         }
      
         else if (lock.lockType == IRevest.LockType.AddressLock) {
-            return lock.unlocked || (lock.addressLock.supportsInterface(ADDRESS_LOCK_INTERFACE_ID) &&
-                                        IAddressLock(lock.addressLock).isUnlockable(fnftId, uint(lockId)));
+            return (lock.addressLock.supportsInterface(ADDRESS_LOCK_INTERFACE_ID) &&
+                    IAddressLock(lock.addressLock).isUnlockable(fnftId, uint(lockId)));
         }
+
         else {
-            revert("E050");
+            return false;
         }
     }
 

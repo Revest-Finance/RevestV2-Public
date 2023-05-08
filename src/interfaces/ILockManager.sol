@@ -12,7 +12,7 @@ interface ILockManager {
 
     function lockTypes(bytes32 fnftId) external view returns (IRevest.LockType);
 
-    function unlockFNFT(bytes32 salt, uint fnftId, address sender) external returns (bool);
+    function unlockFNFT(bytes32 salt, uint fnftId, address sender) external;
 
     function getLockMaturity(bytes32 salt, uint fnftId) external view returns (bool);
 }

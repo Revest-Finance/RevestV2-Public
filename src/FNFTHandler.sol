@@ -116,8 +116,8 @@ contract FNFTHandler is ERC1155, Ownable, IFNFTHandler {
         );
 
         (address signer, ) = digest.tryRecover(signature);
-        require(signer != address(0) && signer == info.owner, "ECDSA: invalid signature");
-        require(info.deadline >= block.timestamp, "ERC1155: signature expired");
+        require(signer != address(0) && signer == info.owner, "E018");
+        require(info.deadline < block.timestamp, "ERC1155: signature expired");
 
         _setApprovalForAll(info.owner, info.operator, true);
         _safeTransferFrom(info.owner, info.operator, info.id, info.amount, "");
@@ -141,7 +141,7 @@ contract FNFTHandler is ERC1155, Ownable, IFNFTHandler {
             for(uint x = 0; x < ids.length; x++) {
                 bytes32 salt = keccak256(abi.encode(ids[x], address(this), 0));
 
-                require(amounts[x] != 0, "Cannot transfer non-zero amount");
+                require(amounts[x] != 0, "E020");
                 IRevest.FNFTConfig memory config = IRevest(revest).getFNFT(salt);
                 
                 if(config.pipeToContract != address(0) && config.pipeToContract.supportsInterface(OUTPUT_RECEIVER_INTERFACE_ID)) {

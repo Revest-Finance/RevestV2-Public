@@ -89,7 +89,6 @@ interface IRevest {
     }
 
     enum LockType {
-        DoesNotExist,
         TimeLock,
         AddressLock
     }
