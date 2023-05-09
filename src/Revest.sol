@@ -386,8 +386,6 @@ contract Revest is IRevest, ReentrancyGuard, Ownable {
             IWETH(WETH).deposit{value: msg.value}();
         }
 
-        takeFees(params.fnftConfig, totalQuantity, params.usePermit2);
-        
         // Create the FNFT and update accounting within TokenVault
         createFNFT(salt, params.fnftId, params.handler, params.nonce, params.fnftConfig, totalQuantity);
 
@@ -413,32 +411,6 @@ contract Revest is IRevest, ReentrancyGuard, Ownable {
         emit CreateFNFT(salt, params.fnftId, msg.sender);
     }
 
-    function takeFees(IRevest.FNFTConfig memory fnftConfig, uint totalQuantity, bool usePermit2) internal {
-        if(fee != 0) {
-            //TODO: Change Depending on How Fees are Taken in the future
-            IRewardsHandler(rewardsHandler).receiveFee(WETH, fee);
-            
-            uint totalFee = fee.mulDivDown((totalQuantity * fnftConfig.depositAmount), BASIS_POINTS);
-
-            if(totalFee != 0) {
-                if (fnftConfig.asset == address(0)) {
-                    require(msg.value == (totalQuantity * fnftConfig.depositAmount) + totalFee, "E004");
-                    address(rewardsHandler).safeTransferETH(totalFee);
-                }
-
-                else {
-                    if (usePermit2) {
-                        PERMIT2.transferFrom(msg.sender, address(rewardsHandler), totalFee.toUint160(), fnftConfig.asset);
-                    }
-
-                    else {
-                        ERC20(fnftConfig.asset).safeTransferFrom(msg.sender, address(rewardsHandler), totalFee);
-                    }
-                }
-                rewardsHandler.receiveFee(fnftConfig.asset, totalFee);
-            }
-        }
-    }
 
     function withdrawToken(
         bytes32 salt,
