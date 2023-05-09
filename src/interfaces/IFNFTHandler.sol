@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GNU-GPL v3.0 or later
 
-pragma solidity ^0.8.12;
-
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
+
+pragma solidity ^0.8.12;
 
 interface IERC1155Supply {
   // @notice      This function MUST return whether the given token id exists, previously existed, or may exist
@@ -16,12 +16,8 @@ interface IERC1155Supply {
   function totalSupply(uint256 id) external view returns (uint256);
 }
 
-interface IFNFTHandler is IERC1155Supply, IERC1155 {
+interface IFNFTHandler is IERC1155, IERC1155Supply {
     function mint(address account, uint id, uint amount, bytes memory data) external;
-
-    function mintBatchRec(address[] memory recipients, uint[] memory quantities, uint id, uint newSupply, bytes memory data) external;
-
-    function mintBatch(address to, uint[] memory ids, uint[] memory amounts, bytes memory data) external;
 
     function burn(address account, uint id, uint amount) external;
 

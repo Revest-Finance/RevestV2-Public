@@ -25,6 +25,17 @@ contract RevestSmartWallet is ReentrancyGuard {
         _cleanMemory();
     }
 
+    function proxyCall(address[] memory targets, uint256[] memory values, bytes[] memory calldatas) external nonReentrant onlyMaster returns(bytes[] memory outputs) {
+        for (uint256 i = 0; i < targets.length; i++) {
+            (bool success, bytes memory result) = targets[i].call{value: values[i]}(calldatas[i]);
+            require(success, "ER022");
+            outputs[i] = result;
+        }
+
+        // Must manually cleanup since this returns something
+        _cleanMemory();
+    }
+
 
     function _cleanMemory() internal {
         selfdestruct(payable(MASTER));

@@ -8,8 +8,6 @@ import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-import "./Revest6551SmartWallet.sol";
-
 import "./interfaces/IRevest.sol";
 import "./interfaces/IFNFTHandler.sol";
 import "./interfaces/IMetadataHandler.sol";
@@ -26,13 +24,14 @@ contract FNFTHandler is ERC1155, Ownable, IFNFTHandler {
         uint id;
         uint amount;
         uint256 deadline;
+        bytes data;
     }
 
     bytes4 public constant OUTPUT_RECEIVER_INTERFACE_ID = type(IOutputReceiver).interfaceId;
     
     //Permit Signature Stuff
     bytes32 public constant DOMAIN_TYPEHASH = keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
-    bytes32 public constant SETAPPROVALFORALL_TYPEHASH = keccak256("SetApprovalForAll(address owner,address operator, bool approved, uint id, uint amount, uint256 deadline, uint nonce)");
+    bytes32 public constant SETAPPROVALFORALL_TYPEHASH = keccak256("transferFromWithPermit(address owner,address operator, bool approved, uint id, uint amount, uint256 deadline, uint nonce, bytes data)");
     bytes32 immutable DOMAIN_SEPARATOR;
     mapping(address signer => uint256 nonce) public nonces;
 
@@ -44,8 +43,6 @@ contract FNFTHandler is ERC1155, Ownable, IFNFTHandler {
     uint public fnftsCreated = 1;
 
     IMetadataHandler immutable metadataHandler;
-    Revest6551SmartWallet immutable SMARTWALLET_IMPLEMENTATION;
-
 
     /**
      * @dev Primary constructor to create an instance of NegativeEntropy
@@ -55,7 +52,6 @@ contract FNFTHandler is ERC1155, Ownable, IFNFTHandler {
         DOMAIN_SEPARATOR = keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes("Revest_FNFTHandler")), block.chainid, address(this)));
         metadataHandler = IMetadataHandler(_metadataHandler);
 
-        SMARTWALLET_IMPLEMENTATION = new Revest6551SmartWallet();
     }
 
     /**
@@ -72,16 +68,6 @@ contract FNFTHandler is ERC1155, Ownable, IFNFTHandler {
         fnftsCreated += 1;
         _mint(account, id, amount, data);
     }
-
-    function mintBatchRec(address[] calldata recipients, uint[] calldata quantities, uint id, uint newSupply, bytes memory data) external override onlyOwner {
-        supply[id] += newSupply;
-        fnftsCreated += 1;
-        for(uint i = 0; i < quantities.length; i++) {
-            _mint(recipients[i], id, quantities[i], data);
-        }
-    }
-
-    function mintBatch(address to, uint[] memory ids, uint[] memory amounts, bytes memory data) external override onlyOwner {}
 
     function burn(address account, uint id, uint amount) external override onlyOwner {
         supply[id] -= amount;

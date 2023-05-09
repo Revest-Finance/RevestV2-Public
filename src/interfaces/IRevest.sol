@@ -83,6 +83,7 @@ interface IRevest {
         uint nonce;// The FNFT number
         uint quantity;// How many FNFTs
         uint fnftId;//the ID of the NFT the FNFT was minted to
+        bytes32 lockSalt; // The salt used to generate the lock info
         bool maturityExtension; // Maturity extensions remaining
         bool useETH;
         bool nontransferrable;
@@ -118,10 +119,11 @@ interface IRevest {
         bool usePermit2;
     }
 
-    function mintTimeLock(
+    function mintTimeLockWithPermit(
         address handler,
         uint fnftId,
         uint endTime,
+        bytes32 lockSalt,
         address[] memory recipients,
         uint[] memory quantities,
         IRevest.FNFTConfig memory fnftConfig,
@@ -129,11 +131,32 @@ interface IRevest {
         bytes calldata _signature
     ) external payable returns (bytes32, bytes32);
 
+    function mintTimeLock(
+        address handler,
+        uint fnftId,
+        uint endTime,
+        bytes32 lockSalt,
+        address[] memory recipients,
+        uint[] memory quantities,
+        IRevest.FNFTConfig memory fnftConfig
+    ) external payable returns (bytes32, bytes32);
 
     function mintAddressLock(
         address handler,
         uint fnftId,
         address trigger,
+        bytes32 lockSalt,
+        bytes memory arguments,
+        address[] memory recipients,
+        uint[] memory quantities,
+        IRevest.FNFTConfig memory fnftConfig
+    ) external payable returns (bytes32, bytes32);
+
+    function mintAddressLockWithPermit(
+        address handler,
+        uint fnftId,
+        address trigger,
+        bytes32 lockSalt,
         bytes memory arguments,
         address[] memory recipients,
         uint[] memory quantities,
@@ -157,8 +180,6 @@ interface IRevest {
         bytes32 salt,
         uint endTime
     ) external returns (uint);
-
-    function setFee(uint _fee) external;
 
     function getFNFT(bytes32 salt) external view returns (FNFTConfig memory);
 

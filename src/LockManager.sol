@@ -117,4 +117,8 @@ contract LockManager is ILockManager, ReentrancyGuard {
         return locks[salt].lockType;
     }
 
+    function lockExists(bytes32 lockSalt) external view override returns (bool) {
+        return locks[lockSalt].creationTime != 0;
+    }
+
 }

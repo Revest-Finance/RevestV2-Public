@@ -15,4 +15,6 @@ interface ILockManager {
     function unlockFNFT(bytes32 salt, uint fnftId, address sender) external;
 
     function getLockMaturity(bytes32 salt, uint fnftId) external view returns (bool);
+
+    function lockExists(bytes32 lockSalt) external view returns (bool);
 }
