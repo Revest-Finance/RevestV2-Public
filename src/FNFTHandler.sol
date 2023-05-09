@@ -8,8 +8,9 @@ import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-import "./interfaces/IRevest.sol";
+import "./Revest6551SmartWallet.sol";
 
+import "./interfaces/IRevest.sol";
 import "./interfaces/IFNFTHandler.sol";
 import "./interfaces/IMetadataHandler.sol";
 import "./interfaces/IOutputReceiver.sol";
@@ -36,13 +37,15 @@ contract FNFTHandler is ERC1155, Ownable, IFNFTHandler {
     mapping(address signer => uint256 nonce) public nonces;
 
 
-    mapping(uint => uint) public supply;
+    mapping(uint => uint) private supply;
 
 
     // Modified to start at 1 to make use of TokenVaultV2 far simpler
     uint public fnftsCreated = 1;
 
     IMetadataHandler immutable metadataHandler;
+    Revest6551SmartWallet immutable SMARTWALLET_IMPLEMENTATION;
+
 
     /**
      * @dev Primary constructor to create an instance of NegativeEntropy
@@ -51,12 +54,14 @@ contract FNFTHandler is ERC1155, Ownable, IFNFTHandler {
     constructor(address _metadataHandler) ERC1155("") Ownable() {
         DOMAIN_SEPARATOR = keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes("Revest_FNFTHandler")), block.chainid, address(this)));
         metadataHandler = IMetadataHandler(_metadataHandler);
+
+        SMARTWALLET_IMPLEMENTATION = new Revest6551SmartWallet();
     }
 
     /**
      * @dev See {IERC165-supportsInterface}.
      */
-    function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
+    function supportsInterface(bytes4 interfaceId) public view virtual override (ERC1155,IERC165) returns (bool) {
         return interfaceId == type(IFNFTHandler).interfaceId || //IFNFTHandler
                 interfaceId == type(IERC1155Supply).interfaceId || //IERC1155Supply
                 super.supportsInterface(interfaceId); //ERC1155
@@ -81,10 +86,6 @@ contract FNFTHandler is ERC1155, Ownable, IFNFTHandler {
     function burn(address account, uint id, uint amount) external override onlyOwner {
         supply[id] -= amount;
         _burn(account, id, amount);
-    }
-
-    function getBalance(address account, uint id) external view override returns (uint) {
-        return balanceOf(account, id);
     }
 
     function totalSupply(uint fnftId) public view override returns (uint) {

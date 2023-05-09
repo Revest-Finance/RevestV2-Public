@@ -16,7 +16,7 @@ interface IERC1155Supply {
   function totalSupply(uint256 id) external view returns (uint256);
 }
 
-interface IFNFTHandler is IERC1155Supply {
+interface IFNFTHandler is IERC1155Supply, IERC1155 {
     function mint(address account, uint id, uint amount, bytes memory data) external;
 
     function mintBatchRec(address[] memory recipients, uint[] memory quantities, uint id, uint newSupply, bytes memory data) external;
@@ -24,8 +24,6 @@ interface IFNFTHandler is IERC1155Supply {
     function mintBatch(address to, uint[] memory ids, uint[] memory amounts, bytes memory data) external;
 
     function burn(address account, uint id, uint amount) external;
-
-    function getBalance(address tokenHolder, uint id) external view returns (uint);
 
     function getNextId() external view returns (uint);
 }

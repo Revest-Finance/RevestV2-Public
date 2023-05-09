@@ -12,7 +12,6 @@ E009 - Maturity can only be extended for timelocked FNFTs
 E010 - New unlock date must be after current unlock date
 E011 - Array lengths do not match
 E012 - FNFT mint amounts must be greater than zero
-E013 - Proxy-Call function selector is blacklisted
 E014 - Only the token vault may call this function
 E015 - Unlock date must be in the future
 E016 - Address lock address cannot be zero

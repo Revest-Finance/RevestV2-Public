@@ -37,14 +37,6 @@ contract TokenVault is ITokenVault, ReentrancyGuard {
     }
 
 
-    function proxyCall(bytes32 salt, address[] memory targets, uint256[] memory values, bytes[] memory calldatas) external 
-    nonReentrant returns(bytes[] memory outputs) {
-        address walletAddr = Clones.cloneDeterministic(TEMPLATE, keccak256(abi.encode(salt, msg.sender)));
-
-        //Proxy the calls through and selfDestruct itself when finished
-        return RevestSmartWallet(walletAddr).proxyCall(targets, values, calldatas);
-    }
-
     function getFNFTAddress(bytes32 salt, address caller) public view override returns (address smartWallet) {
         smartWallet = Clones.predictDeterministicAddress(TEMPLATE, keccak256(abi.encode(salt, caller)));
     }

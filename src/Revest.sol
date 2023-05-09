@@ -251,7 +251,7 @@ contract Revest is IRevest, ReentrancyGuard, Ownable {
 
             uint supply = fnftHandler.totalSupply(fnftId);
 
-            uint balance = fnftHandler.getBalance(msg.sender, fnftId);
+            uint balance = fnftHandler.balanceOf(msg.sender, fnftId);
 
             //To extend the maturity you must own the entire supply so you can't extend someone eles's lock time
             require(supply != 0 && balance == supply , "E008");
@@ -484,42 +484,6 @@ contract Revest is IRevest, ReentrancyGuard, Ownable {
 
         emit RedeemFNFT(salt, fnftId, user);
         
-    }
-
-    function proxyCall(bytes32 salt, 
-                        address[] memory targets, 
-                        uint[] memory values, 
-                        bytes[] memory calldatas) 
-        external returns (bytes[] memory) {
-        IRevest.FNFTConfig memory fnft = fnfts[salt];
-
-        if (fnft.handler.supportsInterface(FNFTHANDLER_INTERFACE_ID)) {
-            IFNFTHandler FNFTHandler = IFNFTHandler(fnft.handler);
-
-            //You Must own the entire supply to call a function on the FNFT
-            uint supply = FNFTHandler.totalSupply(fnft.fnftId);
-            require(supply != 0 && FNFTHandler.getBalance(msg.sender, fnft.fnftId) == supply, "E007");
-        }
-
-        else if (fnft.handler.supportsInterface(ERC721_INTERFACE_ID)) {
-            //Only the NFT owner can call a function on the NFT
-            require(IERC721(fnft.handler).ownerOf(fnft.fnftId) == msg.sender);
-        }
-
-        else {
-            revert("E001");
-        }
-
-        for(uint x = 0; x < targets.length; ) {
-            require(!blacklistedFunctions[bytes4(calldatas[x])], "E013");
-
-            unchecked {
-                ++x;
-            }
-        }
-
-        return tokenVault.proxyCall(salt, targets, values, calldatas);
-
     }
 
     function createFNFT(bytes32 salt,

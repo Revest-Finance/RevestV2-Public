@@ -16,8 +16,6 @@ interface ITokenVault {
         address recipient //TODO: Can replace user with just send back to msg.sender but less optimized
     ) external;
 
-    function proxyCall(bytes32 salt, address[] memory targets, uint256[] memory values, bytes[] memory calldatas) external returns(bytes[] memory outputs);
-
     function getFNFTAddress(bytes32 salt, address caller) external view returns (address smartWallet);
     
 }
