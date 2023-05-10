@@ -19,7 +19,8 @@ import "./interfaces/IOutputReceiver.sol";
 import "./interfaces/IFNFTHandler.sol";
 import "./interfaces/IAddressLock.sol";
 import "./interfaces/IAllowanceTransfer.sol";
-import "./interfaces/IRewardsHandler.sol";
+
+import "./Revest_base.sol";
 
 import "./lib/IWETH.sol";
 
@@ -27,97 +28,23 @@ import "./lib/IWETH.sol";
  * This is the entrypoint for the frontend, as well as third-party Revest integrations.
  * Solidity style guide ordering: receive, fallback, external, public, internal, private - within a grouping, view and pure go last - https://docs.soliditylang.org/en/latest/style-guide.html
  */
-contract Revest is IRevest, ReentrancyGuard, Ownable {
+contract Revest is Revest_base {
     using SafeTransferLib for ERC20;
     using SafeTransferLib for address;
     using ERC165Checker for address;
     using FixedPointMathLib for uint256;
     using SafeCast for uint256;
 
-    bytes4 public constant ADDRESS_LOCK_INTERFACE_ID = type(IAddressLock).interfaceId;
-    bytes4 public constant OUTPUT_RECEIVER_INTERFACE_ID = type(IOutputReceiver).interfaceId;
-    bytes4 public constant FNFTHANDLER_INTERFACE_ID = type(IFNFTHandler).interfaceId;
-    bytes4 public constant ERC721_INTERFACE_ID = type(IERC721).interfaceId;
-
-    address immutable WETH;
-    ITokenVault immutable tokenVault;
-    IRewardsHandler rewardsHandler;
-
-    //Deployed omni-chain to same address
-    IAllowanceTransfer constant PERMIT2 = IAllowanceTransfer(0x000000000022D473030F116dDEE9F6B43aC78BA3);
-
-    mapping(bytes32 => IRevest.FNFTConfig) public fnfts;
-    mapping(address handler => mapping(uint nftId => uint numfnfts)) public numfnfts;
-    mapping(bytes4 selector => bool blackListed) public blacklistedFunctions;
-     
     /**
      * @dev Primary constructor to create the Revest controller contract
      */
     constructor(
         address weth,
-        address _tokenVault,
-        address _rewardsHandler
-    ) Ownable() {
-        WETH = weth;
-        tokenVault = ITokenVault(_tokenVault); 
-        rewardsHandler = IRewardsHandler(_rewardsHandler);
+        address _tokenVault
+    ) Revest_base(weth, _tokenVault) {
+       
     }
 
-    function mintTimeLockWithPermit(
-        address handler, 
-        uint fnftId,
-        uint endTime,
-        bytes32 lockSalt,
-        address[] memory recipients,
-        uint[] memory quantities,
-        IRevest.FNFTConfig memory fnftConfig,
-        IAllowanceTransfer.PermitBatch calldata permits,
-        bytes calldata _signature
-    ) external payable override nonReentrant returns (bytes32 salt, bytes32 lockId) {
-        PERMIT2.permit(msg.sender, permits, _signature);
-        return _mintTimeLock(handler, fnftId, endTime, lockSalt, recipients, quantities, fnftConfig, true);
-    }
-
-    function mintTimeLock(
-        address handler, 
-        uint fnftId,
-        uint endTime,
-        bytes32 lockSalt,
-        address[] memory recipients,
-        uint[] memory quantities,
-        IRevest.FNFTConfig memory fnftConfig
-    ) external payable override nonReentrant returns (bytes32 salt, bytes32 lockId) {
-        return _mintTimeLock(handler, fnftId, endTime, lockSalt, recipients, quantities, fnftConfig, false);
-    }
-
-    function mintAddressLockWithPermit(
-        address handler,
-        uint fnftId,
-        address trigger,
-        bytes32 lockSalt,
-        bytes memory arguments,
-        address[] memory recipients,
-        uint[] memory quantities,
-        IRevest.FNFTConfig memory fnftConfig,
-        IAllowanceTransfer.PermitBatch calldata permits,
-        bytes calldata _signature
-    ) external payable override nonReentrant returns (bytes32 salt, bytes32 lockId) {
-        PERMIT2.permit(msg.sender, permits, _signature);
-        return _mintAddressLock(handler, fnftId, trigger, lockSalt, arguments, recipients, quantities, fnftConfig, true);
-    }
-
-    function mintAddressLock(
-        address handler,
-        uint fnftId,
-        address trigger,
-        bytes32 lockSalt,
-        bytes memory arguments,
-        address[] memory recipients,
-        uint[] memory quantities,
-        IRevest.FNFTConfig memory fnftConfig
-    ) external payable override nonReentrant returns (bytes32 salt, bytes32 lockId) {
-        return _mintAddressLock(handler, fnftId, trigger, lockSalt, arguments, recipients, quantities, fnftConfig, false);
-    }
 
     /**
      * @dev creates a single time-locked NFT with <quantity> number of copies with <amount> of <asset> stored for each copy
@@ -135,7 +62,7 @@ contract Revest is IRevest, ReentrancyGuard, Ownable {
         uint[] memory quantities,
         IRevest.FNFTConfig memory fnftConfig,
         bool usePermit2
-    ) internal returns (bytes32 salt, bytes32 lockId) {
+    ) internal override returns (bytes32 salt, bytes32 lockId) {
 
         //Each NFT for a handler as an identifier, so that you can mint multiple fnfts to the same nft
         uint nonce = numfnfts[handler][fnftId]++;
@@ -172,8 +99,6 @@ contract Revest is IRevest, ReentrancyGuard, Ownable {
 
     }
 
-
-
     function _mintAddressLock(
         address handler,
         uint fnftId,
@@ -184,11 +109,10 @@ contract Revest is IRevest, ReentrancyGuard, Ownable {
         uint[] memory quantities,
         IRevest.FNFTConfig memory fnftConfig,
         bool usePermit2
-    ) public returns (bytes32 salt, bytes32 lockId) {
+    ) internal override returns (bytes32 salt, bytes32 lockId) {
 
         //Each NFT for a handler as an identifier, so that you can mint multiple fnfts to the same nft
         uint nonce = numfnfts[handler][fnftId]++;
-
        
         {
             salt = keccak256(abi.encode(fnftId, handler, nonce));
@@ -248,21 +172,6 @@ contract Revest is IRevest, ReentrancyGuard, Ownable {
 
         emit FNFTWithdrawn(msg.sender, fnft.fnftId, fnft.quantity);
     }
-
-    /// Advanced FNFT withdrawals removed for the time being – no active implementations
-    /// Represents slightly increased surface area – may be utilized in Resolve
-
-    function unlockFNFT(bytes32 salt) external override nonReentrant  {
-        IRevest.FNFTConfig memory fnft = fnfts[salt];
-
-        // Works for value locks or time locks
-        ILockManager(fnft.lockManager).unlockFNFT(fnft.lockSalt, fnft.fnftId, msg.sender);
-
-        //TODO: Fix Events
-        emit FNFTUnlocked(msg.sender, fnft.fnftId);
-    }
-
-   //TODO: I just removed Splitting cause we never re-enabled it
 
     /// @return the FNFT ID
     function extendFNFTMaturity(
@@ -449,23 +358,6 @@ contract Revest is IRevest, ReentrancyGuard, Ownable {
         
     }
 
-    function createFNFT(bytes32 salt,
-            uint fnftId, 
-            address handler, 
-            uint nonce,
-            IRevest.FNFTConfig memory fnftConfig, 
-            uint quantity
-            ) internal {
-
-            fnfts[salt] = fnftConfig;
-            
-            fnfts[salt].nonce = nonce;
-            fnfts[salt].fnftId = fnftId;
-            fnfts[salt].handler = handler;
-            fnfts[salt].quantity = quantity;
-
-    }//createFNFT
-
     function proxyCall(bytes32 salt, 
                         address[] memory targets, 
                         uint[] memory values, 
@@ -488,29 +380,4 @@ contract Revest is IRevest, ReentrancyGuard, Ownable {
 
     }
 
-    //You don't need this but it makes it a little easier to return an object and not a bunch of variables
-    function getFNFT(bytes32 fnftId) external view returns (IRevest.FNFTConfig memory) {
-        return fnfts[fnftId];
-    }
-
-    function changeSelectorVisibility(bytes4 selector, bool designation) external onlyOwner {
-        blacklistedFunctions[selector] = designation;
-    }
-
-    function transferOwnershipFNFTHandler(address newRevest, address handler) external onlyOwner {
-        //Ownership should be a timelocked controller.
-        Ownable(handler).transferOwnership(newRevest);
-    }
-
-    function modifyRewardsHandler(address newHandler) external onlyOwner {
-        rewardsHandler = IRewardsHandler(newHandler);
-    }
-
-    receive() external payable {
-        //Do Nothing but receive
-    }
-
-    fallback() external payable {
-        //Do Nothing but receive
-    }
 }
