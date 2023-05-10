@@ -239,7 +239,7 @@ contract Revest is Revest_base {
         uint supply = 1;
         
         bytes32 walletSalt = keccak256(abi.encodePacked(fnft.fnftId, fnft.handler));
-        address smartWallet = tokenVault.getAddress(walletSalt, address(this));
+        address smartWallet = getAddressForFNFT(walletSalt);
 
         deposit = supply * amount;
        
@@ -301,7 +301,7 @@ contract Revest is Revest_base {
         createFNFT(fnftSalt, params.fnftId, params.handler, params.nonce, params.fnftConfig, totalQuantity);
 
         // Now, we move the funds to token vault from the message sender
-        address smartWallet = tokenVault.getAddress(WalletSalt, address(this));
+        address smartWallet = getAddressForFNFT(WalletSalt);
         if (params.usePermit2) {
             PERMIT2.transferFrom(msg.sender, smartWallet, (totalQuantity * params.fnftConfig.depositAmount).toUint160(), params.fnftConfig.asset);
         }
@@ -328,7 +328,7 @@ contract Revest is Revest_base {
         address asset = fnft.asset == address(0) ? WETH : fnft.asset;
 
         bytes32 walletSalt = keccak256(abi.encode(fnftId, fnft.handler));
-        address smartWallAdd = tokenVault.getAddress(walletSalt, address(this));
+        address smartWallAdd = getAddressForFNFT(walletSalt);
 
         uint supplyBefore = 1;
 

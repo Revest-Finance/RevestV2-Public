@@ -7,7 +7,6 @@ pragma solidity ^0.8.12;
 
 contract RevestSmartWallet is ReentrancyGuard {
     using SafeTransferLib for ERC20;
-    using SafeTransferLib for address;
 
     address private immutable MASTER;
 
@@ -22,7 +21,7 @@ contract RevestSmartWallet is ReentrancyGuard {
 
     function withdraw(address token, uint value, address recipient) external nonReentrant onlyMaster {
         ERC20(token).safeTransfer(recipient, value);
-        _cleanMemory();
+        cleanMemory();
     }
 
     function proxyCall(address[] memory targets, uint256[] memory values, bytes[] memory calldatas) external nonReentrant onlyMaster returns(bytes[] memory outputs) {
@@ -31,13 +30,9 @@ contract RevestSmartWallet is ReentrancyGuard {
             require(success, "ER022");
             outputs[i] = result;
         }
-
-        // Must manually cleanup since this returns something
-        _cleanMemory();
     }
 
-
-    function _cleanMemory() internal {
+    function cleanMemory() public onlyMaster {
         selfdestruct(payable(MASTER));
     }
 

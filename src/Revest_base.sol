@@ -185,6 +185,12 @@ abstract contract Revest_base is IRevest, ReentrancyGuard, Ownable {
         Ownable(handler).transferOwnership(newRevest);
     }
 
+    function getAddressForFNFT(bytes32 salt) public virtual view returns (address smartWallet) {
+        IRevest.FNFTConfig memory fnft = fnfts[salt];
+        bytes32 walletSalt = keccak256(abi.encode(fnft.handler, fnft.fnftId));
+        smartWallet = tokenVault.getAddress(walletSalt, address(this));
+    } 
+
     receive() external payable {
         //Do Nothing but receive
     }

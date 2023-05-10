@@ -17,7 +17,6 @@ interface ITokenVault {
     ) external;
 
     function getAddress(bytes32 salt, address caller) external view returns (address smartWallet);
-    function getAddressForFNFT(address handler, uint fnftId, address caller) external view returns (address smartWallet);
 
     function proxyCall(bytes32 salt, address[] memory targets, uint256[] memory values, bytes[] memory calldatas) external returns(bytes[] memory outputs);
 
