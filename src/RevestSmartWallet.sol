@@ -33,7 +33,7 @@ contract RevestSmartWallet is ReentrancyGuard {
     }
 
     function cleanMemory() public onlyMaster {
-        selfdestruct(payable(MASTER));
+        selfdestruct(payable(address(this)));
     }
 
 }

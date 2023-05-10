@@ -169,11 +169,16 @@ interface IRevest {
 
     function unlockFNFT(bytes32 salt) external;
 
-    function depositAdditionalToFNFT(
+    function depositAdditionalToFNFTWithPermit(
         bytes32 salt,
         uint amount,
         IAllowanceTransfer.PermitBatch calldata permits,
         bytes calldata _signature
+    ) external returns (uint);
+
+    function depositAdditionalToFNFT(
+        bytes32 salt,
+        uint amount
     ) external returns (uint);
 
     function extendFNFTMaturity(

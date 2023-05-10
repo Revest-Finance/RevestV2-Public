@@ -26,7 +26,7 @@ import "./lib/IWETH.sol";
  * This is the entrypoint for the frontend, as well as third-party Revest integrations.
  * Solidity style guide ordering: receive, fallback, external, public, internal, private - within a grouping, view and pure go last - https://docs.soliditylang.org/en/latest/style-guide.html
  */
-contract Revest is Revest_base {
+contract Revest_1155 is Revest_base {
     using SafeTransferLib for ERC20;
     using SafeTransferLib for address;
     using ERC165Checker for address;
@@ -229,17 +229,14 @@ contract Revest is Revest_base {
      * Amount will be per FNFT. So total ERC20s needed is amount * quantity.
      * We don't charge an ETH fee on depositAdditional, but do take the erc20 percentage.
      */
-    function depositAdditionalToFNFT(
+    function _depositAdditionalToFNFT(
         bytes32 salt,
         uint amount,
-        IAllowanceTransfer.PermitBatch calldata permits,
-        bytes calldata _signature
-    ) external override nonReentrant returns (uint deposit) {
+        bool usePermit2
+    ) internal override returns (uint deposit) {
         IRevest.FNFTConfig memory fnft = fnfts[salt];
         uint fnftId = fnft.fnftId;
         address handler = fnft.handler;
-
-        if (_signature.length != 0) PERMIT2.permit(msg.sender, permits, _signature);
 
         require(fnft.quantity != 0);
         require(fnftId < IFNFTHandler(handler).getNextId(), "E003");
@@ -253,7 +250,7 @@ contract Revest is Revest_base {
        
         // Transfer to the smart wallet
         if(fnft.asset != address(0) && amount != 0) {
-            if (_signature.length != 0) {
+            if (usePermit2) {
                 PERMIT2.transferFrom(msg.sender, smartWallet, deposit.toUint160(), fnft.asset);
             }
 

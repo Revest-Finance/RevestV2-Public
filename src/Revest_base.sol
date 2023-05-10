@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/interfaces/IERC721.sol";
 import "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/access/Ownable2Step.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import "@solmate/utils/SafeTransferLib.sol";
@@ -26,7 +26,7 @@ import "./lib/IWETH.sol";
  * This is the entrypoint for the frontend, as well as third-party Revest integrations.
  * Solidity style guide ordering: receive, fallback, external, public, internal, private - within a grouping, view and pure go last - https://docs.soliditylang.org/en/latest/style-guide.html
  */
-abstract contract Revest_base is IRevest, ReentrancyGuard, Ownable {
+abstract contract Revest_base is IRevest, ReentrancyGuard, Ownable2Step {
     using SafeTransferLib for ERC20;
     using SafeTransferLib for address;
     using ERC165Checker for address;
@@ -54,7 +54,7 @@ abstract contract Revest_base is IRevest, ReentrancyGuard, Ownable {
     constructor(
         address weth,
         address _tokenVault
-    ) Ownable() {
+    ) Ownable2Step() {
         WETH = weth;
         tokenVault = ITokenVault(_tokenVault); 
     }
@@ -70,7 +70,8 @@ abstract contract Revest_base is IRevest, ReentrancyGuard, Ownable {
         IAllowanceTransfer.PermitBatch calldata permits,
         bytes calldata _signature
     ) external payable override nonReentrant returns (bytes32 salt, bytes32 lockId) {
-        PERMIT2.permit(msg.sender, permits, _signature);
+        //Length check means to use permit2 for allowance but allowance has already been granted
+        if (_signature.length != 0) PERMIT2.permit(msg.sender, permits, _signature);
         return _mintTimeLock(handler, fnftId, endTime, lockSalt, recipients, quantities, fnftConfig, true);
     }
 
@@ -98,7 +99,8 @@ abstract contract Revest_base is IRevest, ReentrancyGuard, Ownable {
         IAllowanceTransfer.PermitBatch calldata permits,
         bytes calldata _signature
     ) external payable virtual override nonReentrant returns (bytes32 salt, bytes32 lockId) {
-        PERMIT2.permit(msg.sender, permits, _signature);
+        //Length check means to use permit2 for allowance but allowance has already been granted
+        if (_signature.length != 0) PERMIT2.permit(msg.sender, permits, _signature);
         return _mintAddressLock(handler, fnftId, trigger, lockSalt, arguments, recipients, quantities, fnftConfig, true);
     }
 
@@ -152,6 +154,29 @@ abstract contract Revest_base is IRevest, ReentrancyGuard, Ownable {
         emit FNFTUnlocked(msg.sender, fnft.fnftId);
     }
 
+    function depositAdditionalToFNFT(
+        bytes32 salt,
+        uint amount
+    ) external virtual returns (uint deposit) {
+        return _depositAdditionalToFNFT(salt, amount, false);
+    }
+
+    function depositAdditionalToFNFTWithPermit(
+        bytes32 salt,
+        uint amount,
+        IAllowanceTransfer.PermitBatch calldata permits,
+        bytes calldata _signature
+    ) external virtual returns (uint deposit) {
+        //Length check means to use permit2 for allowance but allowance has already been granted
+        if (_signature.length != 0) PERMIT2.permit(msg.sender, permits, _signature);
+        return _depositAdditionalToFNFT(salt, amount, true);
+    }
+
+    function _depositAdditionalToFNFT(
+        bytes32 salt,
+        uint amount,
+        bool usePermit2
+    ) internal virtual returns (uint deposit);
 
     function createFNFT(bytes32 salt,
             uint fnftId, 

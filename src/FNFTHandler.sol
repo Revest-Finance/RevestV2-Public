@@ -6,14 +6,14 @@ import '@openzeppelin/contracts/utils/introspection/ERC165Checker.sol';
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/access/Ownable2Step.sol";
 
 import "./interfaces/IRevest.sol";
 import "./interfaces/IFNFTHandler.sol";
 import "./interfaces/IMetadataHandler.sol";
 import "./interfaces/IOutputReceiver.sol";
 
-contract FNFTHandler is ERC1155, Ownable, IFNFTHandler {
+contract FNFTHandler is ERC1155, Ownable2Step, IFNFTHandler {
 
     using ERC165Checker for address;
     using ECDSA for bytes32;
@@ -48,10 +48,9 @@ contract FNFTHandler is ERC1155, Ownable, IFNFTHandler {
      * @dev Primary constructor to create an instance of NegativeEntropy
      * Grants ADMIN and MINTER_ROLE to whoever creates the contract
      */
-    constructor(address _metadataHandler) ERC1155("") Ownable() {
+    constructor(address _metadataHandler) ERC1155("") Ownable2Step() {
         DOMAIN_SEPARATOR = keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes("Revest_FNFTHandler")), block.chainid, address(this)));
         metadataHandler = IMetadataHandler(_metadataHandler);
-
     }
 
     /**
@@ -107,7 +106,7 @@ contract FNFTHandler is ERC1155, Ownable, IFNFTHandler {
         require(info.deadline < block.timestamp, "ERC1155: signature expired");
 
         _setApprovalForAll(info.owner, info.operator, true);
-        _safeTransferFrom(info.owner, info.operator, info.id, info.amount, "");
+        _safeTransferFrom(info.owner, info.operator, info.id, info.amount, info.data);
     }
 
     // OVERIDDEN ERC-1155 METHODS
