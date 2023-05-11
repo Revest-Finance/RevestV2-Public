@@ -6,14 +6,14 @@ import '@openzeppelin/contracts/utils/introspection/ERC165Checker.sol';
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import "@openzeppelin/contracts/access/Ownable2Step.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
 import "./interfaces/IRevest.sol";
 import "./interfaces/IFNFTHandler.sol";
 import "./interfaces/IMetadataHandler.sol";
 import "./interfaces/IOutputReceiver.sol";
 
-contract FNFTHandler is ERC1155, Ownable2Step, IFNFTHandler {
+contract FNFTHandler is ERC1155, Ownable, IFNFTHandler {
 
     using ERC165Checker for address;
     using ECDSA for bytes32;
@@ -48,7 +48,7 @@ contract FNFTHandler is ERC1155, Ownable2Step, IFNFTHandler {
      * @dev Primary constructor to create an instance of NegativeEntropy
      * Grants ADMIN and MINTER_ROLE to whoever creates the contract
      */
-    constructor(address _metadataHandler) ERC1155("") Ownable2Step() {
+    constructor(address _metadataHandler) ERC1155("") Ownable() {
         DOMAIN_SEPARATOR = keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes("Revest_FNFTHandler")), block.chainid, address(this)));
         metadataHandler = IMetadataHandler(_metadataHandler);
     }
@@ -124,7 +124,7 @@ contract FNFTHandler is ERC1155, Ownable2Step, IFNFTHandler {
         if (from != address(0)) {
             address revest = owner();
 
-            for(uint x = 0; x < ids.length; x++) {
+            for(uint x = 0; x < ids.length; ) {
                 bytes32 salt = keccak256(abi.encode(ids[x], address(this), 0));
 
                 require(amounts[x] != 0, "E020");
@@ -135,6 +135,10 @@ contract FNFTHandler is ERC1155, Ownable2Step, IFNFTHandler {
                 }
 
                 require(!config.nontransferrable || to == address(0));
+
+                unchecked {
+                    ++x;
+                }
             }
         }
     }

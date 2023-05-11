@@ -165,7 +165,7 @@ interface IRevest {
         bytes calldata _signature
     ) external payable returns (bytes32, bytes32);
 
-    function withdrawFNFT(bytes32 salt) external;
+    function withdrawFNFT(bytes32 salt, uint quantity) external;
 
     function unlockFNFT(bytes32 salt) external;
 

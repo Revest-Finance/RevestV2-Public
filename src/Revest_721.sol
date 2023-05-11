@@ -45,7 +45,6 @@ contract Revest_721 is Revest_base {
        
     }
 
-
     /**
      * @dev creates a single time-locked NFT with <quantity> number of copies with <amount> of <asset> stored for each copy
      * asset - the address of the underlying ERC20 token for this bond
@@ -150,7 +149,7 @@ contract Revest_721 is Revest_base {
         emit FNFTAddressLockMinted(fnftConfig.asset, msg.sender, fnftId, trigger, quantities, fnftConfig);
     }
 
-    function withdrawFNFT(bytes32 salt) external override nonReentrant {
+    function withdrawFNFT(bytes32 salt, uint) external override nonReentrant {
         IRevest.FNFTConfig memory fnft = fnfts[salt];
 
         // Check if this many FNFTs exist in the first place for the given ID
@@ -158,17 +157,17 @@ contract Revest_721 is Revest_base {
 
         // Burn the FNFTs being exchanged
         if (fnft.handler.supportsInterface(FNFTHANDLER_INTERFACE_ID)) {
-            IFNFTHandler(fnft.handler).burn(msg.sender, fnft.fnftId, fnft.quantity);
+            IFNFTHandler(fnft.handler).burn(msg.sender, fnft.fnftId, 1);
         }
 
         //Checks-effects because unlockFNFT has an external call which could be used for reentrancy
-        fnfts[salt].quantity -= fnft.quantity;
+        fnfts[salt].quantity -= 1;
 
         ILockManager(fnft.lockManager).unlockFNFT(fnft.lockSalt, fnft.fnftId, msg.sender);
 
         bytes32 walletSalt = keccak256(abi.encode(fnft.fnftId, fnft.handler));
 
-        withdrawToken(walletSalt, fnft.fnftId, fnft.quantity, msg.sender);
+        withdrawToken(walletSalt, fnft.fnftId, 1, msg.sender);
 
         emit FNFTWithdrawn(msg.sender, fnft.fnftId, fnft.quantity);
     }
@@ -197,8 +196,10 @@ contract Revest_721 is Revest_base {
         require(fnft.maturityExtension &&
             manager.lockTypes(salt) == IRevest.LockType.TimeLock, "E009");
 
-        // If desired maturity is below existing date, reject operation
-        require(manager.getLock(salt).timeLockExpiry < endTime, "E010");
+        // If desired maturity is below existing date or already unlocked, reject operation
+        IRevest.Lock memory lockParam = manager.getLock(salt);
+        require(!lockParam.unlocked && lockParam.timeLockExpiry > block.timestamp, "E021");
+        require(lockParam.timeLockExpiry < endTime, "E010");
 
         // Update the lock
         IRevest.LockParam memory lock;
@@ -272,20 +273,6 @@ contract Revest_721 is Revest_base {
         bytes32 fnftSalt = keccak256(abi.encode(params.fnftId, params.handler, params.nonce));
         bytes32 WalletSalt = keccak256(abi.encode(params.fnftId, params.handler));
 
-        bool isSingular;
-        uint totalQuantity = params.quantities[0];
-        {
-            require(params.recipients.length == params.quantities.length, "E011");
-            // Calculate total quantity
-            isSingular = params.recipients.length == 1;
-            if(!isSingular) {
-                for(uint i = 1; i < params.quantities.length; i++) {
-                    totalQuantity += params.quantities[i];
-                }
-            }
-            require(totalQuantity > 0, "E012");
-        }
-
         // Take fees
         if (msg.value != 0) {
             params.fnftConfig.asset = address(0);
@@ -295,16 +282,16 @@ contract Revest_721 is Revest_base {
         }
 
         // Create the FNFT and update accounting within TokenVault
-        createFNFT(fnftSalt, params.fnftId, params.handler, params.nonce, params.fnftConfig, totalQuantity);
+        createFNFT(fnftSalt, params.fnftId, params.handler, params.nonce, params.fnftConfig, 1);
 
         // Now, we move the funds to token vault from the message sender
         address smartWallet = getAddressForFNFT(WalletSalt);
         if (params.usePermit2) {
-            PERMIT2.transferFrom(msg.sender, smartWallet, (totalQuantity * params.fnftConfig.depositAmount).toUint160(), params.fnftConfig.asset);
+            PERMIT2.transferFrom(msg.sender, smartWallet, (params.fnftConfig.depositAmount).toUint160(), params.fnftConfig.asset);
         }
 
         else {
-            ERC20(params.fnftConfig.asset).safeTransferFrom(msg.sender, smartWallet, totalQuantity * params.fnftConfig.depositAmount);
+            ERC20(params.fnftConfig.asset).safeTransferFrom(msg.sender, smartWallet, params.fnftConfig.depositAmount);
         }
 
         emit CreateFNFT(fnftSalt, params.fnftId, msg.sender);

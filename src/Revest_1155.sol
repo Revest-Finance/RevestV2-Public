@@ -152,22 +152,22 @@ contract Revest_1155 is Revest_base {
         emit FNFTAddressLockMinted(fnftConfig.asset, msg.sender, fnftId, trigger, quantities, fnftConfig);
     }
 
-    function withdrawFNFT(bytes32 salt) external override nonReentrant {
+    function withdrawFNFT(bytes32 salt, uint quantity) external override nonReentrant {
         IRevest.FNFTConfig memory fnft = fnfts[salt];
 
         // Check if this many FNFTs exist in the first place for the given ID
         require(fnft.quantity > 0, "E003");
 
         // Burn the FNFTs being exchanged
-        IFNFTHandler(fnft.handler).burn(msg.sender, fnft.fnftId, fnft.quantity);
+        IFNFTHandler(fnft.handler).burn(msg.sender, fnft.fnftId, quantity);
 
         //Checks-effects because unlockFNFT has an external call which could be used for reentrancy
-        fnfts[salt].quantity -= fnft.quantity;
+        fnfts[salt].quantity -= quantity;
 
         ILockManager(fnft.lockManager).unlockFNFT(fnft.lockSalt, fnft.fnftId, msg.sender);
 
         bytes32 walletSalt = keccak256(abi.encode(fnft.fnftId, fnft.handler));
-        withdrawToken(walletSalt, fnft.fnftId, fnft.quantity, msg.sender);
+        withdrawToken(walletSalt, fnft.fnftId, quantity, msg.sender);
 
         emit FNFTWithdrawn(msg.sender, fnft.fnftId, fnft.quantity);
     }
@@ -206,7 +206,9 @@ contract Revest_1155 is Revest_base {
             manager.lockTypes(fnft.lockSalt) == IRevest.LockType.TimeLock, "E009");
 
         // If desired maturity is below existing date, reject operation
-        require(manager.getLock(fnft.lockSalt).timeLockExpiry < endTime, "E010");
+        IRevest.Lock memory lockParam = manager.getLock(fnft.lockSalt);
+        require(!lockParam.unlocked && lockParam.timeLockExpiry > block.timestamp, "E007");
+        require(lockParam.timeLockExpiry < endTime, "E010");
 
         // Update the lock
         IRevest.LockParam memory lock;

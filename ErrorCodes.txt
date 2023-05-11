@@ -4,7 +4,7 @@ E001 - Invalid FNFT Handler provided
 E002 - time lock unlock time is in the past
 E003 – FNFT does not exist
 E004 - Transaction value not enought to cover deposit amount and fees
-E005 - FNFT Already exists for given salt
+E005 - FNFT already exists for given salt
 E006 - FNFT cannot be withdrawn because it is not unlockable
 E007 - FNFT maturity cannot be extended because unlock time has already passed
 E008 - User does not own entire supply of the FNFT ID or supply is zero
@@ -19,3 +19,5 @@ E017 - Invalid Lock-Type provided
 E018 - Invalid Signature provided
 E019 - Signature deadline must be in the future
 E020 - FNFT transfer amount must be non-zero
+E021 - Address Lock has not matured yet
+E022 - FNFT is non-transferable, only burn transfers allowed

@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/interfaces/IERC721.sol";
 import "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import "@openzeppelin/contracts/access/Ownable2Step.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import "@solmate/utils/SafeTransferLib.sol";
@@ -26,7 +26,7 @@ import "./lib/IWETH.sol";
  * This is the entrypoint for the frontend, as well as third-party Revest integrations.
  * Solidity style guide ordering: receive, fallback, external, public, internal, private - within a grouping, view and pure go last - https://docs.soliditylang.org/en/latest/style-guide.html
  */
-abstract contract Revest_base is IRevest, ReentrancyGuard, Ownable2Step {
+abstract contract Revest_base is IRevest, ReentrancyGuard, Ownable {
     using SafeTransferLib for ERC20;
     using SafeTransferLib for address;
     using ERC165Checker for address;
@@ -54,7 +54,7 @@ abstract contract Revest_base is IRevest, ReentrancyGuard, Ownable2Step {
     constructor(
         address weth,
         address _tokenVault
-    ) Ownable2Step() {
+    ) Ownable() {
         WETH = weth;
         tokenVault = ITokenVault(_tokenVault); 
     }

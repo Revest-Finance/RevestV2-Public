@@ -73,7 +73,7 @@ contract LockManager is ILockManager, ReentrancyGuard {
         else if (tempLock.lockType == IRevest.LockType.AddressLock) {
             require((sender == tempLock.addressLock) ||
                     (tempLock.addressLock.supportsInterface(ADDRESS_LOCK_INTERFACE_ID) 
-                    && IAddressLock(tempLock.addressLock).isUnlockable(fnftId, uint(lockId))));
+                    && IAddressLock(tempLock.addressLock).isUnlockable(fnftId, uint(lockId))), "E021");
 
                 tempLock.addressLock = address(0);
         }
