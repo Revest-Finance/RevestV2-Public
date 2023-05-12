@@ -52,7 +52,6 @@ contract Revest_1155 is Revest_base {
      * quantity – the number of FNFTs to create with this operation     
      */
     function _mintTimeLock(
-        address handler, 
         uint fnftId,
         uint endTime,
         bytes32 lockSalt,
@@ -63,11 +62,11 @@ contract Revest_1155 is Revest_base {
     ) internal override returns (bytes32 salt, bytes32 lockId) {
         uint nonce;
 
-        fnftId = IFNFTHandler(handler).getNextId();
+        fnftId = IFNFTHandler(fnftConfig.handler).getNextId();
 
         // Get or create lock based on time, assign lock to ID
         {   
-            salt = keccak256(abi.encode(fnftId, handler, nonce));
+            salt = keccak256(abi.encode(fnftId, fnftConfig.handler, nonce));
             require(fnfts[salt].quantity == 0, "E006");
 
             if (!ILockManager(fnftConfig.lockManager).lockExists(lockSalt)) {
@@ -83,7 +82,6 @@ contract Revest_1155 is Revest_base {
 
         //Stack Too Deep Fixer
         doMint(MintParameters(
-            handler,
             fnftId,
             nonce,
             endTime,
@@ -100,7 +98,6 @@ contract Revest_1155 is Revest_base {
 
 
     function _mintAddressLock(
-        address handler,
         uint fnftId,
         address trigger,
         bytes32 lockSalt,
@@ -113,10 +110,10 @@ contract Revest_1155 is Revest_base {
         uint nonce;
 
         //If the handler is the Revest FNFT Contract get the new FNFT ID
-        fnftId = IFNFTHandler(handler).getNextId();
+        fnftId = IFNFTHandler(fnftConfig.handler).getNextId();
 
         {
-            salt = keccak256(abi.encode(fnftId, handler, nonce));
+            salt = keccak256(abi.encode(fnftId, fnftConfig.handler, nonce));
             require(fnfts[salt].quantity == 0, "E006");//TODO: Double check that Error code
 
              if (!ILockManager(fnftConfig.lockManager).lockExists(lockSalt)) {
@@ -139,7 +136,6 @@ contract Revest_1155 is Revest_base {
 
         //Stack Too Deep Fixer
         doMint(MintParameters(
-            handler,
             fnftId,
             nonce,
             0,
@@ -279,7 +275,7 @@ contract Revest_1155 is Revest_base {
     function doMint(
         IRevest.MintParameters memory params
     ) internal {
-        bytes32 salt = keccak256(abi.encode(params.fnftId, params.handler, params.nonce));
+        bytes32 salt = keccak256(abi.encode(params.fnftConfig.fnftId, params.fnftConfig.handler, params.nonce));
 
         bool isSingular;
         uint totalQuantity = params.quantities[0];
@@ -304,10 +300,10 @@ contract Revest_1155 is Revest_base {
         }
 
         // Create the FNFT and update accounting within TokenVault
-        createFNFT(salt, params.fnftId, params.handler, params.nonce, params.fnftConfig, totalQuantity);
+        createFNFT(salt, params.fnftId, params.fnftConfig.handler, params.nonce, params.fnftConfig, totalQuantity);
 
         // Now, we move the funds to token vault from the message sender
-        bytes32 walletSalt = keccak256(abi.encode(params.fnftId, params.handler));
+        bytes32 walletSalt = keccak256(abi.encode(params.fnftId, params.fnftConfig.handler));
         address smartWallet = getAddressForFNFT(walletSalt);
         if (params.usePermit2) {
             PERMIT2.transferFrom(msg.sender, smartWallet, (totalQuantity * params.fnftConfig.depositAmount).toUint160(), params.fnftConfig.asset);
@@ -319,12 +315,12 @@ contract Revest_1155 is Revest_base {
 
         //Mint FNFTs but only if the handler is the Revest FNFT Handler
         if(isSingular) {
-            IFNFTHandler(params.handler).mint(params.recipients[0], params.fnftId, params.quantities[0], '');
+            IFNFTHandler(params.fnftConfig.handler).mint(params.recipients[0], params.fnftId, params.quantities[0], '');
         } else {
 
-            IFNFTHandler(params.handler).mint(address(this), params.fnftId, totalQuantity, '');
+            IFNFTHandler(params.fnftConfig.handler).mint(address(this), params.fnftId, totalQuantity, '');
             for(uint x = 0; x < params.recipients.length; ) {
-                IFNFTHandler(params.handler).safeTransferFrom(address(this), params.recipients[x], params.fnftId, params.quantities[x], "");
+                IFNFTHandler(params.fnftConfig.handler).safeTransferFrom(address(this), params.recipients[x], params.fnftId, params.quantities[x], "");
             
                 unchecked {
                     ++x;//Gas Saver

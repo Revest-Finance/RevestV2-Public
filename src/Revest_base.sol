@@ -60,7 +60,6 @@ abstract contract Revest_base is IRevest, ReentrancyGuard, Ownable {
     }
 
     function mintTimeLockWithPermit(
-        address handler, 
         uint fnftId,
         uint endTime,
         bytes32 lockSalt,
@@ -72,11 +71,10 @@ abstract contract Revest_base is IRevest, ReentrancyGuard, Ownable {
     ) external payable override nonReentrant returns (bytes32 salt, bytes32 lockId) {
         //Length check means to use permit2 for allowance but allowance has already been granted
         if (_signature.length != 0) PERMIT2.permit(msg.sender, permits, _signature);
-        return _mintTimeLock(handler, fnftId, endTime, lockSalt, recipients, quantities, fnftConfig, true);
+        return _mintTimeLock(fnftId, endTime, lockSalt, recipients, quantities, fnftConfig, true);
     }
 
     function mintTimeLock(
-        address handler, 
         uint fnftId,
         uint endTime,
         bytes32 lockSalt,
@@ -84,11 +82,10 @@ abstract contract Revest_base is IRevest, ReentrancyGuard, Ownable {
         uint[] memory quantities,
         IRevest.FNFTConfig memory fnftConfig
     ) external payable virtual override nonReentrant returns (bytes32 salt, bytes32 lockId) {
-        return _mintTimeLock(handler, fnftId, endTime, lockSalt, recipients, quantities, fnftConfig, false);
+        return _mintTimeLock(fnftId, endTime, lockSalt, recipients, quantities, fnftConfig, false);
     }
 
     function mintAddressLockWithPermit(
-        address handler,
         uint fnftId,
         address trigger,
         bytes32 lockSalt,
@@ -101,11 +98,10 @@ abstract contract Revest_base is IRevest, ReentrancyGuard, Ownable {
     ) external payable virtual override nonReentrant returns (bytes32 salt, bytes32 lockId) {
         //Length check means to use permit2 for allowance but allowance has already been granted
         if (_signature.length != 0) PERMIT2.permit(msg.sender, permits, _signature);
-        return _mintAddressLock(handler, fnftId, trigger, lockSalt, arguments, recipients, quantities, fnftConfig, true);
+        return _mintAddressLock(fnftId, trigger, lockSalt, arguments, recipients, quantities, fnftConfig, true);
     }
 
     function mintAddressLock(
-        address handler,
         uint fnftId,
         address trigger,
         bytes32 lockSalt,
@@ -114,11 +110,10 @@ abstract contract Revest_base is IRevest, ReentrancyGuard, Ownable {
         uint[] memory quantities,
         IRevest.FNFTConfig memory fnftConfig
     ) external payable virtual override nonReentrant returns (bytes32 salt, bytes32 lockId) {
-        return _mintAddressLock(handler, fnftId, trigger, lockSalt, arguments, recipients, quantities, fnftConfig, false);
+        return _mintAddressLock(fnftId, trigger, lockSalt, arguments, recipients, quantities, fnftConfig, false);
     }
 
     function _mintAddressLock(
-        address handler,
         uint fnftId,
         address trigger,
         bytes32 lockSalt,
@@ -130,7 +125,6 @@ abstract contract Revest_base is IRevest, ReentrancyGuard, Ownable {
     ) internal virtual returns (bytes32 salt, bytes32 lockId);
 
     function _mintTimeLock(
-        address handler, 
         uint fnftId,
         uint endTime,
         bytes32 lockSalt,

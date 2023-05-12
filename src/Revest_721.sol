@@ -53,7 +53,6 @@ contract Revest_721 is Revest_base {
      * quantity – the number of FNFTs to create with this operation     
      */
     function _mintTimeLock(
-        address handler, 
         uint fnftId,
         uint endTime,
         bytes32 lockSalt,
@@ -64,11 +63,11 @@ contract Revest_721 is Revest_base {
     ) internal override returns (bytes32 salt, bytes32 lockId) {
 
         //Each NFT for a handler as an identifier, so that you can mint multiple fnfts to the same nft
-        uint nonce = numfnfts[handler][fnftId]++;
+        uint nonce = numfnfts[fnftConfig.handler][fnftId]++;
 
         // Get or create lock based on time, assign lock to ID
         {   
-            salt = keccak256(abi.encode(fnftId, handler, nonce));
+            salt = keccak256(abi.encode(fnftId, fnftConfig.handler, nonce));
             require(fnfts[salt].quantity == 0, "E006");
 
             if (!ILockManager(fnftConfig.lockManager).lockExists(lockSalt)) {
@@ -83,7 +82,6 @@ contract Revest_721 is Revest_base {
 
         //Stack Too Deep Fixer
         doMint(MintParameters(
-            handler,
             fnftId,
             nonce,
             endTime,
@@ -99,7 +97,6 @@ contract Revest_721 is Revest_base {
     }
 
     function _mintAddressLock(
-        address handler,
         uint fnftId,
         address trigger,
         bytes32 lockSalt,
@@ -111,10 +108,10 @@ contract Revest_721 is Revest_base {
     ) internal override returns (bytes32 salt, bytes32 lockId) {
 
         //Each NFT for a handler as an identifier, so that you can mint multiple fnfts to the same nft
-        uint nonce = numfnfts[handler][fnftId]++;
+        uint nonce = numfnfts[fnftConfig.handler][fnftId]++;
        
         {
-            salt = keccak256(abi.encode(fnftId, handler, nonce));
+            salt = keccak256(abi.encode(fnftId, fnftConfig.handler, nonce));
             require(fnfts[salt].quantity == 0, "E006");//TODO: Double check that Error code
 
             if (!ILockManager(fnftConfig.lockManager).lockExists(lockSalt)) {
@@ -136,7 +133,6 @@ contract Revest_721 is Revest_base {
 
         //Stack Too Deep Fixer
         doMint(MintParameters(
-            handler,
             fnftId,
             nonce,
             0,
@@ -270,8 +266,8 @@ contract Revest_721 is Revest_base {
     function doMint(
         IRevest.MintParameters memory params
     ) internal {
-        bytes32 fnftSalt = keccak256(abi.encode(params.fnftId, params.handler, params.nonce));
-        bytes32 WalletSalt = keccak256(abi.encode(params.fnftId, params.handler));
+        bytes32 fnftSalt = keccak256(abi.encode(params.fnftId, params.fnftConfig.handler, params.nonce));
+        bytes32 WalletSalt = keccak256(abi.encode(params.fnftId, params.fnftConfig.handler));
 
         // Take fees
         if (msg.value != 0) {
@@ -282,7 +278,7 @@ contract Revest_721 is Revest_base {
         }
 
         // Create the FNFT and update accounting within TokenVault
-        createFNFT(fnftSalt, params.fnftId, params.handler, params.nonce, params.fnftConfig, 1);
+        createFNFT(fnftSalt, params.fnftId, params.fnftConfig.handler, params.nonce, params.fnftConfig, 1);
 
         // Now, we move the funds to token vault from the message sender
         address smartWallet = getAddressForFNFT(WalletSalt);

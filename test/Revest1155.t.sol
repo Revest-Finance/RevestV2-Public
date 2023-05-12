@@ -78,7 +78,7 @@ contract Revest1155Tests is Test {
 
         IRevest.FNFTConfig memory config = IRevest.FNFTConfig({
             pipeToContract: address(0),
-            handler: address(0),
+            handler: address(fnftHandler),
             asset: address(USDC),
             lockManager: address(lockManager),
             depositAmount: amount,
@@ -92,7 +92,6 @@ contract Revest1155Tests is Test {
         });
 
         (bytes32 salt, bytes32 lockId) = revest.mintTimeLock(
-            address(fnftHandler),
             0,
             block.timestamp + 1 weeks,
             0,
@@ -162,7 +161,7 @@ contract Revest1155Tests is Test {
 
         IRevest.FNFTConfig memory config = IRevest.FNFTConfig({
             pipeToContract: address(0),
-            handler: address(0),
+            handler: address(fnftHandler),
             asset: address(USDC),
             lockManager: address(lockManager),
             depositAmount: amount,
@@ -176,7 +175,6 @@ contract Revest1155Tests is Test {
         });
 
         (bytes32 salt, bytes32 lockId) = revest.mintTimeLock(
-            address(fnftHandler),
             0,
             block.timestamp + 1 weeks,
             0,
@@ -241,7 +239,7 @@ contract Revest1155Tests is Test {
 
         IRevest.FNFTConfig memory config = IRevest.FNFTConfig({
             pipeToContract: address(0),
-            handler: address(0),
+            handler: address(fnftHandler),
             asset: address(USDC),
             lockManager: address(lockManager),
             depositAmount: amount,
@@ -255,7 +253,6 @@ contract Revest1155Tests is Test {
         });
 
         (bytes32 salt, bytes32 lockId) = revest.mintAddressLock(
-            address(fnftHandler),
             0,
             address(addressLock),
             0,
@@ -306,7 +303,7 @@ contract Revest1155Tests is Test {
 
         IRevest.FNFTConfig memory config = IRevest.FNFTConfig({
             pipeToContract: address(0),
-            handler: address(0),
+            handler: address(fnftHandler),
             asset: address(USDC),
             lockManager: address(lockManager),
             depositAmount: amount,
@@ -320,7 +317,6 @@ contract Revest1155Tests is Test {
         });
 
         (bytes32 salt, bytes32 lockId) = revest.mintAddressLock(
-            address(fnftHandler),
             0,
             carol,//Set carol as the unlocker
             0,
@@ -374,7 +370,7 @@ contract Revest1155Tests is Test {
 
         IRevest.FNFTConfig memory config = IRevest.FNFTConfig({
             pipeToContract: address(0),
-            handler: address(0),
+            handler: address(fnftHandler),
             asset: address(USDC),
             lockManager: address(lockManager),
             depositAmount: amount,
@@ -388,7 +384,6 @@ contract Revest1155Tests is Test {
         });
 
         (bytes32 salt,) = revest.mintTimeLock(
-            address(fnftHandler),
             0,
             block.timestamp + 1 weeks,
             0,
@@ -440,7 +435,7 @@ contract Revest1155Tests is Test {
 
         IRevest.FNFTConfig memory config = IRevest.FNFTConfig({
             pipeToContract: address(0),
-            handler: address(0),
+            handler: address(fnftHandler),
             asset: address(USDC),
             lockManager: address(lockManager),
             depositAmount: amount,
@@ -454,7 +449,6 @@ contract Revest1155Tests is Test {
         });
 
         (bytes32 salt, bytes32 lockSalt) = revest.mintTimeLock(
-            address(fnftHandler),
             0,
             block.timestamp + 1 weeks,
             0,
@@ -496,7 +490,6 @@ contract Revest1155Tests is Test {
         config.maturityExtension = false;
 
         (salt, lockSalt) = revest.mintTimeLock(
-            address(fnftHandler),
             0,
             block.timestamp + 1 weeks,
             0,
@@ -528,7 +521,7 @@ contract Revest1155Tests is Test {
 
         IRevest.FNFTConfig memory config = IRevest.FNFTConfig({
             pipeToContract: address(0),
-            handler: address(0),
+            handler: address(fnftHandler),
             asset: address(0),
             lockManager: address(lockManager),
             depositAmount: amount,
@@ -542,7 +535,6 @@ contract Revest1155Tests is Test {
         });
 
         (bytes32 salt,) = revest.mintTimeLock{value: amount}(
-            address(fnftHandler),
             0,
             block.timestamp + 1 weeks,
             0,
@@ -576,7 +568,7 @@ contract Revest1155Tests is Test {
 
         IRevest.FNFTConfig memory config = IRevest.FNFTConfig({
             pipeToContract: address(0),
-            handler: address(0),
+            handler: address(fnftHandler),
             asset: address(USDC),
             lockManager: address(lockManager),
             depositAmount: 1e6,
@@ -590,7 +582,6 @@ contract Revest1155Tests is Test {
         });
 
         revest.mintTimeLock(
-            address(fnftHandler),
             0,
             block.timestamp + 1 weeks,
             0,

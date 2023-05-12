@@ -109,7 +109,6 @@ interface IRevest {
     }
 
     struct MintParameters {
-        address handler;
         uint fnftId;
         uint nonce;
         uint endTime;
@@ -120,7 +119,6 @@ interface IRevest {
     }
 
     function mintTimeLockWithPermit(
-        address handler,
         uint fnftId,
         uint endTime,
         bytes32 lockSalt,
@@ -132,7 +130,6 @@ interface IRevest {
     ) external payable returns (bytes32, bytes32);
 
     function mintTimeLock(
-        address handler,
         uint fnftId,
         uint endTime,
         bytes32 lockSalt,
@@ -142,7 +139,6 @@ interface IRevest {
     ) external payable returns (bytes32, bytes32);
 
     function mintAddressLock(
-        address handler,
         uint fnftId,
         address trigger,
         bytes32 lockSalt,
@@ -153,7 +149,6 @@ interface IRevest {
     ) external payable returns (bytes32, bytes32);
 
     function mintAddressLockWithPermit(
-        address handler,
         uint fnftId,
         address trigger,
         bytes32 lockSalt,
