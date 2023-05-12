@@ -5,6 +5,9 @@ import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 pragma solidity ^0.8.12;
 
 interface IERC1155Supply {
+  
+
+
   // @notice      This function MUST return whether the given token id exists, previously existed, or may exist
   // @param   id  The token id of which to check the existence
   // @return      Whether the given token id exists, previously existed, or may exist
@@ -17,9 +20,18 @@ interface IERC1155Supply {
 }
 
 interface IFNFTHandler is IERC1155, IERC1155Supply {
-    function mint(address account, uint id, uint amount, bytes memory data) external;
+  struct permitApprovalInfo {
+    address owner;
+    address operator;
+    uint id;
+    uint amount;
+    uint256 deadline;
+    bytes data;
+  }
 
-    function burn(address account, uint id, uint amount) external;
+  function mint(address account, uint id, uint amount, bytes memory data) external;
 
-    function getNextId() external view returns (uint);
+  function burn(address account, uint id, uint amount) external;
+
+  function getNextId() external view returns (uint);
 }

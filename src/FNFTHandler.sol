@@ -18,21 +18,13 @@ contract FNFTHandler is ERC1155, Ownable, IFNFTHandler {
     using ERC165Checker for address;
     using ECDSA for bytes32;
 
-    struct permitApprovalInfo {
-        address owner;
-        address operator;
-        uint id;
-        uint amount;
-        uint256 deadline;
-        bytes data;
-    }
 
     bytes4 public constant OUTPUT_RECEIVER_INTERFACE_ID = type(IOutputReceiver).interfaceId;
     
     //Permit Signature Stuff
     bytes32 public constant DOMAIN_TYPEHASH = keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
     bytes32 public constant SETAPPROVALFORALL_TYPEHASH = keccak256("transferFromWithPermit(address owner,address operator, bool approved, uint id, uint amount, uint256 deadline, uint nonce, bytes data)");
-    bytes32 immutable DOMAIN_SEPARATOR;
+    bytes32 public immutable DOMAIN_SEPARATOR;
     mapping(address signer => uint256 nonce) public nonces;
 
 

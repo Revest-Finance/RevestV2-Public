@@ -19,7 +19,8 @@ contract Revest1155Tests is Test {
     FNFTHandler public immutable fnftHandler;
     ExampleAddressLock public immutable addressLock;
 
-    address alice = makeAddr("alice");
+    uint PRIVATE_KEY = vm.envUint("PRIVATE_KEY");//Useful for EIP-712 Testing
+    address alice = vm.rememberKey(PRIVATE_KEY);
     address bob = makeAddr("bob");
     address carol = makeAddr("carol");
 
@@ -599,9 +600,143 @@ contract Revest1155Tests is Test {
     
     }
 
+    function testMintFNFTWithExistingLock() public {
+        uint preBal = USDC.balanceOf(alice);
+        
+        address[] memory recipients = new address[](1);
+        recipients[0] = alice;
+        
+        uint[] memory amounts = new uint[](1);
+        amounts[0] = 1;
 
+        uint id = fnftHandler.getNextId();
 
+        IRevest.FNFTConfig memory config = IRevest.FNFTConfig({
+            pipeToContract: address(0),
+            handler: address(fnftHandler),
+            asset: address(USDC),
+            lockManager: address(lockManager),
+            depositAmount: 1e6,
+            nonce: 0,
+            quantity: 0,
+            fnftId: id,
+            lockSalt: bytes32(0),
+            maturityExtension: true,
+            useETH: false,
+            nontransferrable: true
+        });
 
+        (bytes32 salt1, bytes32 lockSalt) = revest.mintTimeLock(
+            0,
+            block.timestamp + 1 weeks,
+            0,
+            recipients,
+            amounts,
+            config
+        );
+        
+
+        (bytes32 salt2, bytes32 lockSalt2) = revest.mintTimeLock(
+            0,
+            block.timestamp + 3 weeks,
+            lockSalt,
+            recipients,
+            amounts,
+            config
+        );
+
+        assertEq(lockSalt, lockSalt2, "lockSalts do not match");
+
+        IRevest.FNFTConfig memory timelock1 = revest.getFNFT(salt1);
+        IRevest.FNFTConfig memory timelock2 = revest.getFNFT(salt2);
+        assertEq(timelock1.lockSalt, timelock2.lockSalt, "lockSalts do not match");
+        IRevest.Lock memory lock = lockManager.getLock(lockSalt);
+
+        assertEq(lock.timeLockExpiry, block.timestamp + 1 weeks, "lock did not extend maturity by expected amount");
+        skip(1 weeks);
+
+        revest.withdrawFNFT(salt1, 1);
+
+        bool unlocked = lockManager.getLockMaturity(lockSalt, id);
+        assertEq(unlocked, true, "lock was not unlocked");
+        revest.withdrawFNFT(salt2, 1);
+
+        assertEq(USDC.balanceOf(alice), preBal, "alice did not receive expected amount of USDC");
+    }
+
+    function testTransferFNFTWithSignature() public {
+        address[] memory recipients = new address[](1);
+        recipients[0] = alice;
+        
+        uint[] memory amounts = new uint[](1);
+        amounts[0] = 1;
+
+        uint id = fnftHandler.getNextId();
+
+        IRevest.FNFTConfig memory config = IRevest.FNFTConfig({
+            pipeToContract: address(0),
+            handler: address(fnftHandler),
+            asset: address(USDC),
+            lockManager: address(lockManager),
+            depositAmount: 1e6,
+            nonce: 0,
+            quantity: 0,
+            fnftId: id,
+            lockSalt: bytes32(0),
+            maturityExtension: true,
+            useETH: false,
+            nontransferrable: true
+        });
+
+        revest.mintTimeLock(
+            0,
+            block.timestamp + 1 weeks,
+            0,
+            recipients,
+            amounts,
+            config
+        );
+
+        bytes32 SETAPPROVALFORALL_TYPEHASH = keccak256("transferFromWithPermit(address owner,address operator, bool approved, uint id, uint amount, uint256 deadline, uint nonce, bytes data)");
+        bytes32 DOMAIN_SEPARATOR = fnftHandler.DOMAIN_SEPARATOR();
+
+        bytes32 digest = keccak256(
+            abi.encodePacked(
+                "\x19\x01",
+                DOMAIN_SEPARATOR,
+                keccak256(abi.encode(SETAPPROVALFORALL_TYPEHASH, alice, bob, true, id, 1, block.timestamp + 1 weeks, 0, bytes("")))
+            )
+        );
+
+        //Sign the permit info
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(PRIVATE_KEY, digest);
+        bytes memory signature = abi.encode(v, r, s);
+
+        //The Permit info itself
+        IFNFTHandler.permitApprovalInfo memory permit = IFNFTHandler.permitApprovalInfo({
+            owner: alice,
+            operator: bob,
+            id: id,
+            amount: 1,
+            deadline: block.timestamp + 1 weeks,
+            data: bytes("")
+        });
+
+        //Do the transfer
+        fnftHandler.transferFromWithPermit(permit, signature);
+
+        assertEq(fnftHandler.balanceOf(alice, id), 0, "alice still owns FNFT");
+        assertEq(fnftHandler.balanceOf(bob, id), 1, "bob does not own FNFT");
+        assertEq(fnftHandler.isApprovedForAll(alice, bob), true);
+    }
+
+    function testMintingWithPermit2(uint amount) public {
+
+    }
+
+    function testProxyCallFunctionality() public {
+
+    }
 
 
 }
