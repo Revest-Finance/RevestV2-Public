@@ -6,6 +6,8 @@ import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
 import "./interfaces/IRevest.sol";
 import "./interfaces/ILockManager.sol";
 import "./interfaces/IAddressLock.sol";
@@ -16,6 +18,14 @@ contract LockManager is ILockManager, ReentrancyGuard {
 
     bytes4 public constant ADDRESS_LOCK_INTERFACE_ID = type(IAddressLock).interfaceId;
     mapping(bytes32 => IRevest.Lock) public locks; // maps lockId to locks
+
+    mapping(bytes4 selector => bool) public blacklistedSelector;
+
+    constructor() {
+        blacklistedSelector[IERC20.transfer.selector] = true;
+        blacklistedSelector[IERC20.approve.selector] = true;
+        blacklistedSelector[IERC20.transferFrom.selector] = true;
+    }
 
     function getLock(bytes32 lockId) external view override returns (IRevest.Lock memory) {
         bytes32 salt = keccak256(abi.encode(lockId, msg.sender));
@@ -119,6 +129,26 @@ contract LockManager is ILockManager, ReentrancyGuard {
 
     function lockExists(bytes32 lockSalt) external view override returns (bool) {
         return locks[lockSalt].creationTime != 0;
+    }
+
+    function proxyCallisApproved(bytes32 salt, address token, address[] memory targets, bytes[] memory calldatas) external view returns (bool) {
+        bytes32 lockSalt = keccak256(abi.encode(salt, msg.sender));
+        if (locks[lockSalt].unlocked) return true;
+
+        else {
+            for(uint x = 0; x < calldatas.length;) {
+                //Restriction only enabled when the target is the token and not unlocked
+                if (targets[x] == token) {
+                    if (blacklistedSelector[bytes4(calldatas[x])]) return false;
+                }
+                
+                unchecked {
+                    ++x;
+                }
+            }
+        }
+
+        return true;
     }
 
 }

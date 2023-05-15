@@ -730,12 +730,73 @@ contract Revest1155Tests is Test {
         assertEq(fnftHandler.isApprovedForAll(alice, bob), true);
     }
 
-    function testMintingWithPermit2(uint amount) public {
+    function testProxyCallFunctionality() public {
+        address[] memory recipients = new address[](1);
+        recipients[0] = alice;
+        
+        uint[] memory amounts = new uint[](1);
+        amounts[0] = 2;
 
+        uint id = fnftHandler.getNextId();
+
+        IRevest.FNFTConfig memory config = IRevest.FNFTConfig({
+            pipeToContract: address(0),
+            handler: address(fnftHandler),
+            asset: address(USDC),
+            lockManager: address(lockManager),
+            depositAmount: 1e6,
+            nonce: 0,
+            quantity: 0,
+            fnftId: id,
+            lockSalt: bytes32(0),
+            maturityExtension: true,
+            useETH: false,
+            nontransferrable: true
+        });
+
+        (bytes32 salt,) = revest.mintTimeLock(
+            0,
+            block.timestamp + 1 weeks,
+            0,
+            recipients,
+            amounts,
+            config
+        );
+
+        address[] memory targets = new address[](1);
+        targets[0] = address(USDC);
+        uint[] memory values = new uint[](1); 
+        bytes[] memory calldatas = new bytes[](1);
+
+        //Blacklist transfer function
+        changePrank(revest.owner());
+        revest.changeSelectorVisibility(USDC.totalSupply.selector, true);
+        changePrank(alice);
+
+        //Transfer tokens out of the vault
+        calldatas[0] = abi.encodeWithSelector(USDC.transfer.selector, bob, 1e6);
+        
+        //Expect Revert because invokes a blacklisted function
+        vm.expectRevert(bytes("E013"));
+        revest.proxyCall(salt, targets, values, calldatas);
+
+        //Should succeed because valid proxy call to invoke
+        calldatas[0] = abi.encodeWithSelector(USDC.totalSupply.selector);
+        bytes[] memory returnDatas = revest.proxyCall(salt, targets, values, calldatas);
+    
+        assertEq(abi.decode(returnDatas[0], (uint)), USDC.totalSupply(), "return data does not match expected value");
+
+
+        fnftHandler.safeTransferFrom(alice, bob, id, 1, "");
+
+        //Should revert because you no longer own the entire supply of the FNFT
+        vm.expectRevert(bytes("E007"));
+        revest.proxyCall(salt, targets, values, calldatas);
     }
 
-    function testProxyCallFunctionality() public {
 
+    function testMintingWithPermit2(uint amount) public {
+        
     }
 
 

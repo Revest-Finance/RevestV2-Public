@@ -17,4 +17,6 @@ interface ILockManager {
     function getLockMaturity(bytes32 salt, uint fnftId) external view returns (bool);
 
     function lockExists(bytes32 lockSalt) external view returns (bool);
+
+    function proxyCallisApproved(bytes32 salt, address token, address[] memory targets, bytes[] memory calldatas) external view returns (bool);
 }

@@ -348,13 +348,7 @@ contract Revest_721 is Revest_base {
         //Only the NFT owner can call a function on the NFT
         require(IERC721(fnft.handler).ownerOf(fnft.fnftId) == msg.sender);
 
-        for(uint x = 0; x < targets.length; ) {
-            require(!blacklistedFunctions[bytes4(calldatas[x])], "E013");
-
-            unchecked {
-                ++x;
-            }
-        }
+        require(ILockManager(fnft.lockManager).proxyCallisApproved(salt, fnft.asset, targets, calldatas));
 
         return tokenVault.proxyCall(salt, targets, values, calldatas);
 
