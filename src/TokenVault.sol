@@ -14,8 +14,7 @@ contract TokenVault is ITokenVault, ReentrancyGuard {
     /// Address to use for EIP-1167 smart-wallet creation calls
     address public immutable TEMPLATE;
 
-    constructor(
-    ) {
+    constructor() {
         TEMPLATE = address(new RevestSmartWallet());
     }
 
@@ -24,20 +23,23 @@ contract TokenVault is ITokenVault, ReentrancyGuard {
     function withdrawToken(
         bytes32 salt,
         address token,
-        uint quantity,
+        uint256 quantity,
         address recipient //TODO: Can replace user with just send back to msg.sender but less optimized
     ) external override nonReentrant {
         //Clone the wallet
         address walletAddr = Clones.cloneDeterministic(TEMPLATE, keccak256(abi.encode(salt, msg.sender)));
-        
+
         //Withdraw the token, selfDestructs itself after
         RevestSmartWallet(walletAddr).withdraw(token, quantity, recipient);
 
         emit WithdrawERC20(token, recipient, salt, quantity, walletAddr);
     }
 
-    function proxyCall(bytes32 salt, address[] memory targets, uint256[] memory values, bytes[] memory calldatas) external 
-    nonReentrant returns(bytes[] memory outputs) {
+    function proxyCall(bytes32 salt, address[] memory targets, uint256[] memory values, bytes[] memory calldatas)
+        external
+        nonReentrant
+        returns (bytes[] memory outputs)
+    {
         address walletAddr = Clones.cloneDeterministic(TEMPLATE, keccak256(abi.encode(salt, msg.sender)));
 
         //Proxy the calls through and selfDestruct itself when finished
@@ -47,9 +49,7 @@ contract TokenVault is ITokenVault, ReentrancyGuard {
         RevestSmartWallet(walletAddr).cleanMemory();
     }
 
-
     function getAddress(bytes32 salt, address caller) external view returns (address smartWallet) {
         smartWallet = Clones.predictDeterministicAddress(TEMPLATE, keccak256(abi.encode(salt, caller)));
     }
-
 }

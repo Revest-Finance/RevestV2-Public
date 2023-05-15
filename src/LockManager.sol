@@ -12,7 +12,6 @@ import "./interfaces/IRevest.sol";
 import "./interfaces/ILockManager.sol";
 import "./interfaces/IAddressLock.sol";
 
-
 contract LockManager is ILockManager, ReentrancyGuard {
     using ERC165Checker for address;
 
@@ -32,7 +31,12 @@ contract LockManager is ILockManager, ReentrancyGuard {
         return locks[salt];
     }
 
-    function createLock(bytes32 salt, IRevest.LockParam memory lock) external override nonReentrant returns (bytes32 lockId) {
+    function createLock(bytes32 salt, IRevest.LockParam memory lock)
+        external
+        override
+        nonReentrant
+        returns (bytes32 lockId)
+    {
         lockId = keccak256(abi.encode(salt, msg.sender));
 
         // Extensive validation on creation
@@ -41,23 +45,18 @@ contract LockManager is ILockManager, ReentrancyGuard {
         newLock.lockType = lock.lockType;
         newLock.creationTime = block.timestamp;
 
-        if(lock.lockType == IRevest.LockType.TimeLock) {
+        if (lock.lockType == IRevest.LockType.TimeLock) {
             require(lock.timeLockExpiry > block.timestamp, "E015");
             newLock.timeLockExpiry = lock.timeLockExpiry;
-        }
-       
-        else if (lock.lockType == IRevest.LockType.AddressLock) {
+        } else if (lock.lockType == IRevest.LockType.AddressLock) {
             require(lock.addressLock != address(0), "E016");
             newLock.addressLock = lock.addressLock;
-        }
-
-        else {
+        } else {
             revert("E017");
         }
 
         //Use a single SSTORE
         locks[lockId] = newLock;
-      
     }
 
     /**
@@ -66,7 +65,7 @@ contract LockManager is ILockManager, ReentrancyGuard {
      * if value, only if value is correct for unlocking
      * lockId - the ID of the FNFT to unlock
      */
-    function unlockFNFT(bytes32 salt, uint fnftId, address sender) external override nonReentrant {
+    function unlockFNFT(bytes32 salt, uint256 fnftId, address sender) external override nonReentrant {
         bytes32 lockId = keccak256(abi.encode(salt, msg.sender));
 
         //Allows reduction to 1 SSTORE at the end as opposed to many
@@ -78,17 +77,18 @@ contract LockManager is ILockManager, ReentrancyGuard {
         if (tempLock.lockType == IRevest.LockType.TimeLock) {
             require(tempLock.timeLockExpiry <= block.timestamp, "E015");
             tempLock.timeLockExpiry = 0;
-        }
-      
-        else if (tempLock.lockType == IRevest.LockType.AddressLock) {
-            require((sender == tempLock.addressLock) ||
-                    (tempLock.addressLock.supportsInterface(ADDRESS_LOCK_INTERFACE_ID) 
-                    && IAddressLock(tempLock.addressLock).isUnlockable(fnftId, uint(lockId))), "E021");
+        } else if (tempLock.lockType == IRevest.LockType.AddressLock) {
+            require(
+                (sender == tempLock.addressLock)
+                    || (
+                        tempLock.addressLock.supportsInterface(ADDRESS_LOCK_INTERFACE_ID)
+                            && IAddressLock(tempLock.addressLock).isUnlockable(fnftId, uint256(lockId))
+                    ),
+                "E021"
+            );
 
-                tempLock.addressLock = address(0);
-        }
-
-        else {
+            tempLock.addressLock = address(0);
+        } else {
             revert("E017");
         }
 
@@ -101,23 +101,21 @@ contract LockManager is ILockManager, ReentrancyGuard {
     /**
      * Return whether a lock of any type is mature. Use this for all locktypes.
      */
-    function getLockMaturity(bytes32 salt, uint fnftId) public view override returns (bool) {
+    function getLockMaturity(bytes32 salt, uint256 fnftId) public view override returns (bool) {
         bytes32 lockId = keccak256(abi.encode(salt, msg.sender));
-        
+
         IRevest.Lock memory lock = locks[lockId];
 
         if (lock.unlocked) return true;
 
         if (lock.lockType == IRevest.LockType.TimeLock) {
             return lock.timeLockExpiry < block.timestamp;
-        }
-     
-        else if (lock.lockType == IRevest.LockType.AddressLock) {
-            return (lock.addressLock.supportsInterface(ADDRESS_LOCK_INTERFACE_ID) &&
-                    IAddressLock(lock.addressLock).isUnlockable(fnftId, uint(lockId)));
-        }
-
-        else {
+        } else if (lock.lockType == IRevest.LockType.AddressLock) {
+            return (
+                lock.addressLock.supportsInterface(ADDRESS_LOCK_INTERFACE_ID)
+                    && IAddressLock(lock.addressLock).isUnlockable(fnftId, uint256(lockId))
+            );
+        } else {
             return false;
         }
     }
@@ -131,17 +129,21 @@ contract LockManager is ILockManager, ReentrancyGuard {
         return locks[lockSalt].creationTime != 0;
     }
 
-    function proxyCallisApproved(bytes32 salt, address token, address[] memory targets, bytes[] memory calldatas) external view returns (bool) {
+    function proxyCallisApproved(bytes32 salt, address token, address[] memory targets, bytes[] memory calldatas)
+        external
+        view
+        returns (bool)
+    {
         bytes32 lockSalt = keccak256(abi.encode(salt, msg.sender));
-        if (locks[lockSalt].unlocked) return true;
-
-        else {
-            for(uint x = 0; x < calldatas.length;) {
+        if (locks[lockSalt].unlocked) {
+            return true;
+        } else {
+            for (uint256 x = 0; x < calldatas.length;) {
                 //Restriction only enabled when the target is the token and not unlocked
                 if (targets[x] == token) {
                     if (blacklistedSelector[bytes4(calldatas[x])]) return false;
                 }
-                
+
                 unchecked {
                     ++x;
                 }
@@ -150,5 +152,4 @@ contract LockManager is ILockManager, ReentrancyGuard {
 
         return true;
     }
-
 }

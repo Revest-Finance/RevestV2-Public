@@ -7,82 +7,52 @@ interface IRevest {
     event FNFTTimeLockMinted(
         address indexed asset,
         address indexed from,
-        uint indexed fnftId,
-        uint endTime,
-        uint[] quantities,
+        uint256 indexed fnftId,
+        uint256 endTime,
+        uint256[] quantities,
         FNFTConfig fnftConfig
     );
 
     event FNFTAddressLockMinted(
         address indexed asset,
         address indexed from,
-        uint indexed fnftId,
+        uint256 indexed fnftId,
         address trigger,
-        uint[] quantities,
+        uint256[] quantities,
         FNFTConfig fnftConfig
     );
 
-    event FNFTWithdrawn(
-        address indexed from,
-        uint indexed fnftId,
-        uint indexed quantity
-    );
+    event FNFTWithdrawn(address indexed from, uint256 indexed fnftId, uint256 indexed quantity);
 
-    event FNFTUnlocked(
-        address indexed from,
-        uint indexed fnftId
-    );
+    event FNFTUnlocked(address indexed from, uint256 indexed fnftId);
 
-    event FNFTMaturityExtended(
-        address indexed from,
-        uint indexed fnftId,
-        uint indexed newExtendedTime
-    );
+    event FNFTMaturityExtended(address indexed from, uint256 indexed fnftId, uint256 indexed newExtendedTime);
 
     event FNFTAddionalDeposited(
-        address indexed from,
-        uint indexed newFNFTId,
-        uint indexed quantity,
-        uint mount
+        address indexed from, uint256 indexed newFNFTId, uint256 indexed quantity, uint256 mount
     );
 
     event DepositERC20(
-        address indexed token, 
-        address indexed user, 
-        uint indexed fnftId, 
-        uint tokenAmount, 
-        address smartWallet
+        address indexed token, address indexed user, uint256 indexed fnftId, uint256 tokenAmount, address smartWallet
     );
 
     event WithdrawERC20(
-        address indexed token, 
-        address indexed user, 
-        uint indexed fnftId, 
-        uint tokenAmount, 
-        address smartWallet
+        address indexed token, address indexed user, uint256 indexed fnftId, uint256 tokenAmount, address smartWallet
     );
 
-    event CreateFNFT(
-        bytes32 salt,
-        uint indexed fnftId, 
-        address indexed from
-    );
-    
-    event RedeemFNFT(
-        bytes32 indexed salt,
-        uint indexed fnftId, 
-        address indexed from
-    );
+    event CreateFNFT(bytes32 salt, uint256 indexed fnftId, address indexed from);
+
+    event RedeemFNFT(bytes32 indexed salt, uint256 indexed fnftId, address indexed from);
 
     struct FNFTConfig {
         address pipeToContract; // Indicates if FNFT will pipe to another contract
         address handler;
         address asset; // The token being stored
         address lockManager;
-        uint depositAmount; // The amount of each token being stored
-        uint nonce;// The FNFT number
-        uint quantity;// How many FNFTs
-        uint fnftId;//the ID of the NFT the FNFT was minted to
+        uint256 depositAmount; // The amount of each token being stored
+        uint256 nonce; // The FNFT number
+        uint256 quantity; // How many FNFTs
+        uint256 fnftId; //the ID of the NFT the FNFT was minted to
         bytes32 lockSalt; // The salt used to generate the lock info
         bool maturityExtension; // Maturity extensions remaining
         bool useETH;
@@ -96,91 +66,84 @@ interface IRevest {
 
     struct LockParam {
         address addressLock;
-        uint timeLockExpiry;
+        uint256 timeLockExpiry;
         LockType lockType;
     }
 
     struct Lock {
         address addressLock;
         LockType lockType;
-        uint timeLockExpiry;
-        uint creationTime;
+        uint256 timeLockExpiry;
+        uint256 creationTime;
         bool unlocked;
     }
 
     struct MintParameters {
-        uint fnftId;
-        uint nonce;
-        uint endTime;
+        uint256 fnftId;
+        uint256 nonce;
+        uint256 endTime;
         address[] recipients;
-        uint[] quantities;
+        uint256[] quantities;
         FNFTConfig fnftConfig;
         bool usePermit2;
     }
 
     function mintTimeLockWithPermit(
-        uint fnftId,
-        uint endTime,
+        uint256 fnftId,
+        uint256 endTime,
         bytes32 lockSalt,
         address[] memory recipients,
-        uint[] memory quantities,
+        uint256[] memory quantities,
         IRevest.FNFTConfig memory fnftConfig,
         IAllowanceTransfer.PermitBatch calldata permits,
         bytes calldata _signature
     ) external payable returns (bytes32, bytes32);
 
     function mintTimeLock(
-        uint fnftId,
-        uint endTime,
+        uint256 fnftId,
+        uint256 endTime,
         bytes32 lockSalt,
         address[] memory recipients,
-        uint[] memory quantities,
+        uint256[] memory quantities,
         IRevest.FNFTConfig memory fnftConfig
     ) external payable returns (bytes32, bytes32);
 
     function mintAddressLock(
-        uint fnftId,
+        uint256 fnftId,
         address trigger,
         bytes32 lockSalt,
         bytes memory arguments,
         address[] memory recipients,
-        uint[] memory quantities,
+        uint256[] memory quantities,
         IRevest.FNFTConfig memory fnftConfig
     ) external payable returns (bytes32, bytes32);
 
     function mintAddressLockWithPermit(
-        uint fnftId,
+        uint256 fnftId,
         address trigger,
         bytes32 lockSalt,
         bytes memory arguments,
         address[] memory recipients,
-        uint[] memory quantities,
+        uint256[] memory quantities,
         IRevest.FNFTConfig memory fnftConfig,
         IAllowanceTransfer.PermitBatch calldata permits,
         bytes calldata _signature
     ) external payable returns (bytes32, bytes32);
 
-    function withdrawFNFT(bytes32 salt, uint quantity) external;
+    function withdrawFNFT(bytes32 salt, uint256 quantity) external;
 
     function unlockFNFT(bytes32 salt) external;
 
     function depositAdditionalToFNFTWithPermit(
         bytes32 salt,
-        uint amount,
+        uint256 amount,
         IAllowanceTransfer.PermitBatch calldata permits,
         bytes calldata _signature
-    ) external returns (uint);
+    ) external returns (uint256);
 
-    function depositAdditionalToFNFT(
-        bytes32 salt,
-        uint amount
-    ) external returns (uint);
+    function depositAdditionalToFNFT(bytes32 salt, uint256 amount) external returns (uint256);
 
-    function extendFNFTMaturity(
-        bytes32 salt,
-        uint endTime
-    ) external returns (uint);
+    function extendFNFTMaturity(bytes32 salt, uint256 endTime) external returns (uint256);
 
     function getFNFT(bytes32 salt) external view returns (FNFTConfig memory);
-
 }

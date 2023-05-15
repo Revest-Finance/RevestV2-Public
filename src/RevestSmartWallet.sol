@@ -15,16 +15,21 @@ contract RevestSmartWallet is ReentrancyGuard {
     }
 
     modifier onlyMaster() {
-        require(msg.sender == MASTER, 'E016');
+        require(msg.sender == MASTER, "E016");
         _;
     }
 
-    function withdraw(address token, uint value, address recipient) external nonReentrant onlyMaster {
+    function withdraw(address token, uint256 value, address recipient) external nonReentrant onlyMaster {
         ERC20(token).safeTransfer(recipient, value);
         cleanMemory();
     }
 
-    function proxyCall(address[] memory targets, uint256[] memory values, bytes[] memory calldatas) external nonReentrant onlyMaster returns(bytes[] memory outputs) {
+    function proxyCall(address[] memory targets, uint256[] memory values, bytes[] memory calldatas)
+        external
+        nonReentrant
+        onlyMaster
+        returns (bytes[] memory outputs)
+    {
         for (uint256 i = 0; i < targets.length; i++) {
             (bool success, bytes memory result) = targets[i].call{value: values[i]}(calldatas[i]);
             require(success, "ER022");
@@ -35,5 +40,4 @@ contract RevestSmartWallet is ReentrancyGuard {
     function cleanMemory() public onlyMaster {
         selfdestruct(payable(address(this)));
     }
-
 }
