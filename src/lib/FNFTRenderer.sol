@@ -31,9 +31,17 @@ library FNFTRenderer {
             "</svg>"
         );
 
-        string memory description = renderDescription();
+        string memory description = renderDescription(param.amount, param.id, param.lockType, param.outputReceiver);
 
-        string memory json = string.concat();
+        string memory json = string.concat(
+            '{"name":"Revest FNFT",',
+            '"description":"',
+            description,
+            '",',
+            '"image":"data:image/svg+xml;base64,',
+            Base64.encode(bytes(image)),
+            '"}'
+        );
 
         return
             string.concat(
@@ -57,20 +65,20 @@ library FNFTRenderer {
         address outputReceiver
     ) internal pure returns (string memory description) {
         description = string.concat(
-            "Receiver: ", abi.encodePacked(outputReceiver_, 
-            "Amount: ", amount, 
+            "Receiver: ", Strings.toHexString(uint256(uint160(outputReceiver)), 20),
+            "Amount: ", Strings.toHexString(amount), 
             "LockType: ", lockType, 
-            "ID: ", id
+            "ID: ", Strings.toHexString(id)
         );
     }
 
     function renderBackground(
-        address owner
+        address outputReceiver
     ) internal pure returns (string memory background) {
         // bytes32 key = keccack256(abi.encodepacked(owner));
         // uint256 hue = uint256(key) % 360;
 
-        string memory addressString = abi.encodePacked(address);
+        string memory addressString = Strings.toHexString(outputReceiver);
 
         background = string.concat(
             '<rect width="300" height="480" fill="hsl(',
