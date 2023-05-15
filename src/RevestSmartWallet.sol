@@ -32,7 +32,7 @@ contract RevestSmartWallet is ReentrancyGuard {
     {
         for (uint256 i = 0; i < targets.length; i++) {
             (bool success, bytes memory result) = targets[i].call{value: values[i]}(calldatas[i]);
-            require(success, "ER022");
+            require(success, "ER025");
             outputs[i] = result;
         }
     }

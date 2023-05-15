@@ -347,7 +347,7 @@ contract Revest_1155 is Revest_base {
         uint256 supply = FNFTHandler.totalSupply(fnft.fnftId);
         require(supply != 0 && FNFTHandler.balanceOf(msg.sender, fnft.fnftId) == supply, "E007");
 
-        require(ILockManager(fnft.lockManager).proxyCallisApproved(salt, fnft.asset, targets, calldatas));
+        require(ILockManager(fnft.lockManager).proxyCallisApproved(salt, fnft.asset, targets, values, calldatas));
 
         return tokenVault.proxyCall(salt, targets, values, calldatas);
     }

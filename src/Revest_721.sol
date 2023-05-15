@@ -121,27 +121,35 @@ contract Revest_721 is Revest_base {
         emit FNFTAddressLockMinted(fnftConfig.asset, msg.sender, fnftId, trigger, quantities, fnftConfig);
     }
 
+    function createFNFT(
+        bytes32 salt,
+        uint256 fnftId,
+        address handler,
+        uint256 nonce,
+        IRevest.FNFTConfig memory fnftConfig,
+        uint256
+    ) internal virtual override {
+        super.createFNFT(salt, fnftId, handler, nonce, fnftConfig, 0);
+        ++fnfts[salt].quantity; //++quantity because we want to increment before using it
+    } //createFNFT
+
     function withdrawFNFT(bytes32 salt, uint256) external override nonReentrant {
         IRevest.FNFTConfig memory fnft = fnfts[salt];
 
         // Check if this many FNFTs exist in the first place for the given ID
         require(fnft.quantity > 0, "E003");
 
-        // Burn the FNFTs being exchanged
-        if (fnft.handler.supportsInterface(FNFTHANDLER_INTERFACE_ID)) {
-            IFNFTHandler(fnft.handler).burn(msg.sender, fnft.fnftId, 1);
-        }
-
-        //Checks-effects because unlockFNFT has an external call which could be used for reentrancy
         fnfts[salt].quantity -= 1;
 
         ILockManager(fnft.lockManager).unlockFNFT(fnft.lockSalt, fnft.fnftId, msg.sender);
 
         bytes32 walletSalt = keccak256(abi.encode(fnft.fnftId, fnft.handler));
 
-        withdrawToken(walletSalt, fnft.fnftId, 1, msg.sender);
+        //Anyone can call withdraw but the funds will only go to the owner
+        address currentOwner = IERC721(fnft.handler).ownerOf(fnft.fnftId);
+        withdrawToken(walletSalt, fnft.fnftId, 1, currentOwner);
 
-        emit FNFTWithdrawn(msg.sender, fnft.fnftId, fnft.quantity);
+        emit FNFTWithdrawn(currentOwner, fnft.fnftId, 1);
     }
 
     /// @return the FNFT ID
@@ -301,9 +309,9 @@ contract Revest_721 is Revest_base {
         IRevest.FNFTConfig memory fnft = fnfts[salt];
 
         //Only the NFT owner can call a function on the NFT
-        require(IERC721(fnft.handler).ownerOf(fnft.fnftId) == msg.sender);
+        require(IERC721(fnft.handler).ownerOf(fnft.fnftId) == msg.sender, "E023");
 
-        require(ILockManager(fnft.lockManager).proxyCallisApproved(salt, fnft.asset, targets, calldatas));
+        require(ILockManager(fnft.lockManager).proxyCallisApproved(salt, fnft.asset, targets, values, calldatas), "E024");
 
         return tokenVault.proxyCall(salt, targets, values, calldatas);
     }

@@ -15,8 +15,11 @@ import "src/lib/PermitHash.sol";
 import "src/interfaces/IAllowanceTransfer.sol";
 import "src/lib/EIP712.sol";
 
+import "@solmate/utils/SafeTransferLib.sol";
+
 contract Revest1155Tests is Test {
     using PermitHash for IAllowanceTransfer.PermitBatch;
+    using SafeTransferLib for ERC20;
 
     Revest_1155 public immutable revest;
     TokenVault public immutable vault;
@@ -37,7 +40,7 @@ contract Revest1155Tests is Test {
     constructor() {
         vault = new TokenVault();
         revest = new Revest_1155(address(WETH), address(vault));
-        lockManager = new LockManager();
+        lockManager = new LockManager(address(WETH));
         fnftHandler = new FNFTHandler(address(0));
         addressLock = new ExampleAddressLock();
 
@@ -49,26 +52,26 @@ contract Revest1155Tests is Test {
         vm.label(address(fnftHandler), "fnftHandler");
         vm.label(address(lockManager), "lockManager");
         vm.label(address(addressLock), "addressLock");
+        vm.label(address(USDC), "USDC");
+        vm.label(address(WETH), "WETH");
+
+        deal(address(WETH), alice, 1000 ether);
+        deal(address(USDC), alice, 1e20);
 
         fnftHandler.transferOwnership(address(revest)); //Transfer ownership to Revest from deployer
 
-        deal(address(WETH), alice, 1000 ether);
-        deal(address(USDC), alice, 1e10);
-
         startHoax(alice, alice);
-        USDC.approve(address(revest), type(uint256).max);
-        USDC.approve(PERMIT2, type(uint256).max);
 
-        WETH.approve(address(revest), type(uint256).max);
-        WETH.approve(PERMIT2, type(uint256).max);
-        vm.stopPrank();
+        USDC.safeApprove(address(revest), type(uint256).max);
+        USDC.safeApprove(PERMIT2, type(uint256).max);
+
+        WETH.safeApprove(address(revest), type(uint256).max);
+        WETH.safeApprove(PERMIT2, type(uint256).max);
     }
 
-    function setUp() public {
-        hoax(alice, alice);
-    }
+    function setUp() public {}
 
-    function testMintTimeLockToAlice(uint256 supply, uint256 amount) public {
+    function testMintTimeLockToAlice(uint8 supply, uint256 amount) public {
         vm.assume(supply % 2 == 0 && supply >= 2);
         vm.assume(amount >= 1e6);
 
@@ -106,6 +109,8 @@ contract Revest1155Tests is Test {
         {
             //Funds were deducted from alice
             uint256 postBal = USDC.balanceOf(alice);
+            console.log("Alice Pre Bal: ", preBal);
+            console.log("Alice Post Bal: ", postBal);
             assertEq(postBal, preBal - (supply * amount), "balance did not decrease by expected amount");
 
             //Funds were moved into the smart wallet
@@ -141,7 +146,7 @@ contract Revest1155Tests is Test {
         assertEq(USDC.balanceOf(walletAddr), 0, "vault balance did not decrease by expected amount"); //All funds were removed from SmartWallet
     }
 
-    function testBatchMintTimeLock(uint256 supply, uint256 amount) public {
+    function testBatchMintTimeLock(uint8 supply, uint256 amount) public {
         vm.assume(supply % 2 == 0 && supply >= 2);
         vm.assume(amount >= 1e6);
 
@@ -217,7 +222,7 @@ contract Revest1155Tests is Test {
         );
     }
 
-    function testMintAddressLock_implementsInterface(uint256 supply, uint256 amount) public {
+    function testMintAddressLock_implementsInterface(uint8 supply, uint256 amount) public {
         vm.assume(supply % 2 == 0 && supply >= 2);
         vm.assume(amount >= 1e6);
 
@@ -273,7 +278,7 @@ contract Revest1155Tests is Test {
         assertEq(USDC.balanceOf(walletAddr), 0, "vault balance did not decrease by expected amount"); //All funds were removed from SmartWallet
     }
 
-    function testMintAddressLock_sendsSignal(uint256 supply, uint256 amount) public {
+    function testMintAddressLock_sendsSignal(uint8 supply, uint256 amount) public {
         vm.assume(supply % 2 == 0 && supply >= 2);
         vm.assume(amount >= 1e6);
 
@@ -341,7 +346,7 @@ contract Revest1155Tests is Test {
         assertEq(USDC.balanceOf(walletAddr), 0, "vault balance did not decrease by expected amount"); //All funds were removed from SmartWallet
     }
 
-    function testDepositAdditionalToToFNFT(uint256 supply, uint256 amount, uint256 additionalDepositAmount) public {
+    function testDepositAdditionalToToFNFT(uint8 supply, uint256 amount, uint256 additionalDepositAmount) public {
         vm.assume(supply % 2 == 0 && supply >= 2);
         vm.assume(amount >= 1e6);
         vm.assume(additionalDepositAmount >= 1e6);
@@ -417,7 +422,7 @@ contract Revest1155Tests is Test {
         );
     }
 
-    function mintTimeLockAndExtendMaturity(uint256 supply, uint256 amount) public {
+    function mintTimeLockAndExtendMaturity(uint8 supply, uint256 amount) public {
         vm.assume(amount >= 1e6);
 
         uint256 preBal = USDC.balanceOf(alice);
@@ -489,7 +494,7 @@ contract Revest1155Tests is Test {
         revest.extendFNFTMaturity(salt, block.timestamp + 2 weeks); //Extend a week beyond the current endDate
     }
 
-    function testMintFNFTWithEth(uint256 supply, uint256 amount) public {
+    function testMintFNFTWithEth(uint8 supply, uint256 amount) public {
         vm.assume(amount >= 1 ether);
         vm.assume(supply != 0);
 

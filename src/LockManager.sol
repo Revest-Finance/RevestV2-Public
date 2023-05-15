@@ -20,10 +20,13 @@ contract LockManager is ILockManager, ReentrancyGuard {
 
     mapping(bytes4 selector => bool) public blacklistedSelector;
 
-    constructor() {
+    address public immutable WETH;
+
+    constructor(address _WETH) {
         blacklistedSelector[IERC20.transfer.selector] = true;
         blacklistedSelector[IERC20.approve.selector] = true;
         blacklistedSelector[IERC20.transferFrom.selector] = true;
+        WETH = _WETH;
     }
 
     function getLock(bytes32 lockId) external view override returns (IRevest.Lock memory) {
@@ -129,11 +132,13 @@ contract LockManager is ILockManager, ReentrancyGuard {
         return locks[lockSalt].creationTime != 0;
     }
 
-    function proxyCallisApproved(bytes32 salt, address token, address[] memory targets, bytes[] memory calldatas)
-        external
-        view
-        returns (bool)
-    {
+    function proxyCallisApproved(
+        bytes32 salt,
+        address token,
+        address[] memory targets,
+        uint[] memory values,
+        bytes[] memory calldatas
+    ) external view returns (bool) {
         bytes32 lockSalt = keccak256(abi.encode(salt, msg.sender));
         if (locks[lockSalt].unlocked) {
             return true;
@@ -142,6 +147,12 @@ contract LockManager is ILockManager, ReentrancyGuard {
                 //Restriction only enabled when the target is the token and not unlocked
                 if (targets[x] == token) {
                     if (blacklistedSelector[bytes4(calldatas[x])]) return false;
+                }
+
+                //Revest uses address(0) for asset when it is ETH, but stores WETH in the vault.
+                //This prevents the edge case for that
+                if (targets[x] == WETH && token == address(0)) {
+                    if (values[x] > 0) return false;
                 }
 
                 unchecked {

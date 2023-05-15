@@ -137,7 +137,7 @@ contract FNFTHandler is ERC1155, Ownable, IFNFTHandler {
                     IOutputReceiver(config.pipeToContract).onTransferFNFT(ids[x], operator, from, to, amounts[x], data);
                 }
 
-                require(!config.nontransferrable || to == address(0), "E021");
+                require(!config.nontransferrable || to == address(0), "E022");
 
                 unchecked {
                     ++x;
