@@ -44,24 +44,27 @@ abstract contract Revest_base is IRevest, ReentrancyGuard, Ownable {
     //Deployed omni-chain to same address
     IAllowanceTransfer constant PERMIT2 = IAllowanceTransfer(0x000000000022D473030F116dDEE9F6B43aC78BA3);
 
-    mapping(bytes32 => IRevest.FNFTConfig) public fnfts;
-    mapping(address handler => mapping(uint256 nftId => uint256 numfnfts)) public numfnfts;
-    mapping(bytes4 selector => bool blackListed) public blacklistedFunctions;
-
+    mapping(bytes32 => FNFTConfig) public fnfts;
+    mapping(address handler => mapping(uint nftId => uint numfnfts)) public override numfnfts;
+    mapping(bytes4 selector => bool blackListed) public override blacklistedFunctions;
+     
     /**
      * @dev Primary constructor to create the Revest controller contract
      */
-    constructor(address weth, address _tokenVault) Ownable() {
+    constructor(
+        address weth,
+        address _tokenVault
+    ) Ownable() {
         WETH = weth;
-        tokenVault = ITokenVault(_tokenVault);
+        tokenVault = ITokenVault(_tokenVault); 
     }
 
     function mintTimeLockWithPermit(
-        uint256 fnftId,
-        uint256 endTime,
+        uint fnftId,
+        uint endTime,
         bytes32 lockSalt,
         address[] memory recipients,
-        uint256[] memory quantities,
+        uint[] memory quantities,
         IRevest.FNFTConfig memory fnftConfig,
         IAllowanceTransfer.PermitBatch calldata permits,
         bytes calldata _signature
@@ -72,23 +75,23 @@ abstract contract Revest_base is IRevest, ReentrancyGuard, Ownable {
     }
 
     function mintTimeLock(
-        uint256 fnftId,
-        uint256 endTime,
+        uint fnftId,
+        uint endTime,
         bytes32 lockSalt,
         address[] memory recipients,
-        uint256[] memory quantities,
+        uint[] memory quantities,
         IRevest.FNFTConfig memory fnftConfig
     ) external payable virtual override nonReentrant returns (bytes32 salt, bytes32 lockId) {
         return _mintTimeLock(fnftId, endTime, lockSalt, recipients, quantities, fnftConfig, false);
     }
 
     function mintAddressLockWithPermit(
-        uint256 fnftId,
+        uint fnftId,
         address trigger,
         bytes32 lockSalt,
         bytes memory arguments,
         address[] memory recipients,
-        uint256[] memory quantities,
+        uint[] memory quantities,
         IRevest.FNFTConfig memory fnftConfig,
         IAllowanceTransfer.PermitBatch calldata permits,
         bytes calldata _signature
@@ -99,42 +102,43 @@ abstract contract Revest_base is IRevest, ReentrancyGuard, Ownable {
     }
 
     function mintAddressLock(
-        uint256 fnftId,
+        uint fnftId,
         address trigger,
         bytes32 lockSalt,
         bytes memory arguments,
         address[] memory recipients,
-        uint256[] memory quantities,
+        uint[] memory quantities,
         IRevest.FNFTConfig memory fnftConfig
     ) external payable virtual override nonReentrant returns (bytes32 salt, bytes32 lockId) {
         return _mintAddressLock(fnftId, trigger, lockSalt, arguments, recipients, quantities, fnftConfig, false);
     }
 
     function _mintAddressLock(
-        uint256 fnftId,
+        uint fnftId,
         address trigger,
         bytes32 lockSalt,
         bytes memory arguments,
         address[] memory recipients,
-        uint256[] memory quantities,
+        uint[] memory quantities,
         IRevest.FNFTConfig memory fnftConfig,
         bool usePermit2
     ) internal virtual returns (bytes32 salt, bytes32 lockId);
 
     function _mintTimeLock(
-        uint256 fnftId,
-        uint256 endTime,
+        uint fnftId,
+        uint endTime,
         bytes32 lockSalt,
         address[] memory recipients,
-        uint256[] memory quantities,
+        uint[] memory quantities,
         IRevest.FNFTConfig memory fnftConfig,
         bool usePermit2
     ) internal virtual returns (bytes32 salt, bytes32 lockId);
 
+    
     /// Advanced FNFT withdrawals removed for the time being – no active implementations
     /// Represents slightly increased surface area – may be utilized in Resolve
 
-    function unlockFNFT(bytes32 salt) external override nonReentrant {
+    function unlockFNFT(bytes32 salt) external override nonReentrant  {
         IRevest.FNFTConfig memory fnft = fnfts[salt];
 
         // Works for value locks or time locks
@@ -144,44 +148,50 @@ abstract contract Revest_base is IRevest, ReentrancyGuard, Ownable {
         emit FNFTUnlocked(msg.sender, fnft.fnftId);
     }
 
-    function depositAdditionalToFNFT(bytes32 salt, uint256 amount) external virtual returns (uint256 deposit) {
+    function depositAdditionalToFNFT(
+        bytes32 salt,
+        uint amount
+    ) external virtual returns (uint deposit) {
         return _depositAdditionalToFNFT(salt, amount, false);
     }
 
     function depositAdditionalToFNFTWithPermit(
         bytes32 salt,
-        uint256 amount,
+        uint amount,
         IAllowanceTransfer.PermitBatch calldata permits,
         bytes calldata _signature
-    ) external virtual returns (uint256 deposit) {
+    ) external virtual returns (uint deposit) {
         //Length check means to use permit2 for allowance but allowance has already been granted
         if (_signature.length != 0) PERMIT2.permit(msg.sender, permits, _signature);
         return _depositAdditionalToFNFT(salt, amount, true);
     }
 
-    function _depositAdditionalToFNFT(bytes32 salt, uint256 amount, bool usePermit2)
-        internal
-        virtual
-        returns (uint256 deposit);
-
-    function createFNFT(
+    function _depositAdditionalToFNFT(
         bytes32 salt,
-        uint256 fnftId,
-        address handler,
-        uint256 nonce,
-        IRevest.FNFTConfig memory fnftConfig,
-        uint256 quantity
-    ) internal virtual {
-        fnfts[salt] = fnftConfig;
+        uint amount,
+        bool usePermit2
+    ) internal virtual returns (uint deposit);
 
-        fnfts[salt].nonce = nonce;
-        fnfts[salt].fnftId = fnftId;
-        fnfts[salt].handler = handler;
-        fnfts[salt].quantity = quantity;
-    } //createFNFT
+    function createFNFT(bytes32 salt,
+            uint fnftId, 
+            address handler, 
+            uint nonce,
+            IRevest.FNFTConfig memory fnftConfig, 
+            uint quantity
+            ) internal virtual {
+
+            fnfts[salt] = fnftConfig;
+            
+            fnfts[salt].nonce = nonce;
+            fnfts[salt].fnftId = fnftId;
+            fnfts[salt].handler = handler;
+            fnfts[salt].quantity = quantity;
+
+    }//createFNFT
+
 
     //You don't need this but it makes it a little easier to return an object and not a bunch of variables
-    function getFNFT(bytes32 fnftId) external view virtual returns (IRevest.FNFTConfig memory) {
+    function getFNFT(bytes32 fnftId) external virtual view returns (IRevest.FNFTConfig memory) {
         return fnfts[fnftId];
     }
 
@@ -194,11 +204,11 @@ abstract contract Revest_base is IRevest, ReentrancyGuard, Ownable {
         Ownable(handler).transferOwnership(newRevest);
     }
 
-    function getAddressForFNFT(bytes32 salt) public view virtual returns (address smartWallet) {
+    function getAddressForFNFT(bytes32 salt) public virtual view returns (address smartWallet) {
         IRevest.FNFTConfig memory fnft = fnfts[salt];
         bytes32 walletSalt = keccak256(abi.encode(fnft.handler, fnft.fnftId));
         smartWallet = tokenVault.getAddress(walletSalt, address(this));
-    }
+    } 
 
     receive() external payable {
         //Do Nothing but receive
