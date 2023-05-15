@@ -11,7 +11,12 @@ import "src/LockManager.sol";
 import "src/FNFTHandler.sol";
 import "./ExampleAddressLock.sol";
 
+import "src/lib/PermitHash.sol";
+import "src/interfaces/IAllowanceTransfer.sol";
+import "src/lib/EIP712.sol";
+
 contract Revest1155Tests is Test {
+    using PermitHash for IAllowanceTransfer.PermitBatch;
 
     Revest_1155 public immutable revest;
     TokenVault public immutable vault;
@@ -795,8 +800,85 @@ contract Revest1155Tests is Test {
     }
 
 
-    function testMintingWithPermit2(uint amount) public {
+    function testMintingWithPermit2(uint160 amount) public {
+        vm.assume(amount >= 1e6);
+
+        IAllowanceTransfer.PermitBatch memory permit;
         
+        { 
+            //Permit to allow Revest to transfer unlimited USDC for the next week
+            IAllowanceTransfer.PermitDetails[] memory details = new IAllowanceTransfer.PermitDetails[](1);
+            details[0] = IAllowanceTransfer.PermitDetails({
+                token: address(USDC),
+                amount: amount,
+                expiration: uint48(block.timestamp + 1 weeks),
+                nonce: uint48(0)
+            });
+            
+            permit = IAllowanceTransfer.PermitBatch({
+                details: details,
+                spender: address(revest),
+                sigDeadline: block.timestamp + 1 weeks
+            });
+        }
+
+        bytes memory signature;
+        {
+            bytes32 DOMAIN_SEPARATOR = EIP712(PERMIT2).DOMAIN_SEPARATOR();
+            bytes32 digest = keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, permit.hash()));
+
+            //Sign the permit info
+            (uint8 v, bytes32 r, bytes32 s) = vm.sign(PRIVATE_KEY, digest);
+            signature = abi.encode(v, r, s);
+        }
+
+        address[] memory recipients = new address[](1);
+        recipients[0] = alice;
+        
+        uint[] memory amounts = new uint[](1);
+        amounts[0] = 1;
+
+        uint id = fnftHandler.getNextId();
+
+        bytes32 salt;
+        bytes32 lockSalt;
+        {
+                IRevest.FNFTConfig memory config = IRevest.FNFTConfig({
+                pipeToContract: address(0),
+                handler: address(fnftHandler),
+                asset: address(USDC),
+                lockManager: address(lockManager),
+                depositAmount: 1e6,
+                nonce: 0,
+                quantity: 0,
+                fnftId: id,
+                lockSalt: bytes32(0),
+                maturityExtension: true,
+                useETH: false,
+                nontransferrable: true
+            });
+
+            (salt,lockSalt) = revest.mintTimeLockWithPermit(
+                0,
+                block.timestamp + 1 weeks,
+                0,
+                recipients,
+                amounts,
+                config,
+                permit,
+                signature
+            );
+        }
+
+        assertEq(fnftHandler.balanceOf(alice, id), 1, "FNFT not minted");
+        assertEq(USDC.balanceOf(revest.getAddressForFNFT(salt)), amount, "USDC not deposited into vault");
+        
+        //Test that Lock was created
+        IRevest.Lock memory lock = lockManager.getLock(lockSalt);
+        assertEq(uint(lock.lockType), uint(IRevest.LockType.TimeLock), "lock type is not TimeLock");
+        assertEq(lock.timeLockExpiry, block.timestamp + 1 weeks, "lock expiry is not expected value");
+        assertEq(lock.unlocked, false);
+
     }
 
 
