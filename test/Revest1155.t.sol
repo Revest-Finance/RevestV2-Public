@@ -157,7 +157,7 @@ contract Revest1155Tests is Test {
         recipients[0] = alice;
         recipients[1] = bob;
 
-        uint256[] memory amounts = new uint[](1);
+        uint256[] memory amounts = new uint[](2);
         amounts[0] = supply / 2;
         amounts[1] = supply / 2;
 
