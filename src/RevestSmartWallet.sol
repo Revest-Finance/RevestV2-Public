@@ -3,6 +3,8 @@
 import "@solmate/utils/SafeTransferLib.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
+import "forge-std/console.sol";
+
 pragma solidity ^0.8.12;
 
 contract RevestSmartWallet is ReentrancyGuard {
@@ -20,6 +22,9 @@ contract RevestSmartWallet is ReentrancyGuard {
     }
 
     function withdraw(address token, uint256 value, address recipient) external nonReentrant onlyMaster {
+        console.log("balance of this: ", ERC20(token).balanceOf(address(this)));
+        console.log("value: ", value);
+
         ERC20(token).safeTransfer(recipient, value);
         cleanMemory();
     }

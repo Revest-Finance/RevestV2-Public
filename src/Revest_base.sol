@@ -9,6 +9,8 @@ import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
+import "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
+
 import "@solmate/utils/SafeTransferLib.sol";
 import "@solmate/utils/FixedPointMathLib.sol";
 
@@ -21,6 +23,8 @@ import "./interfaces/IAddressLock.sol";
 import "./interfaces/IAllowanceTransfer.sol";
 
 import "./lib/IWETH.sol";
+
+import "forge-std/console.sol";
 
 /**
  * This is the entrypoint for the frontend, as well as third-party Revest integrations.
@@ -142,7 +146,7 @@ abstract contract Revest_base is IRevest, ReentrancyGuard, Ownable {
         IRevest.FNFTConfig memory fnft = fnfts[salt];
 
         // Works for value locks or time locks
-        ILockManager(fnft.lockManager).unlockFNFT(fnft.lockSalt, fnft.fnftId, msg.sender);
+        ILockManager(fnft.lockManager).unlockFNFT(fnft.lockId, fnft.fnftId, msg.sender);
 
         //TODO: Fix Events
         emit FNFTUnlocked(msg.sender, fnft.fnftId);
@@ -180,6 +184,8 @@ abstract contract Revest_base is IRevest, ReentrancyGuard, Ownable {
             uint quantity
             ) internal virtual {
 
+            console.log("handler: ", handler);
+
             fnfts[salt] = fnftConfig;
             
             fnfts[salt].nonce = nonce;
@@ -205,10 +211,10 @@ abstract contract Revest_base is IRevest, ReentrancyGuard, Ownable {
     }
 
     function getAddressForFNFT(bytes32 salt) public virtual view returns (address smartWallet) {
-        IRevest.FNFTConfig memory fnft = fnfts[salt];
-        bytes32 walletSalt = keccak256(abi.encode(fnft.handler, fnft.fnftId));
-        smartWallet = tokenVault.getAddress(walletSalt, address(this));
+        smartWallet = tokenVault.getAddress(salt, address(this));
     } 
+
+
 
     receive() external payable {
         //Do Nothing but receive

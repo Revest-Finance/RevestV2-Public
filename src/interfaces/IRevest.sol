@@ -55,7 +55,7 @@ interface IRevest {
         uint256 nonce; // The FNFT number
         uint256 quantity; // How many FNFTs
         uint256 fnftId; //the ID of the NFT the FNFT was minted to
-        bytes32 lockSalt; // The salt used to generate the lock info
+        bytes32 lockId; // The salt used to generate the lock info
         bool maturityExtension; // Maturity extensions remaining
         bool useETH;
         bool nontransferrable;

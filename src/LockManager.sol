@@ -12,6 +12,8 @@ import "./interfaces/IRevest.sol";
 import "./interfaces/ILockManager.sol";
 import "./interfaces/IAddressLock.sol";
 
+import "forge-std/console.sol";
+
 contract LockManager is ILockManager, ReentrancyGuard {
     using ERC165Checker for address;
 
@@ -29,8 +31,7 @@ contract LockManager is ILockManager, ReentrancyGuard {
         WETH = _WETH;
     }
 
-    function getLock(bytes32 lockId) external view override returns (IRevest.Lock memory) {
-        bytes32 salt = keccak256(abi.encode(lockId, msg.sender));
+    function getLock(bytes32 salt) external view override returns (IRevest.Lock memory) {
         return locks[salt];
     }
 
@@ -60,6 +61,7 @@ contract LockManager is ILockManager, ReentrancyGuard {
 
         //Use a single SSTORE
         locks[lockId] = newLock;
+
     }
 
     /**
@@ -68,17 +70,18 @@ contract LockManager is ILockManager, ReentrancyGuard {
      * if value, only if value is correct for unlocking
      * lockId - the ID of the FNFT to unlock
      */
-    function unlockFNFT(bytes32 salt, uint256 fnftId, address sender) external override nonReentrant {
-        bytes32 lockId = keccak256(abi.encode(salt, msg.sender));
+    function unlockFNFT(bytes32 lockId, uint256 fnftId, address sender) external override nonReentrant {
 
         //Allows reduction to 1 SSTORE at the end as opposed to many
         IRevest.Lock memory tempLock = locks[lockId];
+
+        require(tempLock.creationTime != 0, "LOCK DOES NOT EXIST");
 
         //If already unlocked, no state changes needed
         if (tempLock.unlocked) return;
 
         if (tempLock.lockType == IRevest.LockType.TimeLock) {
-            require(tempLock.timeLockExpiry <= block.timestamp, "E015");
+            require(tempLock.timeLockExpiry <= block.timestamp, "E006");
             tempLock.timeLockExpiry = 0;
         } else if (tempLock.lockType == IRevest.LockType.AddressLock) {
             require(
@@ -104,9 +107,7 @@ contract LockManager is ILockManager, ReentrancyGuard {
     /**
      * Return whether a lock of any type is mature. Use this for all locktypes.
      */
-    function getLockMaturity(bytes32 salt, uint256 fnftId) public view override returns (bool) {
-        bytes32 lockId = keccak256(abi.encode(salt, msg.sender));
-
+    function getLockMaturity(bytes32 lockId, uint fnftId) public view override returns (bool) {
         IRevest.Lock memory lock = locks[lockId];
 
         if (lock.unlocked) return true;
@@ -124,8 +125,7 @@ contract LockManager is ILockManager, ReentrancyGuard {
     }
 
     function lockTypes(bytes32 tokenId) external view override returns (IRevest.LockType) {
-        bytes32 salt = keccak256(abi.encode(tokenId, msg.sender));
-        return locks[salt].lockType;
+        return locks[tokenId].lockType;
     }
 
     function lockExists(bytes32 lockSalt) external view override returns (bool) {
