@@ -26,7 +26,9 @@ contract FNFTHandler is ERC1155, Ownable, IFNFTHandler {
         "transferFromWithPermit(address owner,address operator, bool approved, uint id, uint amount, uint256 deadline, uint nonce, bytes data)"
     );
     bytes32 public immutable DOMAIN_SEPARATOR;
-    mapping(address signer => uint256 nonce) public nonces;
+
+    //address signer => uint256 nonce
+    mapping(address => uint256) public nonces;
 
     mapping(uint256 => uint256) private supply;
 

@@ -45,8 +45,12 @@ abstract contract Revest_base is IRevest, ReentrancyGuard, Ownable {
     IAllowanceTransfer constant PERMIT2 = IAllowanceTransfer(0x000000000022D473030F116dDEE9F6B43aC78BA3);
 
     mapping(bytes32 => FNFTConfig) public fnfts;
-    mapping(address handler => mapping(uint nftId => uint numfnfts)) public override numfnfts;
-    mapping(bytes4 selector => bool blackListed) public override blacklistedFunctions;
+
+    //address handler => mapping(uint nftId => uint numfnfts)
+    mapping(address => mapping(uint => uint)) public override numfnfts;
+
+    //bytes4 selector => bool blackListed
+    mapping(bytes4 => bool) public override blacklistedFunctions;
      
     /**
      * @dev Primary constructor to create the Revest controller contract

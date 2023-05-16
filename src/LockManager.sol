@@ -18,7 +18,8 @@ contract LockManager is ILockManager, ReentrancyGuard {
     bytes4 public constant ADDRESS_LOCK_INTERFACE_ID = type(IAddressLock).interfaceId;
     mapping(bytes32 => IRevest.Lock) public locks; // maps lockId to locks
 
-    mapping(bytes4 selector => bool) public blacklistedSelector;
+    //bytes4 selector => bool
+    mapping(bytes4 => bool) public blacklistedSelector;
 
     address public immutable WETH;
 
