@@ -4,9 +4,14 @@ pragma solidity ^0.8.19;
 
 import "src/interfaces/IAddressLock.sol";
 
+import "forge-std/console.sol";
+
 contract ExampleAddressLock is IAddressLock {
-    function supportsInterface(bytes4 selector) external pure returns (bool) {
-        return selector == type(IAddressLock).interfaceId;
+
+    //TODO Change back to Pure when testing is done
+    function supportsInterface(bytes4 selector) public pure override returns (bool) {
+        return selector == type(IAddressLock).interfaceId || 
+                selector == type(IERC165).interfaceId;
     }
 
     function createLock(uint256, uint256, bytes memory) external pure {}

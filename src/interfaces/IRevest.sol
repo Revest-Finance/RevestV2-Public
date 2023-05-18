@@ -4,8 +4,6 @@ import "./IAllowanceTransfer.sol";
 pragma solidity ^0.8.12;
 
 interface IRevest {
-
-
     event FNFTTimeLockMinted(
         address indexed asset,
         address indexed from,
@@ -150,6 +148,6 @@ interface IRevest {
     function getFNFT(bytes32 salt) external view returns (FNFTConfig memory);
 
     //They're public variables in Revest_base but its useful to define it in the interface also
-    function numfnfts(address, uint) external view returns (uint);
+    function numfnfts(address, uint256) external view returns (uint256);
     function blacklistedFunctions(bytes4) external view returns (bool);
 }

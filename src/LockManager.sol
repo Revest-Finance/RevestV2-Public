@@ -61,7 +61,6 @@ contract LockManager is ILockManager, ReentrancyGuard {
 
         //Use a single SSTORE
         locks[lockId] = newLock;
-
     }
 
     /**
@@ -84,6 +83,7 @@ contract LockManager is ILockManager, ReentrancyGuard {
             require(tempLock.timeLockExpiry <= block.timestamp, "E006");
             tempLock.timeLockExpiry = 0;
         } else if (tempLock.lockType == IRevest.LockType.AddressLock) {
+
             require(
                 (sender == tempLock.addressLock)
                     || (
@@ -107,7 +107,7 @@ contract LockManager is ILockManager, ReentrancyGuard {
     /**
      * Return whether a lock of any type is mature. Use this for all locktypes.
      */
-    function getLockMaturity(bytes32 lockId, uint fnftId) public view override returns (bool) {
+    function getLockMaturity(bytes32 lockId, uint256 fnftId) public view override returns (bool) {
         IRevest.Lock memory lock = locks[lockId];
 
         if (lock.unlocked) return true;
@@ -133,14 +133,15 @@ contract LockManager is ILockManager, ReentrancyGuard {
     }
 
     function proxyCallisApproved(
-        bytes32 salt,
+        bytes32 lockSalt,
         address token,
         address[] memory targets,
-        uint[] memory values,
+        uint256[] memory values,
         bytes[] memory calldatas
     ) external view returns (bool) {
-        bytes32 lockSalt = keccak256(abi.encode(salt, msg.sender));
-        if (locks[lockSalt].unlocked) {
+        bytes32 salt = keccak256(abi.encode(lockSalt, msg.sender));
+
+        if (locks[salt].unlocked) {
             return true;
         } else {
             for (uint256 x = 0; x < calldatas.length;) {
