@@ -24,3 +24,5 @@ E022 - FNFT is non-transferable, only burn transfers allowed
 E023 - Only the canonical NFT-owner can call this function
 E024 - One or more of desired proxy call functions is not allowed
 E025 - Proxy Call to external contract failed
+E026 - Invalid Proxy Call array lengths
+

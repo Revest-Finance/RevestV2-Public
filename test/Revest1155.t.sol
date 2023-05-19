@@ -784,7 +784,7 @@ contract Revest1155Tests is Test {
             lockId: bytes32(0),
             maturityExtension: true,
             useETH: false,
-            nontransferrable: true
+            nontransferrable: false
         });
 
         (bytes32 salt,) = revest.mintTimeLock(0, block.timestamp + 1 weeks, 0, recipients, amounts, config);
@@ -820,7 +820,7 @@ contract Revest1155Tests is Test {
     }
 
     function testMintingWithPermit2(uint160 amount) public {
-        vm.assume(amount >= 1e6);
+        vm.assume(amount >= 1e6 && amount <= 1e12);
 
         IAllowanceTransfer.PermitBatch memory permit;
 
@@ -848,7 +848,7 @@ contract Revest1155Tests is Test {
 
             //Sign the permit info
             (uint8 v, bytes32 r, bytes32 s) = vm.sign(PRIVATE_KEY, digest);
-            signature = abi.encode(v, r, s);
+            signature = abi.encodePacked(r,s,v);
         }
 
         address[] memory recipients = new address[](1);
@@ -867,7 +867,7 @@ contract Revest1155Tests is Test {
                 handler: address(fnftHandler),
                 asset: address(USDC),
                 lockManager: address(lockManager),
-                depositAmount: 1e6,
+                depositAmount: amount,
                 nonce: 0,
                 quantity: 0,
                 fnftId: id,

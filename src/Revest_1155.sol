@@ -362,6 +362,8 @@ contract Revest_1155 is Revest_base {
         external
         returns (bytes[] memory)
     {
+        require(targets.length == values.length && targets.length == calldatas.length, "E026");
+
         IRevest.FNFTConfig memory fnft = fnfts[salt];
 
         IFNFTHandler FNFTHandler = IFNFTHandler(fnft.handler);
@@ -370,7 +372,7 @@ contract Revest_1155 is Revest_base {
         uint256 supply = FNFTHandler.totalSupply(fnft.fnftId);
         require(supply != 0 && FNFTHandler.balanceOf(msg.sender, fnft.fnftId) == supply, "E007");
 
-        require(ILockManager(fnft.lockManager).proxyCallisApproved(salt, fnft.asset, targets, values, calldatas));
+        require(ILockManager(fnft.lockManager).proxyCallisApproved(salt, fnft.asset, targets, values, calldatas), "E013");
 
         return tokenVault.proxyCall(salt, targets, values, calldatas);
     }
