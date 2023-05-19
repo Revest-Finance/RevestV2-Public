@@ -26,12 +26,11 @@ contract TokenVault is ITokenVault, ReentrancyGuard {
         uint256 quantity,
         address recipient //TODO: Can replace user with just send back to msg.sender but less optimized
     ) external override nonReentrant {
-        //Clone the wallet
+       
         address walletAddr = Clones.cloneDeterministic(TEMPLATE, keccak256(abi.encode(salt, msg.sender)));
 
         //Withdraw the token, selfDestructs itself after
         RevestSmartWallet(walletAddr).withdraw(token, quantity, recipient);
-
         emit WithdrawERC20(token, recipient, salt, quantity, walletAddr);
     }
 

@@ -24,7 +24,7 @@ import "./interfaces/IAllowanceTransfer.sol";
 
 import "./lib/IWETH.sol";
 
-import "forge-std/console.sol";
+import "forge-std/console2.sol";
 
 /**
  * This is the entrypoint for the frontend, as well as third-party Revest integrations.
@@ -176,8 +176,6 @@ abstract contract Revest_base is IRevest, ERC1155Holder, ReentrancyGuard, Ownabl
         IRevest.FNFTConfig memory fnftConfig,
         uint256 quantity
     ) internal virtual {
-        console.log("handler: ", handler);
-
         fnfts[salt] = fnftConfig;
 
         fnfts[salt].nonce = nonce;

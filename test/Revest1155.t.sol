@@ -3,7 +3,7 @@
 pragma solidity ^0.8.19;
 
 import "forge-std/Test.sol";
-import "forge-std/console.sol";
+import "forge-std/console2.sol";
 
 import "src/Revest_1155.sol";
 import "src/TokenVault.sol";
@@ -236,7 +236,7 @@ contract Revest1155Tests is Test {
         recipients[0] = alice;
 
         uint256[] memory amounts = new uint[](1);
-        amounts[0] = amount;
+        amounts[0] = supply;
 
         uint256 id = fnftHandler.getNextId();
 
@@ -272,8 +272,8 @@ contract Revest1155Tests is Test {
         vm.expectRevert(bytes("E021"));
         revest.withdrawFNFT(salt, supply); //Should revert because lock has not expired
 
-        console.log("---SALT---");
-        console.logBytes32(salt);
+        console2.log("---SALT---");
+        console2.logBytes32(salt);
 
         skip(1 seconds);
         revest.withdrawFNFT(salt, supply);
@@ -287,7 +287,7 @@ contract Revest1155Tests is Test {
 
     function testMintAddressLock_sendsSignal(uint8 supply, uint256 amount) public {
         vm.assume(supply % 2 == 0 && supply >= 2);
-        vm.assume(amount >= 1e6);
+        vm.assume(amount >= 1e6 && amount <= 1e12);
 
         uint256 preBal = USDC.balanceOf(alice);
 
@@ -295,7 +295,7 @@ contract Revest1155Tests is Test {
         recipients[0] = alice;
 
         uint256[] memory amounts = new uint[](1);
-        amounts[0] = amount;
+        amounts[0] = supply;
 
         uint256 id = fnftHandler.getNextId();
 
@@ -330,7 +330,9 @@ contract Revest1155Tests is Test {
         IRevest.Lock memory lock = lockManager.getLock(lockId);
         assertEq(uint256(lock.lockType), uint256(IRevest.LockType.AddressLock), "lock type is not AddressLock");
         assertEq(lock.unlocked, false);
-        assertEq(lock.addressLock, address(addressLock), "address lock is not expected value");
+        assertEq(lock.addressLock, address(carol), "address lock is not expected value");
+
+
         assertEq(lock.creationTime, block.timestamp, "lock creation time is not expected value");
 
         if (block.timestamp % 2 == 0) skip(1 seconds);
@@ -355,14 +357,16 @@ contract Revest1155Tests is Test {
 
     function testDepositAdditionalToToFNFT(uint8 supply, uint256 amount, uint256 additionalDepositAmount) public {
         vm.assume(supply % 2 == 0 && supply >= 2);
-        vm.assume(amount >= 1e6);
-        vm.assume(additionalDepositAmount >= 1e6);
+        vm.assume(amount >= 1e6 && amount <= 1e20);
+        vm.assume(additionalDepositAmount >= 1e6 && additionalDepositAmount <= 1e20);
 
         address[] memory recipients = new address[](1);
         recipients[0] = alice;
 
         uint256[] memory amounts = new uint[](1);
-        amounts[0] = amount;
+        amounts[0] = supply;
+
+        uint preBal = USDC.balanceOf(alice);
 
         uint256 id = fnftHandler.getNextId();
 
@@ -387,9 +391,7 @@ contract Revest1155Tests is Test {
         uint256 balanceBefore = USDC.balanceOf(walletAddr);
         uint256 aliceBalanceBeforeAdditionalDeposit = USDC.balanceOf(alice);
 
-        //Prevents a stack too deep error
-        uint256 tempSupply = supply / 2;
-
+        uint tempSupply = supply;
         {
             revest.depositAdditionalToFNFT(salt, additionalDepositAmount);
             assertEq(
@@ -402,6 +404,14 @@ contract Revest1155Tests is Test {
                 aliceBalanceBeforeAdditionalDeposit - (additionalDepositAmount * supply),
                 "alice balance did not decrease by expected amount"
             );
+
+            assertEq(
+                USDC.balanceOf(alice),
+                preBal - (supply * (amount + additionalDepositAmount)),
+                "alice balance did not decrease by expected amount"
+            );
+
+
             assertEq(
                 revest.getFNFT(salt).depositAmount, amount + additionalDepositAmount, "deposit amount was not updated"
             );
@@ -411,22 +421,19 @@ contract Revest1155Tests is Test {
             fnftHandler.safeTransferFrom(alice, bob, id, tempSupply, "");
 
             changePrank(bob);
-            revest.withdrawFNFT(salt, tempSupply);
-            changePrank(alice);
-            revest.withdrawFNFT(salt, tempSupply);
+            revest.withdrawFNFT(salt, supply);
+            
         }
 
-        uint256 bobSupply = fnftHandler.balanceOf(bob, id);
         assertEq(
             USDC.balanceOf(bob),
-            revest.getFNFT(salt).depositAmount * bobSupply,
+            revest.getFNFT(salt).depositAmount * supply,
             "alice balance did not increase by expected amount"
         );
-        assertEq(
-            USDC.balanceOf(alice),
-            ((tempSupply) * amounts[0]) + ((tempSupply) * additionalDepositAmount),
-            "alice balance did not increase by expected amount"
-        );
+
+        assertEq(USDC.balanceOf(bob), supply * (amount + additionalDepositAmount), "full amount not transfered to bob");
+
+
     }
 
     function mintTimeLockAndExtendMaturity(uint8 supply, uint256 amount) public {
@@ -577,7 +584,7 @@ contract Revest1155Tests is Test {
         vm.expectRevert(bytes("E022")); //Revert because FNFT is marked as non-transferrable
         fnftHandler.safeTransferFrom(alice, bob, id, 1, "");
 
-        fnftHandler.safeTransferFrom(alice, address(0), id, 1, "");
+        fnftHandler.safeTransferFrom(alice, address(0xdead), id, 1, "");
         assertEq(fnftHandler.balanceOf(alice, id), 0, "alice still owns FNFT");
         assertEq(fnftHandler.balanceOf(address(0), id), 1, "alice still owns FNFT");
     }

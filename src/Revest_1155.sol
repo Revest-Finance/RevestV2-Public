@@ -22,7 +22,7 @@ import "./Revest_base.sol";
 
 import "./lib/IWETH.sol";
 
-import "forge-std/console.sol";
+import "forge-std/console2.sol";
 
 /**
  * This is the entrypoint for the frontend, as well as third-party Revest integrations.
@@ -63,11 +63,7 @@ contract Revest_1155 is Revest_base {
         // Get or create lock based on time, assign lock to ID
         {
             salt = keccak256(abi.encode(fnftId, fnftConfig.handler, nonce));
-            // console.log("---MintTimeLock---");
-            // console.logBytes32(salt);
-            // console.log(fnftConfig.fnftId);
-            // console.log(fnftConfig.handler);
-            // console.log(nonce);
+          
             require(fnfts[salt].quantity == 0, "E006");
 
             if (!ILockManager(fnftConfig.lockManager).lockExists(lockId)) {
@@ -118,8 +114,8 @@ contract Revest_1155 is Revest_base {
                 lockId = ILockManager(fnftConfig.lockManager).createLock(salt, addressLock);
                 fnftConfig.lockId = lockId;
 
-                console.log("---LockID at Creation---");
-                console.logBytes32(lockId);
+                console2.log("---LockID at Creation---");
+                console2.logBytes32(lockId);
 
                 // The lock ID is already incremented prior to calling a method that could allow for reentry
                 if (trigger.supportsInterface(ADDRESS_LOCK_INTERFACE_ID)) {
@@ -146,8 +142,8 @@ contract Revest_1155 is Revest_base {
         // Burn the FNFTs being exchanged
         IFNFTHandler(fnft.handler).burn(msg.sender, fnft.fnftId, quantity);
 
-        console.log("quantity: ", quantity);
-        console.log("fnftId: ", fnft.fnftId);
+        console2.log("quantity: ", quantity);
+        console2.log("fnftId: ", fnft.fnftId);
 
         //Checks-effects because unlockFNFT has an external call which could be used for reentrancy
         fnfts[salt].quantity -= quantity;
@@ -218,7 +214,7 @@ contract Revest_1155 is Revest_base {
         override
         returns (uint256 deposit)
     {
-        IRevest.FNFTConfig memory fnft = fnfts[salt];
+        IRevest.FNFTConfig storage fnft = fnfts[salt];
         uint256 fnftId = fnft.fnftId;
         address handler = fnft.handler;
 
@@ -227,8 +223,9 @@ contract Revest_1155 is Revest_base {
 
         uint256 supply = IFNFTHandler(handler).totalSupply(fnftId);
 
-        bytes32 walletSalt = keccak256(abi.encodePacked(fnft.fnftId, fnft.handler));
-        address smartWallet = getAddressForFNFT(walletSalt);
+        address smartWallet = getAddressForFNFT(salt);
+
+        fnft.depositAmount += amount;
 
         deposit = supply * amount;
 
@@ -329,9 +326,9 @@ contract Revest_1155 is Revest_base {
 
         address smartWalletAddr = getAddressForFNFT(salt);
 
-        console.log("smart wallet addr in withdraw: ", smartWalletAddr);
+        console2.log("smart wallet addr in withdraw: ", smartWalletAddr);
 
-        console.log("fnftHandler: ", fnft.handler);
+        console2.log("fnftHandler: ", fnft.handler);
         uint256 supplyBefore = IFNFTHandler(fnft.handler).totalSupply(fnftId) + quantity;
 
         amountToWithdraw = quantity.mulDivDown(IERC20(asset).balanceOf(smartWalletAddr), supplyBefore);
@@ -339,7 +336,7 @@ contract Revest_1155 is Revest_base {
         // Deploy the smart wallet object
         address destination = (pipeTo == address(0)) ? user : pipeTo;
 
-        console.log("withdraw asset: ", asset);
+        console2.log("withdraw asset: ", asset);
         tokenVault.withdrawToken(salt, asset, amountToWithdraw, address(this));
 
         if (asset == address(0)) {

@@ -137,7 +137,8 @@ contract FNFTHandler is ERC1155, Ownable, IFNFTHandler {
                     IOutputReceiver(config.pipeToContract).onTransferFNFT(ids[x], operator, from, to, amounts[x], data);
                 }
 
-                require(!config.nontransferrable || to == address(0), "E022");
+                //OZ-1155 prevents transfers to the zero-address so we use dead address instead
+                require(!config.nontransferrable || to == address(0xdead), "E022");
 
                 unchecked {
                     ++x;
