@@ -13,6 +13,8 @@ import "./interfaces/IFNFTHandler.sol";
 import "./interfaces/IMetadataHandler.sol";
 import "./interfaces/IOutputReceiver.sol";
 
+import "forge-std/console2.sol";
+
 contract FNFTHandler is ERC1155, Ownable, IFNFTHandler {
     using ERC165Checker for address;
     using ECDSA for bytes32;
@@ -22,9 +24,11 @@ contract FNFTHandler is ERC1155, Ownable, IFNFTHandler {
     //Permit Signature Stuff
     bytes32 public constant DOMAIN_TYPEHASH =
         keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
+
     bytes32 public constant SETAPPROVALFORALL_TYPEHASH = keccak256(
         "transferFromWithPermit(address owner,address operator, bool approved, uint id, uint amount, uint256 deadline, uint nonce, bytes data)"
     );
+
     bytes32 public immutable DOMAIN_SEPARATOR;
     mapping(address signer => uint256 nonce) public nonces;
 
@@ -95,13 +99,18 @@ contract FNFTHandler is ERC1155, Ownable, IFNFTHandler {
                         info.id,
                         info.amount,
                         info.deadline,
-                        nonce
+                        nonce,
+                        info.data
                     )
                 )
             )
         );
 
+        console2.log("---FNFT digest---");
+        console2.logBytes32(digest);
+
         (address signer,) = digest.tryRecover(signature);
+        console2.log("signer: ", signer);
         require(signer != address(0) && signer == info.owner, "E018");
         require(info.deadline < block.timestamp, "ERC1155: signature expired");
 

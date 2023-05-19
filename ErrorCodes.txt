@@ -8,7 +8,7 @@ E005 - FNFT already exists for given salt
 E006 - FNFT cannot be withdrawn because it is not unlockable
 E007 - FNFT maturity cannot be extended because unlock time has already passed
 E008 - User does not own entire supply of the FNFT ID or supply is zero
-E009 - Maturity can only be extended for timelocked FNFTs
+E009 - Maturity can only be extended for timelocked FNFTs created as extendable
 E010 - New unlock date must be after current unlock date
 E011 - Array lengths do not match
 E012 - FNFT mint amounts must be greater than zero

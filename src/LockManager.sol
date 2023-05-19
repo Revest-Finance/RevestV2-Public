@@ -42,12 +42,16 @@ contract LockManager is ILockManager, ReentrancyGuard {
         returns (bytes32 lockId)
     {
         lockId = keccak256(abi.encode(salt, msg.sender));
+        console.log("---generated lockId--");
+        console.logBytes32(lockId);
 
         // Extensive validation on creation
-        IRevest.Lock memory newLock = locks[lockId];
+        IRevest.Lock memory newLock;
 
         newLock.lockType = lock.lockType;
         newLock.creationTime = block.timestamp;
+        newLock.creator = msg.sender;
+        console.log("timestamp: ", block.timestamp);
 
         if (lock.lockType == IRevest.LockType.TimeLock) {
             require(lock.timeLockExpiry > block.timestamp, "E015");
@@ -69,8 +73,7 @@ contract LockManager is ILockManager, ReentrancyGuard {
      * if value, only if value is correct for unlocking
      * lockId - the ID of the FNFT to unlock
      */
-    function unlockFNFT(bytes32 lockId, uint256 fnftId, address sender) external override nonReentrant {
-
+    function unlockFNFT(bytes32 lockId, uint256 fnftId, address caller) external override nonReentrant {
         //Allows reduction to 1 SSTORE at the end as opposed to many
         IRevest.Lock memory tempLock = locks[lockId];
 
@@ -83,9 +86,17 @@ contract LockManager is ILockManager, ReentrancyGuard {
             require(tempLock.timeLockExpiry <= block.timestamp, "E006");
             tempLock.timeLockExpiry = 0;
         } else if (tempLock.lockType == IRevest.LockType.AddressLock) {
-
             require(
-                (sender == tempLock.addressLock)
+                /*              This weird logic prevents a critical security vuln.
+                * If you don't specify the sender and the use msg.sender == addressLock only, then the controller can
+                * never be the unlocker without them having to be a lock manager themselves, meaning every unlock
+                * and FNFT withdrawal needs to be a 2 step process, but if you only include
+                * caller without validating message.sender then anyone can impersonate anyone they want and unlock
+                * an FNFT at any time without being the actual unlock address. This solves the issue by allowing
+                * the controller to proxy their unlocks through to the lockManager. It's the responsibility now
+                * of the controller to validate whomever is unlocking is allowed to do so.
+                */
+                ((caller == tempLock.addressLock) && (msg.sender == tempLock.creator))
                     || (
                         tempLock.addressLock.supportsInterface(ADDRESS_LOCK_INTERFACE_ID)
                             && IAddressLock(tempLock.addressLock).isUnlockable(fnftId, uint256(lockId))

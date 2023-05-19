@@ -26,7 +26,9 @@ interface IRevest {
 
     event FNFTUnlocked(address indexed from, uint256 indexed fnftId);
 
-    event FNFTMaturityExtended(address indexed from, uint256 indexed fnftId, uint256 indexed newExtendedTime);
+    event FNFTMaturityExtended(
+        bytes32 indexed newLockId, address from, uint256 indexed fnftId, uint256 indexed newExtendedTime
+    );
 
     event FNFTAddionalDeposited(
         address indexed from, uint256 indexed newFNFTId, uint256 indexed quantity, uint256 mount
@@ -72,6 +74,7 @@ interface IRevest {
 
     struct Lock {
         address addressLock;
+        address creator;
         LockType lockType;
         uint256 timeLockExpiry;
         uint256 creationTime;
@@ -143,7 +146,7 @@ interface IRevest {
 
     function depositAdditionalToFNFT(bytes32 salt, uint256 amount) external returns (uint256);
 
-    function extendFNFTMaturity(bytes32 salt, uint256 endTime) external returns (uint256);
+    function extendFNFTMaturity(bytes32 salt, uint256 endTime) external returns (bytes32);
 
     function getFNFT(bytes32 salt) external view returns (FNFTConfig memory);
 
