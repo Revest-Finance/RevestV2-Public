@@ -31,7 +31,7 @@ library FNFTRenderer {
 
         string memory json = string.concat(
             '{"name" : "Time Lock FNFT - RVST",',
-            '"description": "This Financial Non-Fungible Token is part of the Revest Protocol"',
+            '"description":"',
             description,
             '",',
             '"image":"data:image/svg+xml;base64,',
@@ -62,11 +62,13 @@ library FNFTRenderer {
         address unlockAddress
     ) internal pure returns (string memory description) {
         description = string.concat(
-            "Token Name: ", assetName, 
-            "Ticker: ", assetTicker, 
-            "LockType: ", lockType, 
-            "Amount: ", Strings.toHexString(amount), 
-            "Receiver: ", Strings.toHexString(uint256(uint160(unlockAddress)), 20)
+            assetName, 
+            " ", 
+            assetTicker, 
+            " LockType: ", 
+            lockType, 
+            " Amount: ", Strings.toHexString(amount), 
+            " Receiver: ", Strings.toHexString(uint256(uint160(unlockAddress)), 20)
         );
     }
 

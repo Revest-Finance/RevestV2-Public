@@ -3,7 +3,6 @@ pragma solidity ^0.8.14;
 
 import "solmate/tokens/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-
 import "./lib/FNFTRenderer.sol";
 
 contract RevestNFTManager is ERC721 {
