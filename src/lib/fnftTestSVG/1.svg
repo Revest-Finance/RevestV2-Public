@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 480">
+  <style>
+    .tokens {
+      font: bold 30px sans-serif;
+    }
+
+    .fee {
+      font: normal 26px sans-serif;
+    }
+
+    .tick {
+      font: normal 18px sans-serif;
+    }
+  </style>
+
+  <rect width="300" height="480" fill="hsl(0,0%,100%)" />
+  <rect x="30" y="30" width="240" height="420" rx="15" ry="15" fill="hsl(0,0%,18%)" stroke="#000" />
+
+  <rect x="30" y="87" width="240" height="42" />
+  <text x="39" y="120" class="tokens" fill="#fff">
+    REVEST
+  </text>
+
+  <rect x="30" y="132" width="240" height="30" />
+  <text x="39" y="120" dy="36" class="fee" fill="#fff">
+    RVST
+  </text>
+
+  <rect x="30" y="342" width="240" height="24" />
+  <text x="39" y="360" class="tick" fill="#fff">
+    Amount: 100 000 
+  </text>  
+
+
+  <rect x="30" y="372" width="240" height="24" />
+  <text x="39" y="360" dy="30" class="tick" fill="#fff">
+    Address Lock
+  </text>
+
+  <rect x="30" y="402" width="240" height="24" />
+  <text x="39" y="360" dy="60" class="tick" fill="#fff">
+    0x8618...209
+  </text>
+</svg> 
