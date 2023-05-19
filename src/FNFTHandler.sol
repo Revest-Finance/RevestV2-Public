@@ -112,7 +112,7 @@ contract FNFTHandler is ERC1155, Ownable, IFNFTHandler {
         (address signer,) = digest.tryRecover(signature);
         console2.log("signer: ", signer);
         require(signer != address(0) && signer == info.owner, "E018");
-        require(info.deadline < block.timestamp, "ERC1155: signature expired");
+        require(block.timestamp < info.deadline, "ERC1155: signature expired");
 
         _setApprovalForAll(info.owner, info.operator, true);
         _safeTransferFrom(info.owner, info.operator, info.id, info.amount, info.data);

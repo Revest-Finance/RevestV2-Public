@@ -715,7 +715,7 @@ contract Revest1155Tests is Test {
             lockId: bytes32(0),
             maturityExtension: true,
             useETH: false,
-            nontransferrable: true
+            nontransferrable: false
         });
 
         revest.mintTimeLock(0, block.timestamp + 1 weeks, 0, recipients, amounts, config);
@@ -743,7 +743,7 @@ contract Revest1155Tests is Test {
 
         //Sign the permit info
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(PRIVATE_KEY, digest);
-        bytes memory signature = abi.encodePacked(v, r, s);
+        bytes memory signature = abi.encodePacked(r,s,v);
 
         //The Permit info itself
         IFNFTHandler.permitApprovalInfo memory permit = IFNFTHandler.permitApprovalInfo({
