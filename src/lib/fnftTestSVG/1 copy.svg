@@ -14,10 +14,22 @@
     .tick {
       font: normal 18px sans-serif;
     }
+    
+    .button {
+      fill: #007bbf; 
+      pointer: cursor;
+    }
+    .button:hover {
+      fill: #0069d9;
+    }
   </style>
+
+  
 
   <rect width="300" height="480" fill="hsl(0,0%,100%)" />
   <rect x="30" y="30" width="240" height="420" rx="15" ry="15" fill="hsl(0,0%,18%)" stroke="#000" />
+
+  <circle x = "100" y = "50" r="40" stroke="black" stroke-width="3" fill="red" />
 
   <rect x="30" y="87" width="240" height="42" />
   <text x="39" y="120" class="tokens" fill="#fff">

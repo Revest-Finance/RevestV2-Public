@@ -28,7 +28,7 @@ contract FNFTManagerTest is Test{
 
         factory = new Revest(0xd2c6eB7527Ab1E188638B86F2c14bbAd5A431d78, 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
         nft = new FNFTManager(0xd2c6eB7527Ab1E188638B86F2c14bbAd5A431d78);
-        console2.log(address(nft));
+        //console2.log(address(nft));
 
         weth.mint(address(this), 10_000 ether);
         weth.approve(address(nft), type(uint256).max);
@@ -37,14 +37,11 @@ contract FNFTManagerTest is Test{
     function testMint() public {
         uint256 tokenId = nft.mintAddressLock(10000000, 0x6982508145454Ce325dDbE47a25d4ec3d2311933, 0x4A54e0624A893915a767401413759f578C40ab3b);
         string memory tokenuri = nft.tokenURI(tokenId);
-
-        console2.logString(tokenuri);
-        
-        assert(true);
+        //console2.logString(tokenuri);
     }
 
     function testFNFTRenderer() public {
-        assertTokenURI(nft.displayRenderContent("Revest", "RVST", 100000, "address lock", address(bytes20(bytes('0xd2c6eB7527Ab1E188638B86F2c14bbAd5A431d78')))), "tokenuri0", "invalid token URI");
+        assertTokenURI(nft.displayRenderContent("Pepe", "PEPE", 10000000, "address lock", 0x4A54e0624A893915a767401413759f578C40ab3b), "tokenuri0", "invalid token URI");
         //assert(true);
     }
 
