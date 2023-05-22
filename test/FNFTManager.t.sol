@@ -13,7 +13,7 @@ import "./ERC20Mintable.sol";
 
 contract FNFTManagerTest is Test{
 
-    
+
     ERC20Mintable weth;
     ERC20Mintable usdc;
     ERC20Mintable dai;
@@ -28,7 +28,7 @@ contract FNFTManagerTest is Test{
         dai = new ERC20Mintable("DAI", "DAI", 18);
         rvst = new ERC20Mintable("Revest", "RVST", 18);
 
-        factory = new Revest(0xd2c6eB7527Ab1E188638B86F2c14bbAd5A431d78, 0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2);
+        factory = new Revest(0xd2c6eB7527Ab1E188638B86F2c14bbAd5A431d78, 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
         nft = new FNFTManager(0xd2c6eB7527Ab1E188638B86F2c14bbAd5A431d78);
         console2.log(address(nft));
 
