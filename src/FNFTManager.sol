@@ -2,11 +2,14 @@
 pragma solidity ^0.8.14;
 
 import "solmate/tokens/ERC721.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "./lib/FNFTRenderer.sol";
+import "forge-std/console2.sol";
+import "./Revest.sol";
 
-contract RevestNFTManager is ERC721 {
+contract FNFTManager is ERC721 {
+    uint public number;
     address public immutable factory;
+
     uint256 private nextTokenId;
     uint256 public totalSupply;
     mapping(uint256 => AddressLock) public lockList;
@@ -19,7 +22,7 @@ contract RevestNFTManager is ERC721 {
     );
 
     struct AddressLock {
-        uint tokenId; //TODO: added indexed 
+        uint tokenId; //TODO: added indexed
         string assetName;
         string assetTicker;
         uint amount;
@@ -28,26 +31,24 @@ contract RevestNFTManager is ERC721 {
     }
 
     function mintAddressLock(
-        uint amount, 
-        address tokenAddress, 
+        uint amount,
+        address tokenAddress,
         address unlockAddress
     ) public returns (uint256 tokenId) {
         tokenId = nextTokenId++;
         _mint(unlockAddress, tokenId);
         totalSupply++;
 
-        string memory assetName = ERC20(tokenAddress).name();
-        string memory assetTicker = ERC20(tokenAddress).symbol();
-
+        ERC20 token = ERC20(tokenAddress);
+        string memory assetName = token.name();
+        string memory assetTicker = token.symbol();
 
         AddressLock memory currentLock = AddressLock(tokenId, assetName, assetTicker, amount, tokenAddress, unlockAddress);
         lockList[tokenId] = currentLock;
         emit AddAddressLock(tokenId, amount, tokenAddress, unlockAddress);
     }
 
-    constructor(address factoryAddress)
-        ERC721("Revest FNFT Lock", "FNFT")
-    {
+    constructor(address factoryAddress) ERC721("Revest FNFT Lock", "FNFT") {
         factory = factoryAddress;
     }
 
@@ -59,7 +60,7 @@ contract RevestNFTManager is ERC721 {
     {
         AddressLock memory addressLock = lockList[tokenId];
 
-        //TODO: fix the return NFT 
+        //TODO: fix the return NFT
         return
             FNFTRenderer.render(
                 FNFTRenderer.RenderParams({
@@ -70,5 +71,28 @@ contract RevestNFTManager is ERC721 {
                     unlockAddress: addressLock.unlockAddress
                 })
             );
+    }
+
+    function displayRenderContent(
+        string memory assetName,
+        string memory assetTicker,
+        uint amount,
+        string memory lockType,
+        address unlockAddress
+    ) public view returns (string memory) {
+        return FNFTRenderer.render(
+            FNFTRenderer.RenderParams({
+                assetName: assetName,
+                assetTicker: assetTicker,
+                amount: amount,
+                lockType: lockType,
+                unlockAddress: unlockAddress
+            })
+        );
+    }
+
+    function displayYes() public view returns (uint answer) {
+        return 0;
+        // return "yes";
     }
 }

@@ -46,8 +46,11 @@ contract Revest is IRevest, RevestAccessControl, ReentrancyGuard {
     uint public constant BASIS_POINTS = 1 ether;
 
     mapping(bytes32 => IRevest.FNFTConfig) public fnfts;
-    mapping(address handler => mapping(uint nftId => uint numfnfts)) public numfnfts;
-    mapping(bytes4 selector => bool blackListed) public blacklistedFunctions;
+
+    //address handler => mapping(uint nftId => uint numfnfts)
+    mapping(address  => mapping(uint => uint)) public numfnfts;
+   // bytes4 selector => bool blackListed
+    mapping(bytes4 => bool) public blacklistedFunctions;
      
     /**
      * @dev Primary constructor to create the Revest controller contract

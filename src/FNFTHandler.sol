@@ -34,7 +34,8 @@ contract FNFTHandler is ERC1155, RevestAccessControl, IFNFTHandler {
     bytes32 public constant DOMAIN_TYPEHASH = keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
     bytes32 public constant SETAPPROVALFORALL_TYPEHASH = keccak256("SetApprovalForAll(address owner,address operator, bool approved, uint id, uint amount, uint256 deadline, uint nonce)");
     bytes32 immutable DOMAIN_SEPARATOR;
-    mapping(address signer => uint256 nonce) public nonces;
+    //address signer => uint256 nonce
+    mapping(address => uint256) public nonces;
 
 
     mapping(uint => uint) public supply;

@@ -65,10 +65,10 @@ library FNFTRenderer {
             assetName, 
             " ", 
             assetTicker, 
-            " LockType: ", 
+            ", LockType: ", 
             lockType, 
-            " Amount: ", Strings.toHexString(amount), 
-            " Receiver: ", Strings.toHexString(uint256(uint160(unlockAddress)), 20)
+            ", Amount: ", Strings.toHexString(amount), 
+            ", Receiver: ", Strings.toHexString(uint256(uint160(unlockAddress)), 20)
         );
     }
 
@@ -115,8 +115,8 @@ library FNFTRenderer {
             '<text x="39" y="360" dy="30" class="tick" fill="#fff">Type Lock: ',
             lockType,
             "</text>"
-            '<rect x="30" y="372" width="240" height="24"/>',
-            '<text x="39" y="360" dy="30" class="tick" fill="#fff">UnlockAddress: ',
+            '<rect x="30" y="402" width="240" height="24"/>',
+            '<text x="39" y="360" dy="60" class="tick" fill="#fff">UnlockAddress: ',
             Strings.toHexString(uint256(uint160(unlockAddress)), 20),
             "</text>"
         );
