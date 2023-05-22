@@ -12,8 +12,6 @@ import "./ERC20Mintable.sol";
 
 
 contract FNFTManagerTest is Test{
-
-
     ERC20Mintable weth;
     ERC20Mintable usdc;
     ERC20Mintable dai;
@@ -45,8 +43,29 @@ contract FNFTManagerTest is Test{
         assert(true);
     }
 
-    function testRenderContent() public {
-        console2.logString(nft.displayRenderContent("Revest", "RVST", 100000, "address lock", address(bytes20(bytes('0xd2c6eB7527Ab1E188638B86F2c14bbAd5A431d78')))));
+    function testFNFTRenderer() public {
+        assertTokenURI(nft.displayRenderContent("Revest", "RVST", 100000, "address lock", address(bytes20(bytes('0xd2c6eB7527Ab1E188638B86F2c14bbAd5A431d78')))), "tokenuri0", "invalid token URI");
         //assert(true);
+    }
+
+
+
+
+    ////////////////////////////////////////////////////////////////////////////
+    //
+    // INTERNAL
+    //
+    ////////////////////////////////////////////////////////////////////////////
+
+    function assertTokenURI (
+        string memory actual,
+        string memory expectedFixture,
+        string memory errMessage
+    ) internal {
+        string memory expected = vm.readFile(
+            string.concat("./test/fixture/", expectedFixture)
+        );
+
+        assertEq(actual, string(expected), errMessage);
     }
 }
