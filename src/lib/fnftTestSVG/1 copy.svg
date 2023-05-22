@@ -1,0 +1,69 @@
+
+
+
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 480">
+  <style>
+    .tokens {
+      font: bold 30px sans-serif;
+    }
+
+    .fee {
+      font: normal 26px sans-serif;
+    }
+
+    .tick {
+      font: normal 18px sans-serif;
+    }
+  </style>
+
+  <rect width="300" height="480" fill="hsl(0,0%,100%)" />
+  <rect x="30" y="30" width="240" height="420" rx="15" ry="15" fill="hsl(0,0%,18%)" stroke="#000" />
+
+  <rect x="30" y="87" width="240" height="42" />
+  <text x="39" y="120" class="tokens" fill="#fff">
+    REVEST
+  </text>
+
+  <rect x="30" y="132" width="240" height="30" />
+  <text x="39" y="120" dy="36" class="fee" fill="#fff">
+    RVST
+  </text>
+
+  <svg width = "100" x = "100" id="Default" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576.01 575.06">
+    <defs>
+      <style>.cls-1{fill:#ffa800;}</style>
+    </defs>
+    <path class="cls-1" d="M287.62,676a4.72,4.72,0,0,0-4.33-4.7C135.92,659.1,24.4,532.85,30.49,385.11S158.13,120.73,306,120.73,575.42,237.36,581.51,385.11s-105.43,274-252.8,286.17a4.72,4.72,0,0,0-4.33,4.7v2.84a4.74,4.74,0,0,0,1.52,3.46,4.68,4.68,0,0,0,3.58,1.23c154-12.59,270.59-144.43,264.28-298.79S460.49,108.47,306,108.47,24.54,230.36,18.24,384.72s110.31,286.2,264.28,298.79a4.71,4.71,0,0,0,5.1-4.69V676" transform="translate(-18 -108.47)"/>
+  </svg>
+
+  <svg width = "10" x = "145" id="Default" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 549.88 768"><defs><style>.cls-1{fill:#ccc;}</style></defs><path class="cls-1" d="M196,340.1H113.54V204.46C113.54,98.26,199.8,12,306,12S498.46,98.26,498.46,204.46V340.1H416V204.46a110,110,0,0,0-220,0V340.1" transform="translate(-31.06 -12)"/><path class="cls-1" d="M31.06,725a55,55,0,0,0,55,55H526a55,55,0,0,0,55-55V450.07a55,55,0,0,0-55-55H86.05a55,55,0,0,0-55,55V725" transform="translate(-31.06 -12)"/></svg>
+
+  <svg width = "90" version="1.1" id="Default" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="105px" y="0px"
+	 viewBox="0 0 514.7 514.7" style="enable-background:new 0 0 514.7 514.7;" xml:space="preserve">
+  <style type="text/css">
+    .st0{fill:#7d7d7d;}
+  </style>
+  <path class="st0" d="M0.7,276.9c-6.3-83,27.9-163.9,91.8-217.2l142.2,82.1L0.7,276.9"/>
+  <path class="st0" d="M146,489.4c-75-36-128-106.1-142.2-188.2L146,219.1V489.4"/>
+  <path class="st0" d="M112.1,44.9c68.7-47,155.9-57.8,234-29.1V180L112.1,44.9"/>
+  <path class="st0" d="M368.8,25.4c75,36,128,106.1,142.2,188.1l-142.2,82.1V25.4"/>
+  <path class="st0" d="M514,237.8c6.3,83-27.9,163.9-91.8,217.2L280,372.9L514,237.8"/>
+  <path class="st0" d="M402.6,469.8c-68.7,47-155.9,57.8-234,29.1V334.7L402.6,469.8"/>
+  </svg>
+
+  <rect x="30" y="342" width="240" height="24" />
+  <text x="39" y="360" class="tick" fill="#fff">
+    Amount: 100 000 
+  </text>  
+
+
+  <rect x="30" y="372" width="240" height="24" />
+  <text x="39" y="360" dy="30" class="tick" fill="#fff">
+    Address Lock
+  </text>
+
+  <rect x="30" y="402" width="240" height="24" />
+  <text x="39" y="360" dy="60" class="tick" fill="#fff">
+    0x8618...209
+  </text>
+</svg> 
