@@ -10,6 +10,8 @@ import "@openzeppelin/contracts/proxy/Clones.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
+import "forge-std/console.sol";
+
 contract TokenVault is ITokenVault, ReentrancyGuard {
     /// Address to use for EIP-1167 smart-wallet creation calls
     address public immutable TEMPLATE;
@@ -27,6 +29,8 @@ contract TokenVault is ITokenVault, ReentrancyGuard {
         address recipient //TODO: Can replace user with just send back to msg.sender but less optimized
     ) external override nonReentrant {
         address walletAddr = Clones.cloneDeterministic(TEMPLATE, keccak256(abi.encode(salt, msg.sender)));
+
+        console.log("generated wallet address: ", walletAddr);
 
         //Withdraw the token, selfDestructs itself after
         RevestSmartWallet(walletAddr).withdraw(token, quantity, recipient);

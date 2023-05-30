@@ -131,6 +131,7 @@ contract Revest_1155 is Revest_base {
         require(fnft.quantity != 0, "E003");
 
         // Burn the FNFTs being exchanged
+        //TODO: Add a specific error revert message maybe?
         IFNFTHandler(fnft.handler).burn(msg.sender, fnft.fnftId, quantity);
 
         console2.log("quantity: ", quantity);
@@ -265,6 +266,7 @@ contract Revest_1155 is Revest_base {
             require(totalQuantity > 0, "E012");
         }
 
+        params.fnftConfig.quantity = totalQuantity;
         address smartWallet = getAddressForFNFT(salt);
 
         // Take fees
@@ -288,7 +290,8 @@ contract Revest_1155 is Revest_base {
             );
         }
 
-        createFNFT(salt, params.fnftConfig.fnftId, params.fnftConfig.handler, 0, params.fnftConfig, totalQuantity);
+        //Saves a ton of gas remove the createFNFT method alltogether
+        fnfts[salt] = params.fnftConfig;
 
         //Mint FNFTs but only if the handler is the Revest FNFT Handler
         if (isSingular) {
@@ -363,5 +366,9 @@ contract Revest_1155 is Revest_base {
         );
 
         return tokenVault.proxyCall(salt, targets, values, calldatas);
+    }
+
+    function getAddressForFNFT(bytes32 salt) public view virtual returns (address smartWallet) {
+        smartWallet = tokenVault.getAddress(salt, address(this));
     }
 }

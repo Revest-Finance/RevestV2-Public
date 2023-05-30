@@ -17,6 +17,8 @@ contract ExampleAddressLock is IAddressLock {
     function updateLock(uint256, uint256, bytes memory) external pure {}
 
     function isUnlockable(uint256, uint256) external view returns (bool) {
+
+        console.log("block timestamp: %i", block.timestamp);
         //Makes Testing Easier
         return block.timestamp % 2 == 0;
     }

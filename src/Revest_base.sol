@@ -156,22 +156,6 @@ abstract contract Revest_base is IRevest, ERC1155Holder, ReentrancyGuard, Ownabl
         virtual
         returns (uint256 deposit);
 
-    function createFNFT(
-        bytes32 salt,
-        uint256 fnftId,
-        address handler,
-        uint256 nonce,
-        IRevest.FNFTConfig memory fnftConfig,
-        uint256 quantity
-    ) internal virtual {
-        fnfts[salt] = fnftConfig;
-
-        fnfts[salt].nonce = nonce;
-        fnfts[salt].fnftId = fnftId;
-        fnfts[salt].handler = handler;
-        fnfts[salt].quantity = quantity;
-    } //createFNFT
-
     //You don't need this but it makes it a little easier to return an object and not a bunch of variables
     function getFNFT(bytes32 fnftId) external view virtual returns (IRevest.FNFTConfig memory) {
         return fnfts[fnftId];
@@ -184,10 +168,6 @@ abstract contract Revest_base is IRevest, ERC1155Holder, ReentrancyGuard, Ownabl
     function transferOwnershipFNFTHandler(address newRevest, address handler) external virtual onlyOwner {
         //Ownership should be a timelocked controller.
         Ownable(handler).transferOwnership(newRevest);
-    }
-
-    function getAddressForFNFT(bytes32 salt) public view virtual returns (address smartWallet) {
-        smartWallet = tokenVault.getAddress(salt, address(this));
     }
 
     receive() external payable {
