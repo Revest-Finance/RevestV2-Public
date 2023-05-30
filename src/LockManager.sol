@@ -90,7 +90,7 @@ contract LockManager is ILockManager, ReentrancyGuard {
                 /*              This weird logic prevents a critical security vuln.
                 * If you don't specify the sender and the use msg.sender == addressLock only, then the controller can
                 * never be the unlocker without them having to be a lock manager themselves, meaning every unlock
-                * and FNFT withdrawal needs to be a 2 step process, but if you only include
+                * and FNFT withdrawal needs to be a 2 step process. If you only include
                 * caller without validating message.sender then anyone can impersonate anyone they want and unlock
                 * an FNFT at any time without being the actual unlock address. This solves the issue by allowing
                 * the controller to proxy their unlocks through to the lockManager. It's the responsibility now
