@@ -48,29 +48,22 @@ contract Revest_1155 is Revest_base {
      * quantity – the number of FNFTs to create with this operation
      */
     function _mintTimeLock(
-        uint256 fnftId,
         uint256 endTime,
-        bytes32 lockSalt,
         address[] memory recipients,
         uint256[] memory quantities,
         IRevest.FNFTConfig memory fnftConfig,
         bool usePermit2
     ) internal override returns (bytes32 salt, bytes32 lockId) {
-        uint256 nonce;
 
-        fnftId = IFNFTHandler(fnftConfig.handler).getNextId();
+        fnftConfig.fnftId = IFNFTHandler(fnftConfig.handler).getNextId();
 
         // Get or create lock based on time, assign lock to ID
         {
-            salt = keccak256(abi.encode(fnftId, fnftConfig.handler, nonce));
+            salt = keccak256(abi.encode(fnftConfig.fnftId, fnftConfig.handler, 0));
 
             require(fnfts[salt].quantity == 0, "E006");
 
-            console2.log("---LockSalt---");
-            console2.logBytes32(lockSalt);
-
-            if (!ILockManager(fnftConfig.lockManager).lockExists(lockSalt)) {
-                console2.log("creating new lock");
+            if (!ILockManager(fnftConfig.lockManager).lockExists(fnftConfig.lockId)) {
                 IRevest.LockParam memory timeLock;
                 timeLock.lockType = IRevest.LockType.TimeLock;
                 timeLock.timeLockExpiry = endTime;
@@ -78,39 +71,35 @@ contract Revest_1155 is Revest_base {
                 lockId = ILockManager(fnftConfig.lockManager).createLock(salt, timeLock);
                 fnftConfig.lockId = lockId;
             } else {
-                console2.log("lock already exists");
-                lockId = lockSalt;
-                fnftConfig.lockId = lockSalt;
+                lockId = fnftConfig.lockId;
+                fnftConfig.lockId = fnftConfig.lockId;
             }
         }
 
         //Stack Too Deep Fixer
-        doMint(MintParameters(fnftId, nonce, endTime, recipients, quantities, fnftConfig, usePermit2));
+        doMint(MintParameters(endTime, recipients, quantities, fnftConfig, usePermit2));
 
         //TODO: Fix Events
-        emit FNFTTimeLockMinted(fnftConfig.asset, msg.sender, fnftId, endTime, quantities, fnftConfig);
+        emit FNFTTimeLockMinted(fnftConfig.asset, msg.sender, fnftConfig.fnftId, endTime, quantities, fnftConfig);
     }
 
     function _mintAddressLock(
-        uint256 fnftId,
         address trigger,
-        bytes32 lockSalt,
         bytes memory arguments,
         address[] memory recipients,
         uint256[] memory quantities,
         IRevest.FNFTConfig memory fnftConfig,
         bool usePermit2
     ) internal override returns (bytes32 salt, bytes32 lockId) {
-        uint256 nonce;
 
         //If the handler is the Revest FNFT Contract get the new FNFT ID
-        fnftId = IFNFTHandler(fnftConfig.handler).getNextId();
+        fnftConfig.fnftId = IFNFTHandler(fnftConfig.handler).getNextId();
 
         {
-            salt = keccak256(abi.encode(fnftId, fnftConfig.handler, nonce));
+            salt = keccak256(abi.encode(fnftConfig.fnftId, fnftConfig.handler, 0));
             require(fnfts[salt].quantity == 0, "E006"); //TODO: Double check that Error code
 
-            if (!ILockManager(fnftConfig.lockManager).lockExists(lockSalt)) {
+            if (!ILockManager(fnftConfig.lockManager).lockExists(fnftConfig.lockId)) {
                 IRevest.LockParam memory addressLock;
                 addressLock.addressLock = trigger;
                 addressLock.lockType = IRevest.LockType.AddressLock;
@@ -119,23 +108,20 @@ contract Revest_1155 is Revest_base {
                 lockId = ILockManager(fnftConfig.lockManager).createLock(salt, addressLock);
                 fnftConfig.lockId = lockId;
 
-                console2.log("---LockID at Creation---");
-                console2.logBytes32(lockId);
-
                 // The lock ID is already incremented prior to calling a method that could allow for reentry
                 if (trigger.supportsInterface(ADDRESS_LOCK_INTERFACE_ID)) {
-                    IAddressLock(trigger).createLock(fnftId, uint256(lockId), arguments);
+                    IAddressLock(trigger).createLock(fnftConfig.fnftId, uint256(lockId), arguments);
                 }
             } else {
-                lockId = lockSalt;
-                fnftConfig.lockId = lockSalt;
+                lockId = fnftConfig.lockId;
+                fnftConfig.lockId = fnftConfig.lockId;
             }
         }
 
         //Stack Too Deep Fixer
-        doMint(MintParameters(fnftId, nonce, 0, recipients, quantities, fnftConfig, usePermit2));
+        doMint(MintParameters(0, recipients, quantities, fnftConfig, usePermit2));
 
-        emit FNFTAddressLockMinted(fnftConfig.asset, msg.sender, fnftId, trigger, quantities, fnftConfig);
+        emit FNFTAddressLockMinted(fnftConfig.asset, msg.sender, fnftConfig.fnftId, trigger, quantities, fnftConfig);
     }
 
     function withdrawFNFT(bytes32 salt, uint256 quantity) external override nonReentrant {
@@ -260,7 +246,7 @@ contract Revest_1155 is Revest_base {
     // INTERNAL FUNCTIONS
     //
     function doMint(IRevest.MintParameters memory params) internal {
-        bytes32 salt = keccak256(abi.encode(params.fnftId, params.fnftConfig.handler, params.nonce));
+        bytes32 salt = keccak256(abi.encode(params.fnftConfig.fnftId, params.fnftConfig.handler, params.fnftConfig.nonce));
 
         bool isSingular;
         uint256 totalQuantity;
@@ -302,16 +288,16 @@ contract Revest_1155 is Revest_base {
             );
         }
 
-        createFNFT(salt, params.fnftId, params.fnftConfig.handler, params.nonce, params.fnftConfig, totalQuantity);
+        createFNFT(salt, params.fnftConfig.fnftId, params.fnftConfig.handler, 0, params.fnftConfig, totalQuantity);
 
         //Mint FNFTs but only if the handler is the Revest FNFT Handler
         if (isSingular) {
-            IFNFTHandler(params.fnftConfig.handler).mint(params.recipients[0], params.fnftId, params.quantities[0], "");
+            IFNFTHandler(params.fnftConfig.handler).mint(params.recipients[0], params.fnftConfig.fnftId, params.quantities[0], "");
         } else {
-            IFNFTHandler(params.fnftConfig.handler).mint(address(this), params.fnftId, totalQuantity, "");
+            IFNFTHandler(params.fnftConfig.handler).mint(address(this), params.fnftConfig.fnftId, totalQuantity, "");
             for (uint256 x = 0; x < params.recipients.length;) {
                 IFNFTHandler(params.fnftConfig.handler).safeTransferFrom(
-                    address(this), params.recipients[x], params.fnftId, params.quantities[x], ""
+                    address(this), params.recipients[x], params.fnftConfig.fnftId, params.quantities[x], ""
                 );
 
                 unchecked {
@@ -320,7 +306,7 @@ contract Revest_1155 is Revest_base {
             }
         }
 
-        emit CreateFNFT(salt, params.fnftId, msg.sender);
+        emit CreateFNFT(salt, params.fnftConfig.fnftId, msg.sender);
     }
 
     function withdrawToken(bytes32 salt, uint256 fnftId, uint256 quantity, address user) internal {
@@ -372,7 +358,9 @@ contract Revest_1155 is Revest_base {
         uint256 supply = FNFTHandler.totalSupply(fnft.fnftId);
         require(supply != 0 && FNFTHandler.balanceOf(msg.sender, fnft.fnftId) == supply, "E007");
 
-        require(ILockManager(fnft.lockManager).proxyCallisApproved(salt, fnft.asset, targets, values, calldatas), "E013");
+        require(
+            ILockManager(fnft.lockManager).proxyCallisApproved(salt, fnft.asset, targets, values, calldatas), "E013"
+        );
 
         return tokenVault.proxyCall(salt, targets, values, calldatas);
     }
