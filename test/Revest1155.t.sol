@@ -37,6 +37,9 @@ contract Revest1155Tests is Test {
 
     address PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
 
+    bytes signature;
+    IAllowanceTransfer.PermitBatch permit;
+
     constructor() {
         vault = new TokenVault();
         revest = new Revest_1155(address(WETH), address(vault));
@@ -68,9 +71,32 @@ contract Revest1155Tests is Test {
 
         WETH.safeApprove(address(revest), type(uint256).max);
         WETH.safeApprove(PERMIT2, type(uint256).max);
+
+        
     }
 
-    function setUp() public {}
+    function setUp() public {
+        // --- CALCULATING THE SIGNATURE FOR PERMIT2 AHEAD OF TIME PREVENTS STACK TOO DEEP --- DO NOT REMOVE
+        IAllowanceTransfer.PermitDetails memory details = IAllowanceTransfer.PermitDetails({
+            token: address(USDC),
+            amount: type(uint160).max,
+            expiration: 0, //Only valid for length of the tx
+            nonce: uint48(0)
+        });
+
+        permit.spender = address(revest);
+        permit.sigDeadline = block.timestamp + 1 weeks;
+        permit.details.push(details);
+
+        {
+            bytes32 DOMAIN_SEPARATOR = EIP712(PERMIT2).DOMAIN_SEPARATOR();
+            bytes32 digest = keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, permit.hash()));
+
+            //Sign the permit info
+            (uint8 v, bytes32 r, bytes32 s) = vm.sign(PRIVATE_KEY, digest);
+            signature = abi.encodePacked(r, s, v);
+        }
+    }
 
     function testMintTimeLockToAlice(uint8 supply, uint256 amount) public {
         vm.assume(supply % 2 == 0 && supply >= 2);
@@ -102,8 +128,7 @@ contract Revest1155Tests is Test {
         });
 
         uint256 currentTime = block.timestamp;
-        (bytes32 salt, bytes32 lockId) =
-            revest.mintTimeLock(block.timestamp + 1 weeks, recipients, supplies, config);
+        (bytes32 salt, bytes32 lockId) = revest.mintTimeLock(block.timestamp + 1 weeks, recipients, supplies, config);
 
         address walletAddr = revest.getAddressForFNFT(salt);
 
@@ -181,8 +206,7 @@ contract Revest1155Tests is Test {
             nontransferrable: false
         });
 
-        (bytes32 salt, bytes32 lockId) =
-            revest.mintTimeLock(block.timestamp + 1 weeks, recipients, amounts, config);
+        (bytes32 salt, bytes32 lockId) = revest.mintTimeLock(block.timestamp + 1 weeks, recipients, amounts, config);
 
         address walletAddr = revest.getAddressForFNFT(salt);
 
@@ -256,8 +280,7 @@ contract Revest1155Tests is Test {
             nontransferrable: false
         });
 
-        (bytes32 salt, bytes32 lockId) =
-            revest.mintAddressLock(address(addressLock), "", recipients, amounts, config);
+        (bytes32 salt, bytes32 lockId) = revest.mintAddressLock(address(addressLock), "", recipients, amounts, config);
 
         address walletAddr = revest.getAddressForFNFT(salt);
 
@@ -282,73 +305,6 @@ contract Revest1155Tests is Test {
         //Check that the lock was unlocked and all funds returned to alice
         assertEq(fnftHandler.balanceOf(alice, id), 0, "alice did not lose expected amount of FNFTs"); //All FNFTs were burned
         assertEq(USDC.balanceOf(alice), preBal, "alice did not receive expected amount of USDC"); //All funds were returned to bob
-        assertEq(fnftHandler.totalSupply(id), 0, "total supply of FNFTs did not decrease by expected amount"); //Total supply of FNFTs was decreased
-        assertEq(USDC.balanceOf(walletAddr), 0, "vault balance did not decrease by expected amount"); //All funds were removed from SmartWallet
-    }
-
-    function testMintAddressLock_sendsSignal(uint8 supply, uint256 amount) public {
-        vm.assume(supply % 2 == 0 && supply >= 2);
-        vm.assume(amount >= 1e6 && amount <= 1e12);
-
-        uint256 preBal = USDC.balanceOf(alice);
-
-        address[] memory recipients = new address[](1);
-        recipients[0] = alice;
-
-        uint256[] memory amounts = new uint[](1);
-        amounts[0] = supply;
-
-        uint256 id = fnftHandler.getNextId();
-
-        IRevest.FNFTConfig memory config = IRevest.FNFTConfig({
-            pipeToContract: address(0),
-            handler: address(fnftHandler),
-            asset: address(USDC),
-            lockManager: address(lockManager),
-            depositAmount: amount,
-            nonce: 0,
-            quantity: 0,
-            fnftId: 0,
-            lockId: bytes32(0),
-            maturityExtension: false,
-            useETH: false,
-            nontransferrable: false
-        });
-
-        (bytes32 salt, bytes32 lockId) = revest.mintAddressLock(
-            carol, //Set carol as the unlocker
-            "",
-            recipients,
-            amounts,
-            config
-        );
-
-        address walletAddr = revest.getAddressForFNFT(salt);
-
-        //Lock was created
-        IRevest.Lock memory lock = lockManager.getLock(lockId);
-        assertEq(uint256(lock.lockType), uint256(IRevest.LockType.AddressLock), "lock type is not AddressLock");
-        assertEq(lock.unlocked, false);
-        assertEq(lock.addressLock, address(carol), "address lock is not expected value");
-
-        assertEq(lock.creationTime, block.timestamp, "lock creation time is not expected value");
-
-        if (block.timestamp % 2 == 0) skip(1 seconds);
-
-        vm.expectRevert(bytes("E021"));
-        revest.withdrawFNFT(salt, supply); //Should revert because carol has not approved it yet
-
-        //Have Carol unlock the FNFT
-        changePrank(carol);
-        revest.unlockFNFT(salt);
-
-        //Change back to Alice and have her withdraw the FNFT
-        changePrank(alice);
-        revest.withdrawFNFT(salt, supply);
-
-        //Check that the lock was unlocked and all funds returned to alice
-        assertEq(fnftHandler.balanceOf(alice, id), 0, "bob did not lose expected amount of FNFTs"); //All FNFTs were burned
-        assertEq(USDC.balanceOf(alice), preBal, "bob did not receive expected amount of USDC"); //All funds were returned to bob
         assertEq(fnftHandler.totalSupply(id), 0, "total supply of FNFTs did not decrease by expected amount"); //Total supply of FNFTs was decreased
         assertEq(USDC.balanceOf(walletAddr), 0, "vault balance did not decrease by expected amount"); //All funds were removed from SmartWallet
     }
@@ -434,7 +390,7 @@ contract Revest1155Tests is Test {
 
         changePrank(alice);
         revest.withdrawFNFT(salt, tempSupply);
-    
+
         assertEq(
             USDC.balanceOf(alice), preBal - USDC.balanceOf(bob), "alice balance did not increase by expected amount"
         );
@@ -469,8 +425,7 @@ contract Revest1155Tests is Test {
             nontransferrable: false
         });
 
-        (bytes32 salt, bytes32 lockId) =
-            revest.mintTimeLock(block.timestamp + 1 weeks, recipients, amounts, config);
+        (bytes32 salt, bytes32 lockId) = revest.mintTimeLock(block.timestamp + 1 weeks, recipients, amounts, config);
         address walletAddr;
 
         {
@@ -625,13 +580,11 @@ contract Revest1155Tests is Test {
             nontransferrable: false
         });
 
-        (bytes32 salt1, bytes32 lockId) =
-            revest.mintTimeLock(block.timestamp + 1 weeks, recipients, amounts, config);
+        (bytes32 salt1, bytes32 lockId) = revest.mintTimeLock(block.timestamp + 1 weeks, recipients, amounts, config);
 
         config.lockId = lockId;
 
-        (bytes32 salt2, bytes32 lockId2) =
-            revest.mintTimeLock(block.timestamp + 3 weeks, recipients, amounts, config);
+        (bytes32 salt2, bytes32 lockId2) = revest.mintTimeLock(block.timestamp + 3 weeks, recipients, amounts, config);
 
         assertEq(lockId, lockId2, "lockIds returned do not match");
 
@@ -678,11 +631,10 @@ contract Revest1155Tests is Test {
             nontransferrable: false
         });
 
-        (bytes32 salt1, bytes32 lockId) = revest.mintAddressLock(carol, "", recipients, amounts, config);
+        (bytes32 salt1, bytes32 lockId) = revest.mintAddressLock(address(addressLock), "", recipients, amounts, config);
 
         config.lockId = lockId;
-
-        (bytes32 salt2, bytes32 lockId2) = revest.mintAddressLock(carol, "", recipients, amounts, config);
+        (bytes32 salt2, bytes32 lockId2) = revest.mintAddressLock(address(0), "", recipients, amounts, config);
 
         assertEq(lockId, lockId2, "lockIds returned do not match");
 
@@ -691,10 +643,9 @@ contract Revest1155Tests is Test {
         assertEq(timelock1.lockId, timelock2.lockId, "lockIds stored do not match");
 
         IRevest.Lock memory lock = lockManager.getLock(lockId);
-        assertEq(lock.addressLock, carol, "lock did not extend maturity by expected amount");
+        assertEq(lock.addressLock, address(addressLock), "expected and actual address lock does not match");
 
-        changePrank(carol);
-        revest.unlockFNFT(salt1);
+        if(block.timestamp % 2 != 0) skip (1 seconds);
 
         changePrank(alice);
         revest.withdrawFNFT(salt1, 1);
@@ -755,10 +706,10 @@ contract Revest1155Tests is Test {
 
         //Sign the permit info
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(PRIVATE_KEY, digest);
-        bytes memory signature = abi.encodePacked(r, s, v);
+        bytes memory transferSignature = abi.encodePacked(r, s, v);
 
         //The Permit info itself
-        IFNFTHandler.permitApprovalInfo memory permit = IFNFTHandler.permitApprovalInfo({
+        IFNFTHandler.permitApprovalInfo memory transferPermit = IFNFTHandler.permitApprovalInfo({
             owner: alice,
             operator: bob,
             id: id,
@@ -768,7 +719,7 @@ contract Revest1155Tests is Test {
         });
 
         //Do the transfer
-        fnftHandler.transferFromWithPermit(permit, signature);
+        fnftHandler.transferFromWithPermit(transferPermit, transferSignature);
 
         assertEq(fnftHandler.balanceOf(alice, id), 0, "alice still owns FNFT");
         assertEq(fnftHandler.balanceOf(bob, id), 1, "bob does not own FNFT");
@@ -831,37 +782,9 @@ contract Revest1155Tests is Test {
         revest.proxyCall(salt, targets, values, calldatas);
     }
 
-    function testMintingWithPermit2(uint160 amount) public {
+    function testMintTimeLockWithPermit2(uint160 amount) public {
         vm.assume(amount >= 1e6 && amount <= 1e12);
 
-        IAllowanceTransfer.PermitBatch memory permit;
-
-        {
-            //Permit to allow Revest to transfer unlimited USDC for the next week
-            IAllowanceTransfer.PermitDetails[] memory details = new IAllowanceTransfer.PermitDetails[](1);
-            details[0] = IAllowanceTransfer.PermitDetails({
-                token: address(USDC),
-                amount: amount,
-                expiration: uint48(block.timestamp + 1 weeks),
-                nonce: uint48(0)
-            });
-
-            permit = IAllowanceTransfer.PermitBatch({
-                details: details,
-                spender: address(revest),
-                sigDeadline: block.timestamp + 1 weeks
-            });
-        }
-
-        bytes memory signature;
-        {
-            bytes32 DOMAIN_SEPARATOR = EIP712(PERMIT2).DOMAIN_SEPARATOR();
-            bytes32 digest = keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, permit.hash()));
-
-            //Sign the permit info
-            (uint8 v, bytes32 r, bytes32 s) = vm.sign(PRIVATE_KEY, digest);
-            signature = abi.encodePacked(r, s, v);
-        }
 
         address[] memory recipients = new address[](1);
         recipients[0] = alice;
@@ -889,9 +812,8 @@ contract Revest1155Tests is Test {
                 nontransferrable: true
             });
 
-            (salt, lockId) = revest.mintTimeLockWithPermit(
-                block.timestamp + 1 weeks, recipients, amounts, config, permit, signature
-            );
+            (salt, lockId) =
+                revest.mintTimeLockWithPermit(block.timestamp + 1 weeks, recipients, amounts, config, permit, signature);
         }
 
         assertEq(fnftHandler.balanceOf(alice, id), 1, "FNFT not minted");
@@ -902,5 +824,163 @@ contract Revest1155Tests is Test {
         assertEq(uint256(lock.lockType), uint256(IRevest.LockType.TimeLock), "lock type is not TimeLock");
         assertEq(lock.timeLockExpiry, block.timestamp + 1 weeks, "lock expiry is not expected value");
         assertEq(lock.unlocked, false);
+    }
+
+    function testMintAddressLockWithPermit2(uint160 amount, uint8 supply) public {
+        vm.assume(amount >= 1e6 && amount <= 1e12);
+        vm.assume(supply >= 1);
+
+        uint256 preBal = USDC.balanceOf(alice);
+
+        address[] memory recipients = new address[](1);
+        recipients[0] = alice;
+
+        uint256[] memory amounts = new uint[](1);
+        amounts[0] = supply;
+
+        uint256 id = fnftHandler.getNextId();
+
+        IRevest.FNFTConfig memory config = IRevest.FNFTConfig({
+            pipeToContract: address(0),
+            handler: address(fnftHandler),
+            asset: address(USDC),
+            lockManager: address(lockManager),
+            depositAmount: amount,
+            nonce: 0,
+            quantity: 0,
+            fnftId: 0,
+            lockId: bytes32(0),
+            maturityExtension: false,
+            useETH: false,
+            nontransferrable: false
+        });
+
+        (bytes32 salt, bytes32 lockId) =
+            revest.mintAddressLockWithPermit(address(addressLock), "", recipients, amounts, config, permit, signature);
+
+        address walletAddr = revest.getAddressForFNFT(salt);
+
+        //Lock was created
+        IRevest.Lock memory lock = lockManager.getLock(lockId);
+        assertEq(uint256(lock.lockType), uint256(IRevest.LockType.AddressLock), "lock type is not AddressLock");
+        assertEq(lock.unlocked, false);
+        assertEq(lock.addressLock, address(addressLock), "address lock is not expected value");
+        assertEq(lock.creationTime, block.timestamp, "lock creation time is not expected value");
+
+        if (block.timestamp % 2 == 0) skip(1 seconds);
+
+        vm.expectRevert(bytes("E021"));
+        revest.withdrawFNFT(salt, supply); //Should revert because lock has not expired
+
+        // console2.log("---SALT---");
+        // console2.logBytes32(salt);
+
+        skip(1 seconds);
+        revest.withdrawFNFT(salt, supply);
+
+        //Check that the lock was unlocked and all funds returned to alice
+        assertEq(fnftHandler.balanceOf(alice, id), 0, "alice did not lose expected amount of FNFTs"); //All FNFTs were burned
+        assertEq(USDC.balanceOf(alice), preBal, "alice did not receive expected amount of USDC"); //All funds were returned to bob
+        assertEq(fnftHandler.totalSupply(id), 0, "total supply of FNFTs did not decrease by expected amount"); //Total supply of FNFTs was decreased
+        assertEq(USDC.balanceOf(walletAddr), 0, "vault balance did not decrease by expected amount"); //All funds were removed from SmartWallet
+    }
+
+    function testDepositAdditionalToToFNFTWithPermit2(uint8 supply, uint256 amount, uint256 additionalDepositAmount)
+        public
+    {
+        vm.assume(supply % 2 == 0 && supply >= 2);
+        vm.assume(amount >= 1e6 && amount <= 1e20);
+        vm.assume(additionalDepositAmount >= 1e6 && additionalDepositAmount <= 1e20);
+
+        address[] memory recipients = new address[](1);
+        recipients[0] = alice;
+
+        uint256[] memory amounts = new uint[](1);
+        amounts[0] = supply;
+
+        uint256 preBal = USDC.balanceOf(alice);
+
+        uint256 id = fnftHandler.getNextId();
+
+        bytes32 salt;
+        {
+            IRevest.FNFTConfig memory config = IRevest.FNFTConfig({
+                pipeToContract: address(0),
+                handler: address(fnftHandler),
+                asset: address(USDC),
+                lockManager: address(lockManager),
+                depositAmount: amount,
+                nonce: 0,
+                quantity: 0,
+                fnftId: 0,
+                lockId: bytes32(0),
+                maturityExtension: false,
+                useETH: false,
+                nontransferrable: false
+            });
+
+            (salt,) = revest.mintTimeLock(block.timestamp + 1 weeks, recipients, amounts, config);
+        }
+
+        address walletAddr = revest.getAddressForFNFT(salt);
+        uint256 balanceBefore = USDC.balanceOf(walletAddr);
+        uint256 aliceBalanceBeforeAdditionalDeposit = USDC.balanceOf(alice);
+       
+        revest.depositAdditionalToFNFTWithPermit(salt, additionalDepositAmount, permit, signature);
+
+        {
+
+            assertEq(
+                USDC.balanceOf(walletAddr),
+                balanceBefore + (additionalDepositAmount * supply),
+                "vault balance did not increase by expected amount"
+            );
+
+            assertEq(
+                USDC.balanceOf(alice),
+                aliceBalanceBeforeAdditionalDeposit - (additionalDepositAmount * supply),
+                "alice balance did not decrease by expected amount"
+            );
+
+            assertEq(
+                USDC.balanceOf(alice),
+                preBal - (supply * (amount + additionalDepositAmount)),
+                "alice balance did not decrease by expected amount"
+            );
+
+            assertEq(
+                revest.getFNFT(salt).depositAmount, amount + additionalDepositAmount, "deposit amount was not updated"
+            );
+        }
+
+
+        uint tempSupply = supply / 2;
+        skip(1 weeks);
+        fnftHandler.safeTransferFrom(alice, bob, id, tempSupply, "");
+
+        changePrank(bob);
+        revest.withdrawFNFT(salt, tempSupply);
+        destroyAccount(walletAddr, address(this));
+
+        {
+            assertEq(
+                USDC.balanceOf(bob),
+                revest.getFNFT(salt).depositAmount * tempSupply,
+                "alice balance did not increase by expected amount"
+            );
+
+            assertEq(
+                USDC.balanceOf(bob),
+                tempSupply * (amount + additionalDepositAmount),
+                "full amount not transfered to bob"
+            );
+        }
+
+        changePrank(alice);
+        revest.withdrawFNFT(salt, tempSupply);
+
+        assertEq(
+            USDC.balanceOf(alice), preBal - USDC.balanceOf(bob), "alice balance did not increase by expected amount"
+        );
     }
 }

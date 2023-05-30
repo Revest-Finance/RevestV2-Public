@@ -73,7 +73,7 @@ contract LockManager is ILockManager, ReentrancyGuard {
      * if value, only if value is correct for unlocking
      * lockId - the ID of the FNFT to unlock
      */
-    function unlockFNFT(bytes32 lockId, uint256 fnftId, address caller) external override nonReentrant {
+    function unlockFNFT(bytes32 lockId, uint256 fnftId) external override nonReentrant {
         //Allows reduction to 1 SSTORE at the end as opposed to many
         IRevest.Lock memory tempLock = locks[lockId];
 
@@ -87,26 +87,12 @@ contract LockManager is ILockManager, ReentrancyGuard {
             tempLock.timeLockExpiry = 0;
         } else if (tempLock.lockType == IRevest.LockType.AddressLock) {
             require(
-                /*              This weird logic prevents a critical security vuln.
-                * If you don't specify the sender and the use msg.sender == addressLock only, then the controller can
-                * never be the unlocker without them having to be a lock manager themselves, meaning every unlock
-                * and FNFT withdrawal needs to be a 2 step process. If you only include
-                * caller without validating message.sender then anyone can impersonate anyone they want and unlock
-                * an FNFT at any time without being the actual unlock address. This solves the issue by allowing
-                * the controller to proxy their unlocks through to the lockManager. It's the responsibility now
-                * of the controller to validate whomever is unlocking is allowed to do so.
-                */
-                ((caller == tempLock.addressLock) && (msg.sender == tempLock.creator))
-                    || (
-                        tempLock.addressLock.supportsInterface(ADDRESS_LOCK_INTERFACE_ID)
-                            && IAddressLock(tempLock.addressLock).isUnlockable(fnftId, uint256(lockId))
-                    ),
+                tempLock.addressLock.supportsInterface(ADDRESS_LOCK_INTERFACE_ID)
+                    && IAddressLock(tempLock.addressLock).isUnlockable(fnftId, uint256(lockId)),
                 "E021"
             );
 
             tempLock.addressLock = address(0);
-        } else {
-            revert("E017");
         }
 
         tempLock.unlocked = true;
@@ -164,7 +150,7 @@ contract LockManager is ILockManager, ReentrancyGuard {
                 //Revest uses address(0) for asset when it is ETH, but stores WETH in the vault.
                 //This prevents the edge case for that
                 if (targets[x] == WETH && token == address(0)) {
-                    if (values[x] > 0) return false;
+                    if (values[x] != 0) return false;
                 }
 
                 unchecked {

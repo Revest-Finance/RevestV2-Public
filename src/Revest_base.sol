@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GNU-GPL v3.0 or later
 
-pragma solidity ^0.8.19;
+pragma solidity <=0.8.19;
 
 import "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
@@ -67,7 +67,7 @@ abstract contract Revest_base is IRevest, ERC1155Holder, ReentrancyGuard, Ownabl
         IRevest.FNFTConfig memory fnftConfig,
         IAllowanceTransfer.PermitBatch calldata permits,
         bytes calldata _signature
-    ) external payable override nonReentrant returns (bytes32 salt, bytes32 lockId) {
+    ) external payable nonReentrant returns (bytes32 salt, bytes32 lockId) {
         //Length check means to use permit2 for allowance but allowance has already been granted
         if (_signature.length != 0) PERMIT2.permit(msg.sender, permits, _signature);
         return _mintTimeLock(endTime, recipients, quantities, fnftConfig, true);
@@ -78,7 +78,7 @@ abstract contract Revest_base is IRevest, ERC1155Holder, ReentrancyGuard, Ownabl
         address[] memory recipients,
         uint256[] memory quantities,
         IRevest.FNFTConfig memory fnftConfig
-    ) external payable virtual override nonReentrant returns (bytes32 salt, bytes32 lockId) {
+    ) external payable virtual nonReentrant returns (bytes32 salt, bytes32 lockId) {
         return _mintTimeLock(endTime, recipients, quantities, fnftConfig, false);
     }
 
@@ -90,7 +90,7 @@ abstract contract Revest_base is IRevest, ERC1155Holder, ReentrancyGuard, Ownabl
         IRevest.FNFTConfig memory fnftConfig,
         IAllowanceTransfer.PermitBatch calldata permits,
         bytes calldata _signature
-    ) external payable virtual override nonReentrant returns (bytes32 salt, bytes32 lockId) {
+    ) external payable virtual nonReentrant returns (bytes32 salt, bytes32 lockId) {
         //Length check means to use permit2 for allowance but allowance has already been granted
         if (_signature.length != 0) PERMIT2.permit(msg.sender, permits, _signature);
         return _mintAddressLock(trigger, arguments, recipients, quantities, fnftConfig, true);
@@ -102,7 +102,7 @@ abstract contract Revest_base is IRevest, ERC1155Holder, ReentrancyGuard, Ownabl
         address[] memory recipients,
         uint256[] memory quantities,
         IRevest.FNFTConfig memory fnftConfig
-    ) external payable virtual override nonReentrant returns (bytes32 salt, bytes32 lockId) {
+    ) external payable virtual nonReentrant returns (bytes32 salt, bytes32 lockId) {
         return _mintAddressLock(trigger, arguments, recipients, quantities, fnftConfig, false);
     }
 
@@ -130,7 +130,7 @@ abstract contract Revest_base is IRevest, ERC1155Holder, ReentrancyGuard, Ownabl
         IRevest.FNFTConfig memory fnft = fnfts[salt];
 
         // Works for value locks or time locks
-        ILockManager(fnft.lockManager).unlockFNFT(fnft.lockId, fnft.fnftId, msg.sender);
+        ILockManager(fnft.lockManager).unlockFNFT(fnft.lockId, fnft.fnftId);
 
         //TODO: Fix Events
         emit FNFTUnlocked(msg.sender, fnft.fnftId);

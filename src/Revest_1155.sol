@@ -54,7 +54,6 @@ contract Revest_1155 is Revest_base {
         IRevest.FNFTConfig memory fnftConfig,
         bool usePermit2
     ) internal override returns (bytes32 salt, bytes32 lockId) {
-
         fnftConfig.fnftId = IFNFTHandler(fnftConfig.handler).getNextId();
 
         // Get or create lock based on time, assign lock to ID
@@ -91,7 +90,6 @@ contract Revest_1155 is Revest_base {
         IRevest.FNFTConfig memory fnftConfig,
         bool usePermit2
     ) internal override returns (bytes32 salt, bytes32 lockId) {
-
         //If the handler is the Revest FNFT Contract get the new FNFT ID
         fnftConfig.fnftId = IFNFTHandler(fnftConfig.handler).getNextId();
 
@@ -134,13 +132,11 @@ contract Revest_1155 is Revest_base {
         //TODO: Add a specific error revert message maybe?
         IFNFTHandler(fnft.handler).burn(msg.sender, fnft.fnftId, quantity);
 
-        console2.log("quantity: ", quantity);
-        console2.log("fnftId: ", fnft.fnftId);
 
         //Checks-effects because unlockFNFT has an external call which could be used for reentrancy
         fnfts[salt].quantity -= quantity;
 
-        ILockManager(fnft.lockManager).unlockFNFT(fnft.lockId, fnft.fnftId, msg.sender);
+        ILockManager(fnft.lockManager).unlockFNFT(fnft.lockId, fnft.fnftId);
 
         withdrawToken(salt, fnft.fnftId, quantity, msg.sender);
 
@@ -247,7 +243,8 @@ contract Revest_1155 is Revest_base {
     // INTERNAL FUNCTIONS
     //
     function doMint(IRevest.MintParameters memory params) internal {
-        bytes32 salt = keccak256(abi.encode(params.fnftConfig.fnftId, params.fnftConfig.handler, params.fnftConfig.nonce));
+        bytes32 salt =
+            keccak256(abi.encode(params.fnftConfig.fnftId, params.fnftConfig.handler, params.fnftConfig.nonce));
 
         bool isSingular;
         uint256 totalQuantity;
@@ -295,7 +292,9 @@ contract Revest_1155 is Revest_base {
 
         //Mint FNFTs but only if the handler is the Revest FNFT Handler
         if (isSingular) {
-            IFNFTHandler(params.fnftConfig.handler).mint(params.recipients[0], params.fnftConfig.fnftId, params.quantities[0], "");
+            IFNFTHandler(params.fnftConfig.handler).mint(
+                params.recipients[0], params.fnftConfig.fnftId, params.quantities[0], ""
+            );
         } else {
             IFNFTHandler(params.fnftConfig.handler).mint(address(this), params.fnftConfig.fnftId, totalQuantity, "");
             for (uint256 x = 0; x < params.recipients.length;) {

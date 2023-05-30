@@ -69,7 +69,7 @@ contract Revest_721 is Revest_base {
                 timeLock.lockType = IRevest.LockType.TimeLock;
                 timeLock.timeLockExpiry = endTime;
                 lockId = ILockManager(fnftConfig.lockManager).createLock(salt, timeLock);
-            
+
                 fnftConfig.lockId = lockId;
             }
         }
@@ -134,7 +134,7 @@ contract Revest_721 is Revest_base {
 
         fnfts[salt].quantity -= 1;
 
-        ILockManager(fnft.lockManager).unlockFNFT(fnft.lockId, fnft.fnftId, msg.sender);
+        ILockManager(fnft.lockManager).unlockFNFT(fnft.lockId, fnft.fnftId);
 
         withdrawToken(salt, fnft.fnftId, 1, currentOwner);
 
@@ -231,7 +231,8 @@ contract Revest_721 is Revest_base {
     //
     function doMint(IRevest.MintParameters memory params) internal {
         //fnftSalt is the identifier for FNFT itself associated with the NFT, you need it to withdraw
-        bytes32 fnftSalt = keccak256(abi.encode(params.fnftConfig.fnftId, params.fnftConfig.handler, params.fnftConfig.nonce));
+        bytes32 fnftSalt =
+            keccak256(abi.encode(params.fnftConfig.fnftId, params.fnftConfig.handler, params.fnftConfig.nonce));
 
         /*
         * Wallet salt is used to generate the wallet. All FNFTs attached to a given NFT have their tokens stored in the same address.
@@ -247,10 +248,10 @@ contract Revest_721 is Revest_base {
         // Create the FNFT and update accounting within TokenVault
         params.fnftConfig.quantity = 1;
         fnfts[fnftSalt] = params.fnftConfig;
-        
+
         // Now, we move the funds to token vault from the message sender
         address smartWallet = tokenVault.getAddress(WalletSalt, address(this));
-        
+
         console.log("smartWallet on deposit: %s", smartWallet);
         console.log("amount: %i", params.fnftConfig.depositAmount);
 
@@ -310,7 +311,9 @@ contract Revest_721 is Revest_base {
         //Only the NFT owner can call a function on the NFT
         require(IERC721(fnft.handler).ownerOf(fnft.fnftId) == msg.sender, "E023");
 
-        require(ILockManager(fnft.lockManager).proxyCallisApproved(salt, fnft.asset, targets, values, calldatas), "E024");
+        require(
+            ILockManager(fnft.lockManager).proxyCallisApproved(salt, fnft.asset, targets, values, calldatas), "E024"
+        );
 
         bytes32 walletSalt = keccak256(abi.encode(fnft.fnftId, fnft.handler));
 

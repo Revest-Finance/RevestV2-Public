@@ -28,8 +28,6 @@ contract Revest721Tests is Test {
     FNFTHandler public immutable fnftHandler;
     ExampleAddressLock public immutable addressLock;
 
-
-
     uint256 PRIVATE_KEY = vm.envUint("PRIVATE_KEY"); //Useful for EIP-712 Testing
     address alice = vm.rememberKey(PRIVATE_KEY);
     address bob = makeAddr("bob");
@@ -59,8 +57,8 @@ contract Revest721Tests is Test {
         vm.label(address(USDC), "USDC");
         vm.label(address(WETH), "WETH");
 
-        deal(address(WETH), alice, type(uint).max);
-        deal(address(USDC), alice, type(uint).max);
+        deal(address(WETH), alice, type(uint256).max);
+        deal(address(USDC), alice, type(uint256).max);
 
         fnftHandler.transferOwnership(address(revest)); //Transfer ownership to Revest from deployer
 
@@ -88,10 +86,9 @@ contract Revest721Tests is Test {
         uint256 tokenId = 1;
         address[] memory recipients = new address[](1);
         recipients[0] = alice;
-        
+
         uint256[] memory amounts = new uint[](1);
         amounts[0] = amount;
-
 
         IRevest.FNFTConfig memory config = IRevest.FNFTConfig({
             pipeToContract: address(0),
@@ -110,8 +107,7 @@ contract Revest721Tests is Test {
 
         uint256 nonce = revest.numfnfts(address(boredApe), 1);
 
-        (bytes32 salt, bytes32 lockId) =
-            revest.mintTimeLock(block.timestamp + 1 weeks, recipients, amounts, config);
+        (bytes32 salt, bytes32 lockId) = revest.mintTimeLock(block.timestamp + 1 weeks, recipients, amounts, config);
 
         address walletAddr = revest.getAddressForFNFT(salt);
         console.log("smart wallet in test: %s", walletAddr);
@@ -161,7 +157,7 @@ contract Revest721Tests is Test {
 
         address[] memory recipients = new address[](1);
         recipients[0] = alice;
-        
+
         uint256[] memory amounts = new uint[](1);
         amounts[0] = amount;
 
@@ -229,10 +225,10 @@ contract Revest721Tests is Test {
         uint256 preBal = USDC.balanceOf(alice);
 
         uint256 tokenId = 1;
-        
+
         address[] memory recipients = new address[](1);
         recipients[0] = alice;
-        
+
         uint256[] memory amounts = new uint[](1);
         amounts[0] = amount;
 
@@ -253,8 +249,7 @@ contract Revest721Tests is Test {
 
         uint256 nonce = revest.numfnfts(address(boredApe), 1);
 
-        (bytes32 salt, bytes32 lockId) =
-            revest.mintTimeLock(block.timestamp + 1 weeks, recipients, amounts, config);
+        (bytes32 salt, bytes32 lockId) = revest.mintTimeLock(block.timestamp + 1 weeks, recipients, amounts, config);
 
         address walletAddr = revest.getAddressForFNFT(salt);
 
@@ -314,7 +309,7 @@ contract Revest721Tests is Test {
         revest.proxyCall(salt, targets, values, calldatas);
     }
 
-    function testMultipleFNFTsToOneNFT(uint amount, uint wethAmount) public {
+    function testMultipleFNFTsToOneNFT(uint256 amount, uint256 wethAmount) public {
         vm.assume(amount >= 1e6 && amount <= 1e14);
         vm.assume(wethAmount >= 1e18 && wethAmount <= 1e36);
 
@@ -349,8 +344,8 @@ contract Revest721Tests is Test {
         bytes32 salt2;
 
         {
-            uint nonce1;
-            uint nonce2;
+            uint256 nonce1;
+            uint256 nonce2;
             bytes32 lockId1;
             bytes32 lockId2;
 
@@ -369,20 +364,22 @@ contract Revest721Tests is Test {
             address walletAddr2 = revest.getAddressForFNFT(salt2);
             assertEq(walletAddr, walletAddr2, "wallet addresses are not equal");
 
-            assertEq(WETH.balanceOf(walletAddr), wethAmount, "wallet balance did not increase by expected amount of WETH");
+            assertEq(
+                WETH.balanceOf(walletAddr), wethAmount, "wallet balance did not increase by expected amount of WETH"
+            );
             assertEq(USDC.balanceOf(walletAddr), amount, "wallet balance did not increase by expected amount of USDC");
 
             assertEq(revest.numfnfts(address(boredApe), 1), 2);
 
             skip(2 weeks);
             boredApe.transferFrom(alice, bob, 1);
-            changePrank(alice);//Should fail because alice does not have the NFT anymore
+            changePrank(alice); //Should fail because alice does not have the NFT anymore
             vm.expectRevert(bytes("E023"));
             revest.withdrawFNFT(salt1, 1);
 
-            changePrank(bob);//Should succeed because Bob has the NFT
+            changePrank(bob); //Should succeed because Bob has the NFT
             revest.withdrawFNFT(salt1, 1);
-            
+
             //Prevent Create2 Error from Foundry semantic
             destroyAccount(walletAddr, address(this));
 
