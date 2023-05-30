@@ -391,7 +391,7 @@ contract Revest1155Tests is Test {
         uint256 balanceBefore = USDC.balanceOf(walletAddr);
         uint256 aliceBalanceBeforeAdditionalDeposit = USDC.balanceOf(alice);
 
-        uint256 tempSupply = supply;
+        uint256 tempSupply = supply / 2;
         {
             revest.depositAdditionalToFNFT(salt, additionalDepositAmount);
             assertEq(
@@ -420,16 +420,19 @@ contract Revest1155Tests is Test {
             fnftHandler.safeTransferFrom(alice, bob, id, tempSupply, "");
 
             changePrank(bob);
-            revest.withdrawFNFT(salt, supply);
+            revest.withdrawFNFT(salt, tempSupply);
+            destroyAccount(walletAddr, address(this));
         }
 
         assertEq(
             USDC.balanceOf(bob),
-            revest.getFNFT(salt).depositAmount * supply,
+            revest.getFNFT(salt).depositAmount * tempSupply,
             "alice balance did not increase by expected amount"
         );
 
-        assertEq(USDC.balanceOf(bob), supply * (amount + additionalDepositAmount), "full amount not transfered to bob");
+        assertEq(USDC.balanceOf(bob), tempSupply * (amount + additionalDepositAmount), "full amount not transfered to bob");
+
+
     }
 
     function testmintTimeLockAndExtendMaturity(uint8 supply, uint256 amount) public {
@@ -720,7 +723,7 @@ contract Revest1155Tests is Test {
 
         revest.mintTimeLock(0, block.timestamp + 1 weeks, 0, recipients, amounts, config);
 
-        bytes32 SETAPPROVALFORALL_TYPEHASH = keccak256(
+        bytes32 SET_APPROVALFORALL_TYPEHASH = keccak256(
             "transferFromWithPermit(address owner,address operator, bool approved, uint id, uint amount, uint256 deadline, uint nonce, bytes data)"
         );
 
@@ -732,7 +735,7 @@ contract Revest1155Tests is Test {
                 DOMAIN_SEPARATOR,
                 keccak256(
                     abi.encode(
-                        SETAPPROVALFORALL_TYPEHASH, alice, bob, true, id, 1, block.timestamp + 1 weeks, 0, bytes("")
+                        SET_APPROVALFORALL_TYPEHASH, alice, bob, true, id, 1, block.timestamp + 1 weeks, 0, bytes("")
                     )
                 )
             )

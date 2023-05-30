@@ -3,7 +3,7 @@
 import "@solmate/utils/SafeTransferLib.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.19;
 
 contract RevestSmartWallet is ReentrancyGuard {
     using SafeTransferLib for ERC20;

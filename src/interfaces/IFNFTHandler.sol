@@ -2,7 +2,7 @@
 
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.19;
 
 interface IERC1155Supply {
     // @notice      This function MUST return whether the given token id exists, previously existed, or may exist
