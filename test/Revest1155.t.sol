@@ -167,7 +167,12 @@ contract Revest1155Tests is Test {
         vm.expectRevert(bytes("E006"));
         revest.unlockFNFT(salt);
 
-        skip(1 weeks);
+        console.log("first maturity check");
+        assertFalse(lockManager.getLockMaturity(lockId, id));
+
+        skip(1 weeks + 1 seconds);
+        console.log("second maturity check");
+        assertFalse(!lockManager.getLockMaturity(lockId, id));
         revest.unlockFNFT(salt);
         revest.withdrawFNFT(salt, supply);
         assertEq(fnftHandler.balanceOf(bob, id), 0, "bob did not lose expected amount of FNFTs"); //All FNFTs were burned
@@ -253,7 +258,7 @@ contract Revest1155Tests is Test {
         );
     }
 
-    function testMintAddressLock_implementsInterface(uint8 supply, uint256 amount) public {
+    function testMintAddressLock(uint8 supply, uint256 amount) public {
         vm.assume(supply != 0);
         vm.assume(amount >= 1e6 && amount <= 1e12);
 
@@ -295,13 +300,13 @@ contract Revest1155Tests is Test {
 
         if (block.timestamp % 2 == 0) skip(1 seconds);
 
+        assertFalse(lockManager.getLockMaturity(lockId, id));
+
         vm.expectRevert(bytes("E021"));
         revest.withdrawFNFT(salt, supply); //Should revert because lock has not expired
 
-        console2.log("---SALT---");
-        console2.logBytes32(salt);
-
         skip(1 seconds);
+        assertFalse(!lockManager.getLockMaturity(lockId, id));
         revest.withdrawFNFT(salt, supply);
 
         //Check that the lock was unlocked and all funds returned to alice
