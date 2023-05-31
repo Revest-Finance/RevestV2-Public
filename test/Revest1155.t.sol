@@ -71,8 +71,6 @@ contract Revest1155Tests is Test {
 
         WETH.safeApprove(address(revest), type(uint256).max);
         WETH.safeApprove(PERMIT2, type(uint256).max);
-
-        
     }
 
     function setUp() public {
@@ -112,7 +110,7 @@ contract Revest1155Tests is Test {
 
         uint256 id = fnftHandler.getNextId();
 
-        IRevest.FNFTConfig memory config = IRevest.FNFTConfig({
+        IController.FNFTConfig memory config = IController.FNFTConfig({
             pipeToContract: address(0),
             handler: address(fnftHandler),
             asset: address(USDC),
@@ -147,8 +145,8 @@ contract Revest1155Tests is Test {
             assertEq(fnftHandler.totalSupply(id), supply, "total supply of FNFTs did not increase by expected amount");
 
             //Lock was created
-            IRevest.Lock memory lock = lockManager.getLock(lockId);
-            assertEq(uint256(lock.lockType), uint256(IRevest.LockType.TimeLock), "lock type is not TimeLock");
+            ILockManager.Lock memory lock = lockManager.getLock(lockId);
+            assertEq(uint256(lock.lockType), uint256(ILockManager.LockType.TimeLock), "lock type is not TimeLock");
 
             assertFalse(lock.timeLockExpiry == 0, "timeLock Expiry should not be zero");
             assertEq(currentTime + 1 weeks, lock.timeLockExpiry, "lock expiry is not expected value");
@@ -164,9 +162,10 @@ contract Revest1155Tests is Test {
 
         changePrank(bob);
         vm.expectRevert(bytes("E006"));
-        revest.withdrawFNFT(salt, supply);
+        revest.unlockFNFT(salt);
 
         skip(1 weeks);
+        revest.unlockFNFT(salt);
         revest.withdrawFNFT(salt, supply);
         assertEq(fnftHandler.balanceOf(bob, id), 0, "bob did not lose expected amount of FNFTs"); //All FNFTs were burned
         assertEq(USDC.balanceOf(bob), supply * amount, "bob did not receive expected amount of USDC"); //All funds were returned to bob
@@ -191,7 +190,7 @@ contract Revest1155Tests is Test {
 
         uint256 id = fnftHandler.getNextId();
 
-        IRevest.FNFTConfig memory config = IRevest.FNFTConfig({
+        IController.FNFTConfig memory config = IController.FNFTConfig({
             pipeToContract: address(0),
             handler: address(fnftHandler),
             asset: address(USDC),
@@ -224,8 +223,8 @@ contract Revest1155Tests is Test {
             assertEq(fnftHandler.totalSupply(id), supply, "total supply of FNFTs did not increase by expected amount");
 
             //Lock was created
-            IRevest.Lock memory lock = lockManager.getLock(lockId);
-            assertEq(uint256(lock.lockType), uint256(IRevest.LockType.TimeLock), "lock type is not TimeLock");
+            ILockManager.Lock memory lock = lockManager.getLock(lockId);
+            assertEq(uint256(lock.lockType), uint256(ILockManager.LockType.TimeLock), "lock type is not TimeLock");
             assertEq(lock.timeLockExpiry, block.timestamp + 1 weeks, "lock expiry is not expected value");
             assertEq(lock.unlocked, false);
         }
@@ -265,7 +264,7 @@ contract Revest1155Tests is Test {
 
         uint256 id = fnftHandler.getNextId();
 
-        IRevest.FNFTConfig memory config = IRevest.FNFTConfig({
+        IController.FNFTConfig memory config = IController.FNFTConfig({
             pipeToContract: address(0),
             handler: address(fnftHandler),
             asset: address(USDC),
@@ -285,8 +284,8 @@ contract Revest1155Tests is Test {
         address walletAddr = revest.getAddressForFNFT(salt);
 
         //Lock was created
-        IRevest.Lock memory lock = lockManager.getLock(lockId);
-        assertEq(uint256(lock.lockType), uint256(IRevest.LockType.AddressLock), "lock type is not AddressLock");
+        ILockManager.Lock memory lock = lockManager.getLock(lockId);
+        assertEq(uint256(lock.lockType), uint256(ILockManager.LockType.AddressLock), "lock type is not AddressLock");
         assertEq(lock.unlocked, false);
         assertEq(lock.addressLock, address(addressLock), "address lock is not expected value");
         assertEq(lock.creationTime, block.timestamp, "lock creation time is not expected value");
@@ -324,7 +323,7 @@ contract Revest1155Tests is Test {
 
         uint256 id = fnftHandler.getNextId();
 
-        IRevest.FNFTConfig memory config = IRevest.FNFTConfig({
+        IController.FNFTConfig memory config = IController.FNFTConfig({
             pipeToContract: address(0),
             handler: address(fnftHandler),
             asset: address(USDC),
@@ -410,7 +409,7 @@ contract Revest1155Tests is Test {
 
         uint256 id = fnftHandler.getNextId();
 
-        IRevest.FNFTConfig memory config = IRevest.FNFTConfig({
+        IController.FNFTConfig memory config = IController.FNFTConfig({
             pipeToContract: address(0),
             handler: address(fnftHandler),
             asset: address(USDC),
@@ -486,7 +485,7 @@ contract Revest1155Tests is Test {
 
         uint256 id = fnftHandler.getNextId();
 
-        IRevest.FNFTConfig memory config = IRevest.FNFTConfig({
+        IController.FNFTConfig memory config = IController.FNFTConfig({
             pipeToContract: address(0),
             handler: address(fnftHandler),
             asset: address(0),
@@ -510,7 +509,7 @@ contract Revest1155Tests is Test {
         );
 
         assertEq(alice.balance, preBal - (supply * amount), "alice balance did not decrease by expected amountof ETH");
-        IRevest.FNFTConfig memory storedConfig = revest.getFNFT(salt);
+        IController.FNFTConfig memory storedConfig = revest.getFNFT(salt);
         assertEq(storedConfig.useETH, true, "useETH was not set to true");
         assertEq(storedConfig.asset, address(0), "asset was not set to ETH");
         assertEq(storedConfig.depositAmount, amount, "deposit amount was not set to amount");
@@ -529,7 +528,7 @@ contract Revest1155Tests is Test {
 
         uint256 id = fnftHandler.getNextId();
 
-        IRevest.FNFTConfig memory config = IRevest.FNFTConfig({
+        IController.FNFTConfig memory config = IController.FNFTConfig({
             pipeToContract: address(0),
             handler: address(fnftHandler),
             asset: address(USDC),
@@ -565,7 +564,7 @@ contract Revest1155Tests is Test {
 
         uint256 id = fnftHandler.getNextId();
 
-        IRevest.FNFTConfig memory config = IRevest.FNFTConfig({
+        IController.FNFTConfig memory config = IController.FNFTConfig({
             pipeToContract: address(0),
             handler: address(fnftHandler),
             asset: address(USDC),
@@ -588,10 +587,10 @@ contract Revest1155Tests is Test {
 
         assertEq(lockId, lockId2, "lockIds returned do not match");
 
-        IRevest.FNFTConfig memory timelock1 = revest.getFNFT(salt1);
-        IRevest.FNFTConfig memory timelock2 = revest.getFNFT(salt2);
+        IController.FNFTConfig memory timelock1 = revest.getFNFT(salt1);
+        IController.FNFTConfig memory timelock2 = revest.getFNFT(salt2);
         assertEq(timelock1.lockId, timelock2.lockId, "lockIds stored do not match");
-        IRevest.Lock memory lock = lockManager.getLock(lockId);
+        ILockManager.Lock memory lock = lockManager.getLock(lockId);
 
         assertEq(lock.timeLockExpiry, block.timestamp + 1 weeks, "lock end date is not expected amount");
         skip(1 weeks);
@@ -616,7 +615,7 @@ contract Revest1155Tests is Test {
 
         uint256 id = fnftHandler.getNextId();
 
-        IRevest.FNFTConfig memory config = IRevest.FNFTConfig({
+        IController.FNFTConfig memory config = IController.FNFTConfig({
             pipeToContract: address(0),
             handler: address(fnftHandler),
             asset: address(USDC),
@@ -638,14 +637,14 @@ contract Revest1155Tests is Test {
 
         assertEq(lockId, lockId2, "lockIds returned do not match");
 
-        IRevest.FNFTConfig memory timelock1 = revest.getFNFT(salt1);
-        IRevest.FNFTConfig memory timelock2 = revest.getFNFT(salt2);
+        IController.FNFTConfig memory timelock1 = revest.getFNFT(salt1);
+        IController.FNFTConfig memory timelock2 = revest.getFNFT(salt2);
         assertEq(timelock1.lockId, timelock2.lockId, "lockIds stored do not match");
 
-        IRevest.Lock memory lock = lockManager.getLock(lockId);
+        ILockManager.Lock memory lock = lockManager.getLock(lockId);
         assertEq(lock.addressLock, address(addressLock), "expected and actual address lock does not match");
 
-        if(block.timestamp % 2 != 0) skip (1 seconds);
+        if (block.timestamp % 2 != 0) skip(1 seconds);
 
         changePrank(alice);
         revest.withdrawFNFT(salt1, 1);
@@ -658,6 +657,8 @@ contract Revest1155Tests is Test {
     }
 
     function testTransferFNFTWithSignature() public {
+        startHoax(alice);
+
         address[] memory recipients = new address[](1);
         recipients[0] = alice;
 
@@ -666,7 +667,7 @@ contract Revest1155Tests is Test {
 
         uint256 id = fnftHandler.getNextId();
 
-        IRevest.FNFTConfig memory config = IRevest.FNFTConfig({
+        IController.FNFTConfig memory config = IController.FNFTConfig({
             pipeToContract: address(0),
             handler: address(fnftHandler),
             asset: address(USDC),
@@ -724,6 +725,21 @@ contract Revest1155Tests is Test {
         assertEq(fnftHandler.balanceOf(alice, id), 0, "alice still owns FNFT");
         assertEq(fnftHandler.balanceOf(bob, id), 1, "bob does not own FNFT");
         assertEq(fnftHandler.isApprovedForAll(alice, bob), true);
+
+        changePrank(revest.owner());
+
+        Revest_1155 newRevest = new Revest_1155(address(WETH), address(vault));
+
+        revest.transferOwnershipFNFTHandler(address(newRevest), address(fnftHandler));
+        assertEq(fnftHandler.owner(), address(newRevest), "handler ownership not transferred");
+
+        changePrank(alice, alice);
+
+        USDC.safeApprove(address(newRevest), type(uint256).max);
+
+        id = fnftHandler.getNextId();
+        newRevest.mintTimeLock(block.timestamp + 1 weeks, recipients, amounts, config);
+        assertEq(fnftHandler.balanceOf(alice, id), 1, "FNFT not minted to Alice");
     }
 
     function testProxyCallFunctionality() public {
@@ -735,7 +751,7 @@ contract Revest1155Tests is Test {
 
         uint256 id = fnftHandler.getNextId();
 
-        IRevest.FNFTConfig memory config = IRevest.FNFTConfig({
+        IController.FNFTConfig memory config = IController.FNFTConfig({
             pipeToContract: address(0),
             handler: address(fnftHandler),
             asset: address(USDC),
@@ -785,7 +801,6 @@ contract Revest1155Tests is Test {
     function testMintTimeLockWithPermit2(uint160 amount) public {
         vm.assume(amount >= 1e6 && amount <= 1e12);
 
-
         address[] memory recipients = new address[](1);
         recipients[0] = alice;
 
@@ -797,7 +812,7 @@ contract Revest1155Tests is Test {
         bytes32 salt;
         bytes32 lockId;
         {
-            IRevest.FNFTConfig memory config = IRevest.FNFTConfig({
+            IController.FNFTConfig memory config = IController.FNFTConfig({
                 pipeToContract: address(0),
                 handler: address(fnftHandler),
                 asset: address(USDC),
@@ -820,8 +835,8 @@ contract Revest1155Tests is Test {
         assertEq(USDC.balanceOf(revest.getAddressForFNFT(salt)), amount, "USDC not deposited into vault");
 
         //Test that Lock was created
-        IRevest.Lock memory lock = lockManager.getLock(lockId);
-        assertEq(uint256(lock.lockType), uint256(IRevest.LockType.TimeLock), "lock type is not TimeLock");
+        ILockManager.Lock memory lock = lockManager.getLock(lockId);
+        assertEq(uint256(lock.lockType), uint256(ILockManager.LockType.TimeLock), "lock type is not TimeLock");
         assertEq(lock.timeLockExpiry, block.timestamp + 1 weeks, "lock expiry is not expected value");
         assertEq(lock.unlocked, false);
     }
@@ -840,7 +855,7 @@ contract Revest1155Tests is Test {
 
         uint256 id = fnftHandler.getNextId();
 
-        IRevest.FNFTConfig memory config = IRevest.FNFTConfig({
+        IController.FNFTConfig memory config = IController.FNFTConfig({
             pipeToContract: address(0),
             handler: address(fnftHandler),
             asset: address(USDC),
@@ -861,8 +876,8 @@ contract Revest1155Tests is Test {
         address walletAddr = revest.getAddressForFNFT(salt);
 
         //Lock was created
-        IRevest.Lock memory lock = lockManager.getLock(lockId);
-        assertEq(uint256(lock.lockType), uint256(IRevest.LockType.AddressLock), "lock type is not AddressLock");
+        ILockManager.Lock memory lock = lockManager.getLock(lockId);
+        assertEq(uint256(lock.lockType), uint256(ILockManager.LockType.AddressLock), "lock type is not AddressLock");
         assertEq(lock.unlocked, false);
         assertEq(lock.addressLock, address(addressLock), "address lock is not expected value");
         assertEq(lock.creationTime, block.timestamp, "lock creation time is not expected value");
@@ -904,7 +919,7 @@ contract Revest1155Tests is Test {
 
         bytes32 salt;
         {
-            IRevest.FNFTConfig memory config = IRevest.FNFTConfig({
+            IController.FNFTConfig memory config = IController.FNFTConfig({
                 pipeToContract: address(0),
                 handler: address(fnftHandler),
                 asset: address(USDC),
@@ -925,11 +940,10 @@ contract Revest1155Tests is Test {
         address walletAddr = revest.getAddressForFNFT(salt);
         uint256 balanceBefore = USDC.balanceOf(walletAddr);
         uint256 aliceBalanceBeforeAdditionalDeposit = USDC.balanceOf(alice);
-       
+
         revest.depositAdditionalToFNFTWithPermit(salt, additionalDepositAmount, permit, signature);
 
         {
-
             assertEq(
                 USDC.balanceOf(walletAddr),
                 balanceBefore + (additionalDepositAmount * supply),
@@ -953,8 +967,7 @@ contract Revest1155Tests is Test {
             );
         }
 
-
-        uint tempSupply = supply / 2;
+        uint256 tempSupply = supply / 2;
         skip(1 weeks);
         fnftHandler.safeTransferFrom(alice, bob, id, tempSupply, "");
 

@@ -18,7 +18,7 @@ contract LockManager is ILockManager, ReentrancyGuard {
     using ERC165Checker for address;
 
     bytes4 public constant ADDRESS_LOCK_INTERFACE_ID = type(IAddressLock).interfaceId;
-    mapping(bytes32 => IRevest.Lock) public locks; // maps lockId to locks
+    mapping(bytes32 => ILockManager.Lock) public locks; // maps lockId to locks
 
     mapping(bytes4 selector => bool) public blacklistedSelector;
 
@@ -31,11 +31,11 @@ contract LockManager is ILockManager, ReentrancyGuard {
         WETH = _WETH;
     }
 
-    function getLock(bytes32 salt) external view override returns (IRevest.Lock memory) {
+    function getLock(bytes32 salt) external view override returns (ILockManager.Lock memory) {
         return locks[salt];
     }
 
-    function createLock(bytes32 salt, IRevest.LockParam memory lock)
+    function createLock(bytes32 salt, ILockManager.LockParam memory lock)
         external
         override
         nonReentrant
@@ -46,17 +46,17 @@ contract LockManager is ILockManager, ReentrancyGuard {
         console.logBytes32(lockId);
 
         // Extensive validation on creation
-        IRevest.Lock memory newLock;
+        ILockManager.Lock memory newLock;
 
         newLock.lockType = lock.lockType;
         newLock.creationTime = block.timestamp;
         newLock.creator = msg.sender;
         console.log("timestamp: ", block.timestamp);
 
-        if (lock.lockType == IRevest.LockType.TimeLock) {
+        if (lock.lockType == ILockManager.LockType.TimeLock) {
             require(lock.timeLockExpiry > block.timestamp, "E015");
             newLock.timeLockExpiry = lock.timeLockExpiry;
-        } else if (lock.lockType == IRevest.LockType.AddressLock) {
+        } else if (lock.lockType == ILockManager.LockType.AddressLock) {
             require(lock.addressLock != address(0), "E016");
             newLock.addressLock = lock.addressLock;
         } else {
@@ -75,17 +75,17 @@ contract LockManager is ILockManager, ReentrancyGuard {
      */
     function unlockFNFT(bytes32 lockId, uint256 fnftId) external override nonReentrant {
         //Allows reduction to 1 SSTORE at the end as opposed to many
-        IRevest.Lock memory tempLock = locks[lockId];
+        ILockManager.Lock memory tempLock = locks[lockId];
 
         require(tempLock.creationTime != 0, "LOCK DOES NOT EXIST");
 
         //If already unlocked, no state changes needed
         if (tempLock.unlocked) return;
 
-        if (tempLock.lockType == IRevest.LockType.TimeLock) {
+        if (tempLock.lockType == ILockManager.LockType.TimeLock) {
             require(tempLock.timeLockExpiry <= block.timestamp, "E006");
             tempLock.timeLockExpiry = 0;
-        } else if (tempLock.lockType == IRevest.LockType.AddressLock) {
+        } else if (tempLock.lockType == ILockManager.LockType.AddressLock) {
             require(
                 tempLock.addressLock.supportsInterface(ADDRESS_LOCK_INTERFACE_ID)
                     && IAddressLock(tempLock.addressLock).isUnlockable(fnftId, uint256(lockId)),
@@ -105,13 +105,13 @@ contract LockManager is ILockManager, ReentrancyGuard {
      * Return whether a lock of any type is mature. Use this for all locktypes.
      */
     function getLockMaturity(bytes32 lockId, uint256 fnftId) public view override returns (bool) {
-        IRevest.Lock memory lock = locks[lockId];
+        ILockManager.Lock memory lock = locks[lockId];
 
         if (lock.unlocked) return true;
 
-        if (lock.lockType == IRevest.LockType.TimeLock) {
+        if (lock.lockType == ILockManager.LockType.TimeLock) {
             return lock.timeLockExpiry < block.timestamp;
-        } else if (lock.lockType == IRevest.LockType.AddressLock) {
+        } else if (lock.lockType == ILockManager.LockType.AddressLock) {
             return (
                 lock.addressLock.supportsInterface(ADDRESS_LOCK_INTERFACE_ID)
                     && IAddressLock(lock.addressLock).isUnlockable(fnftId, uint256(lockId))
@@ -121,7 +121,7 @@ contract LockManager is ILockManager, ReentrancyGuard {
         }
     }
 
-    function lockTypes(bytes32 tokenId) external view override returns (IRevest.LockType) {
+    function lockTypes(bytes32 tokenId) external view override returns (ILockManager.LockType) {
         return locks[tokenId].lockType;
     }
 

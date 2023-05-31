@@ -11,15 +11,12 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./interfaces/IRevest.sol";
 import "./interfaces/IFNFTHandler.sol";
 import "./interfaces/IMetadataHandler.sol";
-import "./interfaces/IOutputReceiver.sol";
 
 import "forge-std/console2.sol";
 
 contract FNFTHandler is ERC1155, Ownable, IFNFTHandler {
     using ERC165Checker for address;
     using ECDSA for bytes32;
-
-    bytes4 public constant OUTPUT_RECEIVER_INTERFACE_ID = type(IOutputReceiver).interfaceId;
 
     //Permit Signature Stuff
     bytes32 public constant DOMAIN_TYPEHASH =
@@ -121,30 +118,23 @@ contract FNFTHandler is ERC1155, Ownable, IFNFTHandler {
     // OVERIDDEN ERC-1155 METHODS
 
     function _beforeTokenTransfer(
-        address operator,
+        address,
         address from,
         address to,
         uint256[] memory ids,
         uint256[] memory amounts,
-        bytes memory data
-    ) internal override {
+        bytes memory
+    ) internal view override {
         // Loop because all batch transfers must be checked
         // Will only execute once on singular transfer
         if (from != address(0)) {
-            address revest = owner();
+            IRevest revest = IRevest(owner());
 
             for (uint256 x = 0; x < ids.length;) {
                 bytes32 salt = keccak256(abi.encode(ids[x], address(this), 0));
 
                 require(amounts[x] != 0, "E020");
-                IRevest.FNFTConfig memory config = IRevest(revest).getFNFT(salt);
-
-                if (
-                    config.pipeToContract != address(0)
-                        && config.pipeToContract.supportsInterface(OUTPUT_RECEIVER_INTERFACE_ID)
-                ) {
-                    IOutputReceiver(config.pipeToContract).onTransferFNFT(ids[x], operator, from, to, amounts[x], data);
-                }
+                IRevest.FNFTConfig memory config = revest.getFNFT(salt);
 
                 //OZ-1155 prevents transfers to the zero-address so we use dead address instead
                 require(!config.nontransferrable || to == address(0xdead), "E022");

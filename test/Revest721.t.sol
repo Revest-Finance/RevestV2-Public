@@ -90,7 +90,7 @@ contract Revest721Tests is Test {
         uint256[] memory amounts = new uint[](1);
         amounts[0] = amount;
 
-        IRevest.FNFTConfig memory config = IRevest.FNFTConfig({
+        IController.FNFTConfig memory config = IController.FNFTConfig({
             pipeToContract: address(0),
             handler: address(boredApe),
             asset: address(USDC),
@@ -124,8 +124,8 @@ contract Revest721Tests is Test {
             assertEq(USDC.balanceOf(walletAddr), amount, "vault balance did not increase by expected amount");
 
             //Lock was created
-            IRevest.Lock memory lock = lockManager.getLock(lockId);
-            assertEq(uint256(lock.lockType), uint256(IRevest.LockType.TimeLock), "lock type is not TimeLock");
+            ILockManager.Lock memory lock = lockManager.getLock(lockId);
+            assertEq(uint256(lock.lockType), uint256(ILockManager.LockType.TimeLock), "lock type is not TimeLock");
             assertEq(lock.timeLockExpiry, block.timestamp + 1 weeks, "lock expiry is not expected value");
             assertEq(lock.unlocked, false);
 
@@ -164,7 +164,7 @@ contract Revest721Tests is Test {
         uint256 id = 1;
         uint256 nonce = revest.numfnfts(address(boredApe), id);
 
-        IRevest.FNFTConfig memory config = IRevest.FNFTConfig({
+        IController.FNFTConfig memory config = IController.FNFTConfig({
             pipeToContract: address(0),
             handler: address(boredApe),
             asset: address(USDC),
@@ -190,8 +190,8 @@ contract Revest721Tests is Test {
         address walletAddr = revest.getAddressForFNFT(salt);
 
         //Lock was created
-        IRevest.Lock memory lock = lockManager.getLock(lockId);
-        assertEq(uint256(lock.lockType), uint256(IRevest.LockType.AddressLock), "lock type is not AddressLock");
+        ILockManager.Lock memory lock = lockManager.getLock(lockId);
+        assertEq(uint256(lock.lockType), uint256(ILockManager.LockType.AddressLock), "lock type is not AddressLock");
         assertEq(lock.unlocked, false);
         assertEq(lock.addressLock, address(addressLock), "address lock is not expected value");
         assertEq(lock.creationTime, block.timestamp, "lock creation time is not expected value");
@@ -232,7 +232,7 @@ contract Revest721Tests is Test {
         uint256[] memory amounts = new uint[](1);
         amounts[0] = amount;
 
-        IRevest.FNFTConfig memory config = IRevest.FNFTConfig({
+        IController.FNFTConfig memory config = IController.FNFTConfig({
             pipeToContract: address(0),
             handler: address(boredApe),
             asset: address(USDC),
@@ -265,8 +265,8 @@ contract Revest721Tests is Test {
             assertEq(USDC.balanceOf(walletAddr), amount, "vault balance did not increase by expected amount");
 
             //Lock was created
-            IRevest.Lock memory lock = lockManager.getLock(lockId);
-            assertEq(uint256(lock.lockType), uint256(IRevest.LockType.TimeLock), "lock type is not TimeLock");
+            ILockManager.Lock memory lock = lockManager.getLock(lockId);
+            assertEq(uint256(lock.lockType), uint256(ILockManager.LockType.TimeLock), "lock type is not TimeLock");
             assertEq(lock.timeLockExpiry, block.timestamp + 1 weeks, "lock expiry is not expected value");
             assertEq(lock.unlocked, false);
 
@@ -325,7 +325,7 @@ contract Revest721Tests is Test {
         uint256[] memory amounts = new uint[](1);
         amounts[0] = amount;
 
-        IRevest.FNFTConfig memory config = IRevest.FNFTConfig({
+        IController.FNFTConfig memory config = IController.FNFTConfig({
             pipeToContract: address(0),
             handler: address(boredApe),
             asset: address(USDC),

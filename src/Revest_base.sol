@@ -17,7 +17,6 @@ import "@solmate/utils/FixedPointMathLib.sol";
 import "./interfaces/IRevest.sol";
 import "./interfaces/ILockManager.sol";
 import "./interfaces/ITokenVault.sol";
-import "./interfaces/IOutputReceiver.sol";
 import "./interfaces/IFNFTHandler.sol";
 import "./interfaces/IAddressLock.sol";
 import "./interfaces/IAllowanceTransfer.sol";
@@ -38,7 +37,6 @@ abstract contract Revest_base is IRevest, ERC1155Holder, ReentrancyGuard, Ownabl
     using SafeCast for uint256;
 
     bytes4 public constant ADDRESS_LOCK_INTERFACE_ID = type(IAddressLock).interfaceId;
-    bytes4 public constant OUTPUT_RECEIVER_INTERFACE_ID = type(IOutputReceiver).interfaceId;
     bytes4 public constant FNFTHANDLER_INTERFACE_ID = type(IFNFTHandler).interfaceId;
     bytes4 public constant ERC721_INTERFACE_ID = type(IERC721).interfaceId;
 
@@ -161,12 +159,21 @@ abstract contract Revest_base is IRevest, ERC1155Holder, ReentrancyGuard, Ownabl
         return fnfts[fnftId];
     }
 
+    function getAsset(bytes32 fnftId) external view virtual returns (address) {
+        return fnfts[fnftId].asset;
+    }
+
+    function getValue(bytes32 fnftId) external view virtual returns (uint256) {
+        return fnfts[fnftId].depositAmount;
+    }
+
     function changeSelectorVisibility(bytes4 selector, bool designation) external virtual onlyOwner {
         blacklistedFunctions[selector] = designation;
     }
 
     function transferOwnershipFNFTHandler(address newRevest, address handler) external virtual onlyOwner {
         //Ownership should be a timelocked controller.
+        //A public timelock controller can be used to set public ownership of handlers designated by the team
         Ownable(handler).transferOwnership(newRevest);
     }
 

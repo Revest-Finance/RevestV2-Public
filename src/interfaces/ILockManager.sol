@@ -5,11 +5,31 @@ pragma solidity ^0.8.19;
 import "./IRevest.sol";
 
 interface ILockManager {
-    function createLock(bytes32 fnftId, IRevest.LockParam memory lock) external returns (bytes32);
+    enum LockType {
+        TimeLock,
+        AddressLock
+    }
 
-    function getLock(bytes32 lockId) external view returns (IRevest.Lock memory);
+    struct LockParam {
+        address addressLock;
+        uint256 timeLockExpiry;
+        LockType lockType;
+    }
 
-    function lockTypes(bytes32 fnftId) external view returns (IRevest.LockType);
+    struct Lock {
+        address addressLock;
+        address creator;
+        LockType lockType;
+        uint256 timeLockExpiry;
+        uint256 creationTime;
+        bool unlocked;
+    }
+
+    function createLock(bytes32 fnftId, LockParam memory lock) external returns (bytes32);
+
+    function getLock(bytes32 lockId) external view returns (Lock memory);
+
+    function lockTypes(bytes32 fnftId) external view returns (LockType);
 
     function unlockFNFT(bytes32 salt, uint256 fnftId) external;
 

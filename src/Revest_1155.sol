@@ -13,7 +13,6 @@ import "@solmate/utils/FixedPointMathLib.sol";
 import "./interfaces/IRevest.sol";
 import "./interfaces/ILockManager.sol";
 import "./interfaces/ITokenVault.sol";
-import "./interfaces/IOutputReceiver.sol";
 import "./interfaces/IFNFTHandler.sol";
 import "./interfaces/IAddressLock.sol";
 import "./interfaces/IAllowanceTransfer.sol";
@@ -63,8 +62,8 @@ contract Revest_1155 is Revest_base {
             require(fnfts[salt].quantity == 0, "E006");
 
             if (!ILockManager(fnftConfig.lockManager).lockExists(fnftConfig.lockId)) {
-                IRevest.LockParam memory timeLock;
-                timeLock.lockType = IRevest.LockType.TimeLock;
+                ILockManager.LockParam memory timeLock;
+                timeLock.lockType = ILockManager.LockType.TimeLock;
                 timeLock.timeLockExpiry = endTime;
 
                 lockId = ILockManager(fnftConfig.lockManager).createLock(salt, timeLock);
@@ -98,9 +97,9 @@ contract Revest_1155 is Revest_base {
             require(fnfts[salt].quantity == 0, "E006"); //TODO: Double check that Error code
 
             if (!ILockManager(fnftConfig.lockManager).lockExists(fnftConfig.lockId)) {
-                IRevest.LockParam memory addressLock;
+                ILockManager.LockParam memory addressLock;
                 addressLock.addressLock = trigger;
-                addressLock.lockType = IRevest.LockType.AddressLock;
+                addressLock.lockType = ILockManager.LockType.AddressLock;
 
                 //Return the ID of the lock
                 lockId = ILockManager(fnftConfig.lockManager).createLock(salt, addressLock);
@@ -131,7 +130,6 @@ contract Revest_1155 is Revest_base {
         // Burn the FNFTs being exchanged
         //TODO: Add a specific error revert message maybe?
         IFNFTHandler(fnft.handler).burn(msg.sender, fnft.fnftId, quantity);
-
 
         //Checks-effects because unlockFNFT has an external call which could be used for reentrancy
         fnfts[salt].quantity -= quantity;
@@ -173,25 +171,20 @@ contract Revest_1155 is Revest_base {
 
         // If it can't have its maturity extended, revert
         // Will also return false on non-time lock locks
-        require(fnft.maturityExtension && manager.lockTypes(fnft.lockId) == IRevest.LockType.TimeLock, "E009");
+        require(fnft.maturityExtension && manager.lockTypes(fnft.lockId) == ILockManager.LockType.TimeLock, "E009");
 
         // If desired maturity is below existing date, reject operation
-        IRevest.Lock memory lockParam = manager.getLock(fnft.lockId);
+        ILockManager.Lock memory lockParam = manager.getLock(fnft.lockId);
         require(!lockParam.unlocked && lockParam.timeLockExpiry > block.timestamp, "E007");
         require(lockParam.timeLockExpiry < endTime, "E010");
 
         // Update the lock
-        IRevest.LockParam memory lock;
-        lock.lockType = IRevest.LockType.TimeLock;
+        ILockManager.LockParam memory lock;
+        lock.lockType = ILockManager.LockType.TimeLock;
         lock.timeLockExpiry = endTime;
 
         newLockId = manager.createLock(keccak256(abi.encode(block.timestamp, endTime, msg.sender)), lock);
         fnfts[salt].lockId = newLockId;
-
-        // Callback to IOutputReceiverV3
-        if (fnft.pipeToContract != address(0) && fnft.pipeToContract.supportsInterface(OUTPUT_RECEIVER_INTERFACE_ID)) {
-            IOutputReceiver(fnft.pipeToContract).handleTimelockExtensions(fnftId, endTime, msg.sender);
-        }
 
         emit FNFTMaturityExtended(newLockId, msg.sender, fnftId, endTime);
     }
@@ -231,11 +224,6 @@ contract Revest_1155 is Revest_base {
             emit DepositERC20(fnft.asset, msg.sender, fnftId, amount, smartWallet);
         } //if (amount != zero)
 
-        //You don't need to check for address(0) since address(0) does not include support interface
-        if (fnft.pipeToContract.supportsInterface(OUTPUT_RECEIVER_INTERFACE_ID)) {
-            IOutputReceiver(fnft.pipeToContract).handleAdditionalDeposit(fnftId, deposit, supply, msg.sender);
-        }
-
         emit FNFTAddionalDeposited(msg.sender, fnftId, supply, amount);
     }
 
@@ -266,7 +254,6 @@ contract Revest_1155 is Revest_base {
         params.fnftConfig.quantity = totalQuantity;
         address smartWallet = getAddressForFNFT(salt);
 
-        // Take fees
         if (msg.value != 0) {
             params.fnftConfig.asset = address(0);
             params.fnftConfig.depositAmount = msg.value / totalQuantity;
@@ -311,10 +298,9 @@ contract Revest_1155 is Revest_base {
         emit CreateFNFT(salt, params.fnftConfig.fnftId, msg.sender);
     }
 
-    function withdrawToken(bytes32 salt, uint256 fnftId, uint256 quantity, address user) internal {
+    function withdrawToken(bytes32 salt, uint256 fnftId, uint256 quantity, address destination) internal {
         // If the FNFT is an old one, this just assigns to zero-value
         IRevest.FNFTConfig memory fnft = fnfts[salt];
-        address pipeTo = fnft.pipeToContract;
         uint256 amountToWithdraw;
 
         address asset = fnft.asset == address(0) ? WETH : fnft.asset;
@@ -326,7 +312,6 @@ contract Revest_1155 is Revest_base {
         amountToWithdraw = quantity.mulDivDown(IERC20(asset).balanceOf(smartWalletAddr), supplyBefore);
 
         // Deploy the smart wallet object
-        address destination = (pipeTo == address(0)) ? user : pipeTo;
 
         tokenVault.withdrawToken(salt, asset, amountToWithdraw, address(this));
 
@@ -337,13 +322,9 @@ contract Revest_1155 is Revest_base {
             ERC20(asset).safeTransfer(destination, amountToWithdraw);
         }
 
-        emit WithdrawERC20(asset, user, fnftId, amountToWithdraw, smartWalletAddr);
+        emit WithdrawERC20(asset, destination, fnftId, amountToWithdraw, smartWalletAddr);
 
-        if (pipeTo.supportsInterface(OUTPUT_RECEIVER_INTERFACE_ID)) {
-            IOutputReceiver(pipeTo).receiveRevestOutput(fnftId, asset, payable(user), quantity);
-        }
-
-        emit RedeemFNFT(salt, fnftId, user);
+        emit RedeemFNFT(salt, fnftId, destination);
     }
 
     function proxyCall(bytes32 salt, address[] memory targets, uint256[] memory values, bytes[] memory calldatas)

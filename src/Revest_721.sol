@@ -15,7 +15,6 @@ import "@solmate/utils/FixedPointMathLib.sol";
 import "./interfaces/IRevest.sol";
 import "./interfaces/ILockManager.sol";
 import "./interfaces/ITokenVault.sol";
-import "./interfaces/IOutputReceiver.sol";
 import "./interfaces/IFNFTHandler.sol";
 import "./interfaces/IAddressLock.sol";
 import "./interfaces/IAllowanceTransfer.sol";
@@ -65,8 +64,8 @@ contract Revest_721 is Revest_base {
             require(fnfts[salt].quantity == 0, "E006");
 
             if (!ILockManager(fnftConfig.lockManager).lockExists(fnftConfig.lockId)) {
-                IRevest.LockParam memory timeLock;
-                timeLock.lockType = IRevest.LockType.TimeLock;
+                ILockManager.LockParam memory timeLock;
+                timeLock.lockType = ILockManager.LockType.TimeLock;
                 timeLock.timeLockExpiry = endTime;
                 lockId = ILockManager(fnftConfig.lockManager).createLock(salt, timeLock);
 
@@ -99,9 +98,9 @@ contract Revest_721 is Revest_base {
             require(fnfts[salt].quantity == 0, "E006"); //TODO: Double check that Error code
 
             if (!ILockManager(fnftConfig.lockManager).lockExists(fnftConfig.lockId)) {
-                IRevest.LockParam memory addressLock;
+                ILockManager.LockParam memory addressLock;
                 addressLock.addressLock = trigger;
-                addressLock.lockType = IRevest.LockType.AddressLock;
+                addressLock.lockType = ILockManager.LockType.AddressLock;
 
                 //Return the ID of the lock
                 lockId = ILockManager(fnftConfig.lockManager).createLock(salt, addressLock);
@@ -159,26 +158,21 @@ contract Revest_721 is Revest_base {
 
         // If it can't have its maturity extended, revert
         // Will also return false on non-time lock locks
-        require(fnft.maturityExtension && manager.lockTypes(salt) == IRevest.LockType.TimeLock, "E009");
+        require(fnft.maturityExtension && manager.lockTypes(salt) == ILockManager.LockType.TimeLock, "E009");
 
         // If desired maturity is below existing date or already unlocked, reject operation
-        IRevest.Lock memory lockParam = manager.getLock(salt);
+        ILockManager.Lock memory lockParam = manager.getLock(salt);
         require(!lockParam.unlocked && lockParam.timeLockExpiry > block.timestamp, "E021");
         require(lockParam.timeLockExpiry < endTime, "E010");
 
         // Update the lock
-        IRevest.LockParam memory lock;
-        lock.lockType = IRevest.LockType.TimeLock;
+        ILockManager.LockParam memory lock;
+        lock.lockType = ILockManager.LockType.TimeLock;
         lock.timeLockExpiry = endTime;
 
         //Just pick a salt, it doesn't matter as long as it's unique
         bytes32 newLockId = manager.createLock(keccak256(abi.encode(block.timestamp, endTime, msg.sender)), lock);
         fnft.lockId = newLockId;
-
-        // Callback to IOutputReceiverV3
-        if (fnft.pipeToContract != address(0) && fnft.pipeToContract.supportsInterface(OUTPUT_RECEIVER_INTERFACE_ID)) {
-            IOutputReceiver(fnft.pipeToContract).handleTimelockExtensions(fnftId, endTime, msg.sender);
-        }
 
         emit FNFTMaturityExtended(newLockId, msg.sender, fnftId, endTime);
 
@@ -217,11 +211,6 @@ contract Revest_721 is Revest_base {
 
             emit DepositERC20(fnft.asset, msg.sender, fnftId, amount, smartWallet);
         } //if (amount != zero)
-
-        //You don't need to check for address(0) since address(0) does not include support interface
-        if (fnft.pipeToContract.supportsInterface(OUTPUT_RECEIVER_INTERFACE_ID)) {
-            IOutputReceiver(fnft.pipeToContract).handleAdditionalDeposit(fnftId, deposit, supply, msg.sender);
-        }
 
         emit FNFTAddionalDeposited(msg.sender, fnftId, supply, amount);
     }
@@ -294,10 +283,6 @@ contract Revest_721 is Revest_base {
         }
 
         emit WithdrawERC20(asset, user, fnftId, amountToWithdraw, smartWallAdd);
-
-        if (pipeTo.supportsInterface(OUTPUT_RECEIVER_INTERFACE_ID)) {
-            IOutputReceiver(pipeTo).receiveRevestOutput(fnftId, asset, payable(user), quantity);
-        }
 
         emit RedeemFNFT(salt, fnftId, user);
     }
