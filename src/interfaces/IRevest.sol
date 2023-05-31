@@ -1,10 +1,30 @@
 // SPDX-License-Identifier: GNU-GPL v3.0 or later
 
 import "./IController.sol";
+import "./IAllowanceTransfer.sol";
 
 pragma solidity ^0.8.12;
 
 interface IRevest is IController {
+    event FNFTTimeLockMinted(
+        address indexed asset,
+        address indexed from,
+        uint256 indexed fnftId,
+        uint256 endTime,
+        uint256[] quantities,
+        FNFTConfig fnftConfig
+    );
+
+    event FNFTAddressLockMinted(
+        address indexed asset,
+        address indexed from,
+        uint256 indexed fnftId,
+        address trigger,
+        uint256[] quantities,
+        FNFTConfig fnftConfig
+    );
+
+
     function mintTimeLockWithPermit(
         uint256 endTime,
         address[] memory recipients,

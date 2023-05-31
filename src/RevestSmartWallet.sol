@@ -35,10 +35,6 @@ contract RevestSmartWallet is ReentrancyGuard {
         outputs = new bytes[](targets.length);
 
         for (uint256 i = 0; i < targets.length; i++) {
-            console.log("target: %s", targets[i]);
-            console.log("value: %i", values[i]);
-            console.logBytes(calldatas[i]);
-
             (bool success, bytes memory result) = targets[i].call{value: values[i]}(calldatas[i]);
             require(success, "ER025");
             outputs[i] = result;

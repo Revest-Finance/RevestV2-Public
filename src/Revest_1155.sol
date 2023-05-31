@@ -37,7 +37,9 @@ contract Revest_1155 is Revest_base {
     /**
      * @dev Primary constructor to create the Revest controller contract
      */
-    constructor(address weth, address _tokenVault) Revest_base(weth, _tokenVault) {}
+    constructor(address weth, address _tokenVault, address _metadataHandler)
+        Revest_base(weth, _tokenVault, _metadataHandler)
+    {}
 
     /**
      * @dev creates a single time-locked NFT with <quantity> number of copies with <amount> of <asset> stored for each copy
@@ -350,5 +352,9 @@ contract Revest_1155 is Revest_base {
 
     function getAddressForFNFT(bytes32 salt) public view virtual returns (address smartWallet) {
         smartWallet = tokenVault.getAddress(salt, address(this));
+    }
+
+    function fnftIdToRevestId(address handler, uint256 fnftId) public pure returns (bytes32 salt) {
+        salt = keccak256(abi.encode(fnftId, handler, 0));
     }
 }

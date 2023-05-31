@@ -9,6 +9,7 @@ import "src/Revest_1155.sol";
 import "src/TokenVault.sol";
 import "src/LockManager.sol";
 import "src/FNFTHandler.sol";
+import "src/MetadataHandler.sol";
 import "./ExampleAddressLock.sol";
 
 import "src/lib/PermitHash.sol";
@@ -26,6 +27,7 @@ contract Revest1155Tests is Test {
     LockManager public immutable lockManager;
     FNFTHandler public immutable fnftHandler;
     ExampleAddressLock public immutable addressLock;
+    MetadataHandler public immutable metadataHandler;
 
     uint256 PRIVATE_KEY = vm.envUint("PRIVATE_KEY"); //Useful for EIP-712 Testing
     address alice = vm.rememberKey(PRIVATE_KEY);
@@ -42,9 +44,10 @@ contract Revest1155Tests is Test {
 
     constructor() {
         vault = new TokenVault();
-        revest = new Revest_1155(address(WETH), address(vault));
+        metadataHandler = new MetadataHandler("");
+        revest = new Revest_1155(address(WETH), address(vault), address(metadataHandler));
         lockManager = new LockManager(address(WETH));
-        fnftHandler = new FNFTHandler(address(0));
+        fnftHandler = new FNFTHandler();
         addressLock = new ExampleAddressLock();
 
         vm.label(alice, "alice");
@@ -728,7 +731,7 @@ contract Revest1155Tests is Test {
 
         changePrank(revest.owner());
 
-        Revest_1155 newRevest = new Revest_1155(address(WETH), address(vault));
+        Revest_1155 newRevest = new Revest_1155(address(WETH), address(vault), address(metadataHandler));
 
         revest.transferOwnershipFNFTHandler(address(newRevest), address(fnftHandler));
         assertEq(fnftHandler.owner(), address(newRevest), "handler ownership not transferred");

@@ -34,16 +34,13 @@ contract FNFTHandler is ERC1155, Ownable, IFNFTHandler {
     // Modified to start at 1 to make use of TokenVaultV2 far simpler
     uint256 public fnftsCreated = 1;
 
-    IMetadataHandler immutable metadataHandler;
-
     /**
      * @dev Primary constructor to create an instance of NegativeEntropy
      * Grants ADMIN and MINTER_ROLE to whoever creates the contract
      */
-    constructor(address _metadataHandler) ERC1155("") Ownable() {
+    constructor() ERC1155("") Ownable() {
         DOMAIN_SEPARATOR =
             keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes("Revest_FNFTHandler")), block.chainid, address(this)));
-        metadataHandler = IMetadataHandler(_metadataHandler);
     }
 
     /**
@@ -147,14 +144,14 @@ contract FNFTHandler is ERC1155, Ownable, IFNFTHandler {
     }
 
     function uri(uint256 fnftId) public view override returns (string memory) {
-        return metadataHandler.getTokenURI(fnftId);
+        return IRevest(owner()).getTokenURI(fnftId);
     }
 
-    function renderTokenURI(uint256 tokenId, address owner)
-        public
+    function renderTokenURI(uint256 tokenId, address _owner)
+        external
         view
         returns (string memory baseRenderURI, string[] memory parameters)
     {
-        return metadataHandler.getRenderTokenURI(tokenId, owner);
+        return IRevest(owner()).renderTokenURI(tokenId, _owner);
     }
 }

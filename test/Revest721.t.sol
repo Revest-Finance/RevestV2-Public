@@ -9,6 +9,7 @@ import "src/Revest_721.sol";
 import "src/TokenVault.sol";
 import "src/LockManager.sol";
 import "src/FNFTHandler.sol";
+import "src/MetadataHandler.sol";
 import "./ExampleAddressLock.sol";
 
 import "src/lib/PermitHash.sol";
@@ -27,6 +28,7 @@ contract Revest721Tests is Test {
     LockManager public immutable lockManager;
     FNFTHandler public immutable fnftHandler;
     ExampleAddressLock public immutable addressLock;
+    MetadataHandler public immutable metadataHandler;
 
     uint256 PRIVATE_KEY = vm.envUint("PRIVATE_KEY"); //Useful for EIP-712 Testing
     address alice = vm.rememberKey(PRIVATE_KEY);
@@ -41,9 +43,10 @@ contract Revest721Tests is Test {
 
     constructor() {
         vault = new TokenVault();
-        revest = new Revest_721(address(WETH), address(vault));
+        metadataHandler = new MetadataHandler("");
+        revest = new Revest_721(address(WETH), address(vault), address(metadataHandler));
         lockManager = new LockManager(address(WETH));
-        fnftHandler = new FNFTHandler(address(0));
+        fnftHandler = new FNFTHandler();
         addressLock = new ExampleAddressLock();
 
         vm.label(alice, "alice");

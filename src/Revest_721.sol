@@ -39,7 +39,9 @@ contract Revest_721 is Revest_base {
     /**
      * @dev Primary constructor to create the Revest controller contract
      */
-    constructor(address weth, address _tokenVault) Revest_base(weth, _tokenVault) {}
+    constructor(address weth, address _tokenVault, address _metadataHandler)
+        Revest_base(weth, _tokenVault, _metadataHandler)
+    {}
 
     /**
      * @dev creates a single time-locked NFT with <quantity> number of copies with <amount> of <asset> stored for each copy

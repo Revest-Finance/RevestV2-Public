@@ -19,15 +19,6 @@ interface IAddressLock is IERC165 {
     ///      representing any parameters this lock requires are passed through to this method, where abi.decode must be call on them
     function createLock(uint256 fnftId, uint256 lockId, bytes memory arguments) external;
 
-    /// Updates a lock at the specified lockId
-    /// @param fnftId the fnftId that can map to a lock config stored in implementing contracts. Not recommended, as it will break on splitting
-    /// @param lockId the lockId that maps to the lock config which should be updated. Recommended for retrieving references to lock configurations
-    /// @param arguments an abi.encode() bytes array. Allows frontend to encode and pass in an arbitrary set of parameters
-    /// @dev updates a lock for the specified lockId. Will be called by the frontend from the information section if an update is requested
-    ///      can further accept and decode parameters to use in modifying the lock's config or triggering other actions
-    ///      such as triggering an on-chain oracle to update
-    function updateLock(uint256 fnftId, uint256 lockId, bytes memory arguments) external;
-
     /// Whether or not the lock can be unlocked
     /// @param fnftId the fnftId that can map to a lock config stored in implementing contracts. Not recommended, as it will break on splitting
     /// @param lockId the lockId that maps to the lock config which should be updated. Recommended for retrieving references to lock configurations
@@ -36,22 +27,4 @@ interface IAddressLock is IERC165 {
     /// @return whether or not this lock may be unlocked
     function isUnlockable(uint256 fnftId, uint256 lockId) external view returns (bool);
 
-    /// Provides an encoded bytes arary that represents values this lock wants to display on the info screen
-    /// Info to decode these values is provided in the metadata file
-    /// @param fnftId the fnftId that can map to a lock config stored in implementing contracts. Not recommended, as it will break on splitting
-    /// @param lockId the lockId that maps to the lock config which should be updated. Recommended for retrieving references to lock configurations
-    /// @dev used by the frontend to fetch on-chain data on the state of any given lock
-    /// @return a bytes array that represents the result of calling abi.encode on values which the developer wants to appear on the frontend
-    function getDisplayValues(uint256 fnftId, uint256 lockId) external view returns (bytes memory);
-
-    /// Maps to a URL, typically IPFS-based, that contains information on how to encode and decode paramters sent to and from this lock
-    /// Please see additional documentation for JSON config info
-    /// @dev this method will be called by the frontend only but is crucial to properly implement for proper minting and information workflows
-    /// @return a URL to the JSON file containing this lock's metadata schema
-    function getMetadata() external view returns (string memory);
-
-    /// Whether or not this lock will need updates and should display the option for them
-    /// @dev this will be called by the frontend to determine if update inputs and buttons should be displayed
-    /// @return whether or not the locks created by this contract will need updates
-    function needsUpdate() external view returns (bool);
 }

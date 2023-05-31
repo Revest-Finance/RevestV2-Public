@@ -1,39 +1,11 @@
 // SPDX-License-Identifier: GNU-GPL v3.0 or later
 
-import "./IAllowanceTransfer.sol";
-
 pragma solidity ^0.8.12;
 
 interface IController {
-    event FNFTTimeLockMinted(
-        address indexed asset,
-        address indexed from,
-        uint256 indexed fnftId,
-        uint256 endTime,
-        uint256[] quantities,
-        FNFTConfig fnftConfig
-    );
-
-    event FNFTAddressLockMinted(
-        address indexed asset,
-        address indexed from,
-        uint256 indexed fnftId,
-        address trigger,
-        uint256[] quantities,
-        FNFTConfig fnftConfig
-    );
-
     event FNFTWithdrawn(address indexed from, uint256 indexed fnftId, uint256 indexed quantity);
 
     event FNFTUnlocked(address indexed from, uint256 indexed fnftId);
-
-    event FNFTMaturityExtended(
-        bytes32 indexed newLockId, address from, uint256 indexed fnftId, uint256 indexed newExtendedTime
-    );
-
-    event FNFTAddionalDeposited(
-        address indexed from, uint256 indexed newFNFTId, uint256 indexed quantity, uint256 mount
-    );
 
     event DepositERC20(
         address indexed token, address indexed user, uint256 indexed fnftId, uint256 tokenAmount, address smartWallet
@@ -62,6 +34,7 @@ interface IController {
         bool nontransferrable;
     }
 
+    //Used for stackTooDeep - TODO: See about removing this
     struct MintParameters {
         uint256 endTime;
         address[] recipients;
@@ -71,22 +44,19 @@ interface IController {
     }
 
     function withdrawFNFT(bytes32 salt, uint256 quantity) external;
-
     function unlockFNFT(bytes32 salt) external;
 
-    function depositAdditionalToFNFT(bytes32 salt, uint256 amount) external returns (uint256);
-    function depositAdditionalToFNFTWithPermit(
-        bytes32 salt,
-        uint256 amount,
-        IAllowanceTransfer.PermitBatch calldata permits,
-        bytes calldata _signature
-    ) external returns (uint256);
-
-    function extendFNFTMaturity(bytes32 salt, uint256 endTime) external returns (bytes32);
-
+    //View Functions
     function getValue(bytes32 fnftId) external view returns (uint256);
     function getAsset(bytes32 fnftId) external view returns (address);
     function getFNFT(bytes32 salt) external view returns (FNFTConfig memory);
+
+    //Metadata Functions
+    function getTokenURI(uint256 fnftId) external view returns (string memory);
+    function renderTokenURI(uint256 tokenId, address owner)
+        external
+        view
+        returns (string memory baseRenderURI, string[] memory parameters);
 
     //They're public variables in Revest_base but its useful to define it in the interface also
     function numfnfts(address, uint256) external view returns (uint256);

@@ -31,4 +31,9 @@ interface IFNFTHandler is IERC1155, IERC1155Supply {
     function burn(address account, uint256 id, uint256 amount) external;
 
     function getNextId() external view returns (uint256);
+
+    function renderTokenURI(uint256 tokenId, address owner)
+        external
+        view
+        returns (string memory baseRenderURI, string[] memory parameters);
 }
