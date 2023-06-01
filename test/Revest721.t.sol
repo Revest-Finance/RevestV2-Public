@@ -311,7 +311,7 @@ contract Revest721Tests is Test {
         calldatas[0] = abi.encodeWithSelector(USDC.transfer.selector, alice, amount);
 
         //Do a proxy call with a blacklisted function selector
-        vm.expectRevert(bytes("E024"));
+        vm.expectRevert(bytes("E013"));
         revest.proxyCall(salt, targets, values, calldatas);
 
         //Perform a state changing proxy call that is allowed

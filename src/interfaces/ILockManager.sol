@@ -6,6 +6,7 @@ import "./IRevest.sol";
 
 interface ILockManager {
     enum LockType {
+        DEFAULT,
         TimeLock,
         AddressLock
     }
@@ -38,7 +39,6 @@ interface ILockManager {
     function lockExists(bytes32 lockSalt) external view returns (bool);
 
     function proxyCallisApproved(
-        bytes32 salt,
         address token,
         address[] memory targets,
         uint256[] memory values,

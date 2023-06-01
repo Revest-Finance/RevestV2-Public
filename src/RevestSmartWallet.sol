@@ -36,7 +36,7 @@ contract RevestSmartWallet is ReentrancyGuard {
 
         for (uint256 i = 0; i < targets.length; i++) {
             (bool success, bytes memory result) = targets[i].call{value: values[i]}(calldatas[i]);
-            require(success, "ER025");
+            require(success, "E025");
             outputs[i] = result;
         }
     }
@@ -44,4 +44,8 @@ contract RevestSmartWallet is ReentrancyGuard {
     function cleanMemory() public onlyMaster {
         selfdestruct(payable(address(this)));
     }
+
+    //We want to be able to receive ETH for any other misc. things people want to do with it.
+    fallback() external payable {}
+    receive() external payable {}
 }

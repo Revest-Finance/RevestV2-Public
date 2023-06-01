@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GNU-GPL v3.0 or later
 
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
+import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 
 pragma solidity ^0.8.19;
 
@@ -16,7 +17,7 @@ interface IERC1155Supply {
     function totalSupply(uint256 id) external view returns (uint256);
 }
 
-interface IFNFTHandler is IERC1155, IERC1155Supply {
+interface IFNFTHandler is IERC165, IERC1155, IERC1155Supply {
     struct permitApprovalInfo {
         address owner;
         address operator;
@@ -31,6 +32,8 @@ interface IFNFTHandler is IERC1155, IERC1155Supply {
     function burn(address account, uint256 id, uint256 amount) external;
 
     function getNextId() external view returns (uint256);
+
+    function uri(uint256 fnftId) external view returns (string memory);
 
     function renderTokenURI(uint256 tokenId, address owner)
         external

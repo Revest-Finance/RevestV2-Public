@@ -188,6 +188,14 @@ contract Revest1155Tests is Test {
 
         assertEq(revest.getAsset(salt), address(USDC), "asset was not set correctly");
         assertEq(revest.getValue(salt), amount, "value was not set correctly");
+
+
+        //Test misc. branch for invalid lock type
+        ILockManager.LockParam memory invalidLock;
+        invalidLock.addressLock = address(addressLock);
+
+        vm.expectRevert(bytes("E017"));
+        ILockManager(address(lockManager)).createLock(salt, invalidLock);    
     }
 
     function testBatchMintTimeLock(uint8 supply, uint256 amount) public {
@@ -816,6 +824,18 @@ contract Revest1155Tests is Test {
         //Should revert because you no longer own the entire supply of the FNFT
         vm.expectRevert(bytes("E007"));
         revest.proxyCall(salt, targets, values, calldatas);
+
+        skip(1 weeks);
+        config.asset = address(0);
+        config.useETH = true;
+        config.depositAmount = 1 ether;
+        targets[0] = address(WETH);
+        (salt,) = revest.mintTimeLock{value: 1 ether}(block.timestamp + 1 weeks, recipients, amounts, config);
+        calldatas[0] = abi.encodeWithSelector(IWETH.withdraw.selector, 1 ether);
+
+        vm.expectRevert(bytes("E013"));
+        revest.proxyCall(salt, targets, values, calldatas);
+
     }
 
     function testMintTimeLockWithPermit2(uint160 amount) public {
@@ -920,8 +940,7 @@ contract Revest1155Tests is Test {
         assertEq(USDC.balanceOf(walletAddr), 0, "vault balance did not decrease by expected amount"); //All funds were removed from SmartWallet
     }
 
-    function testDepositAdditionalToToFNFTWithPermit2(uint8 supply, uint256 amount, uint256 additionalDepositAmount)
-        public
+    function testDepositAdditionalToToFNFTWithPermit2(uint8 supply, uint256 amount, uint256 additionalDepositAmount) public
     {
         vm.assume(supply % 2 == 0 && supply >= 2);
         vm.assume(amount >= 1e6 && amount <= 1e20);
@@ -1020,7 +1039,6 @@ contract Revest1155Tests is Test {
     function testMetadataFunctions() public {
         uint amount = 1e6;
         uint supply = 1;
-        uint256 preBal = USDC.balanceOf(alice);
 
         address[] memory recipients = new address[](1);
         recipients[0] = alice;
@@ -1048,11 +1066,13 @@ contract Revest1155Tests is Test {
         //TODO: Once we figure out the metadata handler
         //This is only meant to fill the coverage test
 
-        uint256 currentTime = block.timestamp;
-        (bytes32 salt, bytes32 lockId) = revest.mintTimeLock(block.timestamp + 1 weeks, recipients, supplies, config);
+        revest.mintTimeLock(block.timestamp + 1 weeks, recipients, supplies, config);
 
-        string memory metadata = revest.getTokenURI(id);
-        revest.renderTokenURI(id, alice);
+        assert(fnftHandler.exists(id));
+
+        //TODO
+        fnftHandler.uri(id);
+        fnftHandler.renderTokenURI(id, alice);
 
         changePrank(revest.owner());
         revest.changeMetadataHandler(address(0xdead));

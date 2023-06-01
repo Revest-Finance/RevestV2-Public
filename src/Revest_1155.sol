@@ -55,6 +55,8 @@ contract Revest_1155 is Revest_base {
         IRevest.FNFTConfig memory fnftConfig,
         bool usePermit2
     ) internal override returns (bytes32 salt, bytes32 lockId) {
+        require(fnftConfig.handler.supportsInterface(type(IFNFTHandler).interfaceId));
+
         fnftConfig.fnftId = IFNFTHandler(fnftConfig.handler).getNextId();
 
         // Get or create lock based on time, assign lock to ID
@@ -91,6 +93,8 @@ contract Revest_1155 is Revest_base {
         IRevest.FNFTConfig memory fnftConfig,
         bool usePermit2
     ) internal override returns (bytes32 salt, bytes32 lockId) {
+        require(fnftConfig.handler.supportsInterface(type(IFNFTHandler).interfaceId));
+
         //If the handler is the Revest FNFT Contract get the new FNFT ID
         fnftConfig.fnftId = IFNFTHandler(fnftConfig.handler).getNextId();
 
@@ -312,7 +316,7 @@ contract Revest_1155 is Revest_base {
 
         uint256 supplyBefore = IFNFTHandler(fnft.handler).totalSupply(fnftId) + quantity;
 
-        amountToWithdraw = quantity.mulDivDown(IERC20(transferAsset).balanceOf(smartWalletAddr), supplyBefore);
+        amountToWithdraw = quantity.mulDivDown(supplyBefore * fnft.depositAmount, supplyBefore);
 
         // Deploy the smart wallet object
         tokenVault.withdrawToken(salt, transferAsset, amountToWithdraw, address(this));
@@ -345,7 +349,7 @@ contract Revest_1155 is Revest_base {
         require(supply != 0 && FNFTHandler.balanceOf(msg.sender, fnft.fnftId) == supply, "E007");
 
         require(
-            ILockManager(fnft.lockManager).proxyCallisApproved(salt, fnft.asset, targets, values, calldatas), "E013"
+            ILockManager(fnft.lockManager).proxyCallisApproved(fnft.asset, targets, values, calldatas), "E013"
         );
 
         return tokenVault.proxyCall(salt, targets, values, calldatas);

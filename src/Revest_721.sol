@@ -313,7 +313,7 @@ contract Revest_721 is Revest_base {
         require(IERC721(fnft.handler).ownerOf(fnft.fnftId) == msg.sender, "E023");
 
         require(
-            ILockManager(fnft.lockManager).proxyCallisApproved(salt, fnft.asset, targets, values, calldatas), "E024"
+            ILockManager(fnft.lockManager).proxyCallisApproved(fnft.asset, targets, values, calldatas), "E013"
         );
 
         bytes32 walletSalt = keccak256(abi.encode(fnft.fnftId, fnft.handler));

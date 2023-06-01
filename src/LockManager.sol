@@ -11,6 +11,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./interfaces/IRevest.sol";
 import "./interfaces/ILockManager.sol";
 import "./interfaces/IAddressLock.sol";
+import "./lib/IWETH.sol";
 
 import "forge-std/console.sol";
 
@@ -52,6 +53,7 @@ contract LockManager is ILockManager, ReentrancyGuard {
         newLock.creationTime = block.timestamp;
         newLock.creator = msg.sender;
         console.log("timestamp: ", block.timestamp);
+
 
         if (lock.lockType == ILockManager.LockType.TimeLock) {
             require(lock.timeLockExpiry > block.timestamp, "E015");
@@ -104,21 +106,20 @@ contract LockManager is ILockManager, ReentrancyGuard {
     /**
      * Return whether a lock of any type is mature. Use this for all locktypes.
      */
-    function getLockMaturity(bytes32 lockId, uint256 fnftId) public view override returns (bool) {
+    function getLockMaturity(bytes32 lockId, uint256 fnftId) public view override returns (bool hasMatured) {
         ILockManager.Lock memory lock = locks[lockId];
 
         if (lock.unlocked) return true;
 
         if (lock.lockType == ILockManager.LockType.TimeLock) {
-            return lock.timeLockExpiry <= block.timestamp;
+            hasMatured = lock.timeLockExpiry <= block.timestamp;
         } else if (lock.lockType == ILockManager.LockType.AddressLock) {
-            return (
+            hasMatured = (
                 lock.addressLock.supportsInterface(ADDRESS_LOCK_INTERFACE_ID)
                     && IAddressLock(lock.addressLock).isUnlockable(fnftId, uint256(lockId))
             );
         }
-
-        return false;
+        
     }
 
     function lockTypes(bytes32 tokenId) external view override returns (ILockManager.LockType) {
@@ -130,36 +131,31 @@ contract LockManager is ILockManager, ReentrancyGuard {
     }
 
     function proxyCallisApproved(
-        bytes32 lockSalt,
         address token,
         address[] memory targets,
         uint256[] memory, //We don't need values but its in the interface and good for users who want to bring their own lockManager
         bytes[] memory calldatas
     ) external view returns (bool) {
-        bytes32 salt = keccak256(abi.encode(lockSalt, msg.sender));
+        for (uint256 x = 0; x < calldatas.length;) {
+            //Restriction only enabled when the target is the token and not unlocked
+            if (targets[x] == token && blacklistedSelector[bytes4(calldatas[x])]) {
+                return false;
+            }
 
-        if (locks[salt].unlocked) {
-            return true;
-        } else {
-            for (uint256 x = 0; x < calldatas.length;) {
-                //Restriction only enabled when the target is the token and not unlocked
-                if (targets[x] == token && blacklistedSelector[bytes4(calldatas[x])]) {
+            //Revest uses address(0) for asset when it is ETH, but stores WETH in the vault.
+            //This prevents the edge case for that
+            else if (targets[x] == WETH && token == address(0)) {
+                console.log("got here");
+                if (bytes4(calldatas[x]) == IWETH.withdraw.selector) {
                     return false;
                 }
-                //Revest uses address(0) for asset when it is ETH, but stores WETH in the vault.
-                //This prevents the edge case for that
-                else if (targets[x] == WETH && token == address(0)) {
-                    //The function signature for "withdraw(uint256)", so you cant remove it by unwrapping the WETH
-                    if (bytes4(calldatas[x]) == bytes4(hex"2e1a7d4d")) {
-                        return false;
-                    }
-                }
+            }
 
-                unchecked {
-                    ++x;
-                }
+            unchecked {
+                ++x;
             }
         }
+
         return true;
     }
 }

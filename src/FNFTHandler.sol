@@ -143,7 +143,7 @@ contract FNFTHandler is ERC1155, Ownable, IFNFTHandler {
         }
     }
 
-    function uri(uint256 fnftId) public view override returns (string memory) {
+    function uri(uint256 fnftId) public view override(ERC1155, IFNFTHandler) returns (string memory) {
         return IRevest(owner()).getTokenURI(fnftId);
     }
 
