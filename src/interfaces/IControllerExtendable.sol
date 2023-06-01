@@ -8,7 +8,6 @@ import "./IAllowanceTransfer.sol";
  * @title Provider interface for Revest FNFTs
  */
 interface IControllerExtendable {
-
     event FNFTMaturityExtended(
         bytes32 indexed newLockId, address from, uint256 indexed fnftId, uint256 indexed newExtendedTime
     );
@@ -25,7 +24,5 @@ interface IControllerExtendable {
         bytes calldata _signature
     ) external returns (uint256);
 
-
     function extendFNFTMaturity(bytes32 salt, uint256 endTime) external returns (bytes32);
-
 }

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GNU-GPL v3.0 or later
 
 E001 - Invalid FNFT Handler provided
-E002 - time lock unlock time is in the past
+E002 - Time lock unlock time is in the past
 E003 – FNFT does not exist
 E004 - Transaction value not enought to cover deposit amount and fees
 E005 - FNFT already exists for given salt

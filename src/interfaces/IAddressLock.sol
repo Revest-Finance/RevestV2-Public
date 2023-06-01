@@ -26,5 +26,4 @@ interface IAddressLock is IERC165 {
     ///      if this method is returning true and someone attempts to unlock or withdraw from an FNFT attached to the requested lock, the request will succeed
     /// @return whether or not this lock may be unlocked
     function isUnlockable(uint256 fnftId, uint256 lockId) external view returns (bool);
-
 }

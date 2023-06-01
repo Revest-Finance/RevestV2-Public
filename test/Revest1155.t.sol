@@ -42,9 +42,11 @@ contract Revest1155Tests is Test {
     bytes signature;
     IAllowanceTransfer.PermitBatch permit;
 
+    string baseURI = "https://ipfs.io/ipfs/";
+
     constructor() {
         vault = new TokenVault();
-        metadataHandler = new MetadataHandler("");
+        metadataHandler = new MetadataHandler(baseURI);
         revest = new Revest_1155(address(WETH), address(vault), address(metadataHandler));
         lockManager = new LockManager(address(WETH));
         fnftHandler = new FNFTHandler();
@@ -173,12 +175,19 @@ contract Revest1155Tests is Test {
         skip(1 weeks + 1 seconds);
         console.log("second maturity check");
         assertFalse(!lockManager.getLockMaturity(lockId, id));
+
         revest.unlockFNFT(salt);
         revest.withdrawFNFT(salt, supply);
+
         assertEq(fnftHandler.balanceOf(bob, id), 0, "bob did not lose expected amount of FNFTs"); //All FNFTs were burned
         assertEq(USDC.balanceOf(bob), supply * amount, "bob did not receive expected amount of USDC"); //All funds were returned to bob
         assertEq(fnftHandler.totalSupply(id), 0, "total supply of FNFTs did not decrease by expected amount"); //Total supply of FNFTs was decreased
         assertEq(USDC.balanceOf(walletAddr), 0, "vault balance did not decrease by expected amount"); //All funds were removed from SmartWallet
+
+        assertEq(revest.fnftIdToRevestId(address(fnftHandler), id), salt, "revestId was not set correctly");
+
+        assertEq(revest.getAsset(salt), address(USDC), "asset was not set correctly");
+        assertEq(revest.getValue(salt), amount, "value was not set correctly");
     }
 
     function testBatchMintTimeLock(uint8 supply, uint256 amount) public {
@@ -450,7 +459,10 @@ contract Revest1155Tests is Test {
             changePrank(alice);
 
             skip(2 weeks);
-            vm.expectRevert(bytes("E007")); //Revert because FNFT maturity has already passed
+            vm.expectRevert(bytes("E015")); //Revert because new FNFT maturity date has already passed
+            revest.extendFNFTMaturity(salt, block.timestamp - 2 weeks); //Extend a week beyond the current endDate
+
+            vm.expectRevert(bytes("E007")); //Revert because new FNFT maturity date has already passed
             revest.extendFNFTMaturity(salt, block.timestamp + 2 weeks); //Extend a week beyond the current endDate
 
             rewind(2 weeks); //Go back 2 weeks to actually extend this time
@@ -1003,5 +1015,47 @@ contract Revest1155Tests is Test {
         assertEq(
             USDC.balanceOf(alice), preBal - USDC.balanceOf(bob), "alice balance did not increase by expected amount"
         );
+    }
+
+    function testMetadataFunctions() public {
+        uint amount = 1e6;
+        uint supply = 1;
+        uint256 preBal = USDC.balanceOf(alice);
+
+        address[] memory recipients = new address[](1);
+        recipients[0] = alice;
+
+        uint256[] memory supplies = new uint[](1);
+        supplies[0] = supply;
+
+        uint256 id = fnftHandler.getNextId();
+
+        IController.FNFTConfig memory config = IController.FNFTConfig({
+            pipeToContract: address(0),
+            handler: address(fnftHandler),
+            asset: address(USDC),
+            lockManager: address(lockManager),
+            depositAmount: amount,
+            nonce: 0,
+            quantity: 0,
+            fnftId: 0,
+            lockId: bytes32(0),
+            maturityExtension: false,
+            useETH: false,
+            nontransferrable: false
+        });
+
+        //TODO: Once we figure out the metadata handler
+        //This is only meant to fill the coverage test
+
+        uint256 currentTime = block.timestamp;
+        (bytes32 salt, bytes32 lockId) = revest.mintTimeLock(block.timestamp + 1 weeks, recipients, supplies, config);
+
+        string memory metadata = revest.getTokenURI(id);
+        revest.renderTokenURI(id, alice);
+
+        changePrank(revest.owner());
+        revest.changeMetadataHandler(address(0xdead));
+        assertEq(address(revest.metadataHandler()), address(0xdead), "metadata handler not updated");
     }
 }

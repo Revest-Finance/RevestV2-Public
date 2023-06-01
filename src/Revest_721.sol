@@ -137,7 +137,7 @@ contract Revest_721 is Revest_base {
 
         ILockManager(fnft.lockManager).unlockFNFT(fnft.lockId, fnft.fnftId);
 
-        withdrawToken(salt, fnft.fnftId, 1, currentOwner);
+        withdrawToken(salt, fnft.fnftId, currentOwner);
 
         emit FNFTWithdrawn(currentOwner, fnft.fnftId, 1);
     }
@@ -151,20 +151,26 @@ contract Revest_721 is Revest_base {
         //Require that the FNFT exists
         require(fnft.quantity != 0);
 
-        require(endTime > block.timestamp, "E007");
+        //Require that the new maturity is in the future
+        require(endTime > block.timestamp, "E015");
 
         //Only the NFT owner can extend the lock on the NFT
-        require(IERC721(handler).ownerOf(fnftId) == msg.sender);
+        require(IERC721(handler).ownerOf(fnftId) == msg.sender, "E023");
 
         ILockManager manager = ILockManager(fnft.lockManager);
 
         // If it can't have its maturity extended, revert
         // Will also return false on non-time lock locks
-        require(fnft.maturityExtension && manager.lockTypes(salt) == ILockManager.LockType.TimeLock, "E009");
+        require(fnft.maturityExtension && manager.lockTypes(fnft.lockId) == ILockManager.LockType.TimeLock, "E009");
 
         // If desired maturity is below existing date or already unlocked, reject operation
-        ILockManager.Lock memory lockParam = manager.getLock(salt);
-        require(!lockParam.unlocked && lockParam.timeLockExpiry > block.timestamp, "E021");
+        ILockManager.Lock memory lockParam = manager.getLock(fnft.lockId);
+
+        require(!lockParam.unlocked && lockParam.timeLockExpiry > block.timestamp, "E007");
+
+        console.log("original end time: %i", lockParam.timeLockExpiry);
+        console.log("new end time: %i", endTime);
+
         require(lockParam.timeLockExpiry < endTime, "E010");
 
         // Update the lock
@@ -188,33 +194,35 @@ contract Revest_721 is Revest_base {
     function _depositAdditionalToFNFT(bytes32 salt, uint256 amount, bool usePermit2)
         internal
         override
-        returns (uint256 deposit)
+        returns (uint256)
     {
-        IRevest.FNFTConfig memory fnft = fnfts[salt];
+        IRevest.FNFTConfig storage fnft = fnfts[salt];
         uint256 fnftId = fnft.fnftId;
+
+        fnft.depositAmount += amount;
 
         require(fnft.quantity != 0);
 
         //If the handler is an NFT then supply is 1
-        uint256 supply = 1;
 
-        bytes32 walletSalt = keccak256(abi.encodePacked(fnft.fnftId, fnft.handler));
-        address smartWallet = getAddressForFNFT(walletSalt);
-
-        deposit = supply * amount;
+        bytes32 walletSalt = keccak256(abi.encode(fnft.fnftId, fnft.handler));
+        address smartWallet = tokenVault.getAddress(walletSalt, address(this));
 
         // Transfer to the smart wallet
         if (fnft.asset != address(0) && amount != 0) {
             if (usePermit2) {
-                PERMIT2.transferFrom(msg.sender, smartWallet, deposit.toUint160(), fnft.asset);
+                console.log("amount to deposit: %i", amount);
+                PERMIT2.transferFrom(msg.sender, smartWallet, amount.toUint160(), fnft.asset);
             } else {
-                ERC20(fnft.asset).safeTransferFrom(msg.sender, smartWallet, deposit);
+                ERC20(fnft.asset).safeTransferFrom(msg.sender, smartWallet, amount);
             }
 
             emit DepositERC20(fnft.asset, msg.sender, fnftId, amount, smartWallet);
         } //if (amount != zero)
 
-        emit FNFTAddionalDeposited(msg.sender, fnftId, supply, amount);
+        emit FNFTAddionalDeposited(msg.sender, fnftId, 1, amount);
+
+        return amount;
     }
 
     //
@@ -238,7 +246,6 @@ contract Revest_721 is Revest_base {
 
         // Create the FNFT and update accounting within TokenVault
         params.fnftConfig.quantity = 1;
-        fnfts[fnftSalt] = params.fnftConfig;
 
         // Now, we move the funds to token vault from the message sender
         address smartWallet = tokenVault.getAddress(WalletSalt, address(this));
@@ -246,7 +253,13 @@ contract Revest_721 is Revest_base {
         console.log("smartWallet on deposit: %s", smartWallet);
         console.log("amount: %i", params.fnftConfig.depositAmount);
 
-        if (params.usePermit2) {
+        if (msg.value != 0) {
+            params.fnftConfig.asset = address(0);
+            params.fnftConfig.depositAmount = msg.value;
+            params.fnftConfig.useETH = true;
+            IWETH(WETH).deposit{value: msg.value}(); //Convert it to WETH and send it back to this
+            IWETH(WETH).transfer(smartWallet, msg.value); //Transfer it to the smart wallet
+        } else if (params.usePermit2) {
             PERMIT2.transferFrom(
                 msg.sender, smartWallet, (params.fnftConfig.depositAmount).toUint160(), params.fnftConfig.asset
             );
@@ -254,37 +267,38 @@ contract Revest_721 is Revest_base {
             ERC20(params.fnftConfig.asset).safeTransferFrom(msg.sender, smartWallet, params.fnftConfig.depositAmount);
         }
 
+        fnfts[fnftSalt] = params.fnftConfig;
+
         emit CreateFNFT(fnftSalt, params.fnftConfig.fnftId, msg.sender);
     }
 
-    function withdrawToken(bytes32 salt, uint256 fnftId, uint256 quantity, address user) internal {
+    function withdrawToken(bytes32 salt, uint256 fnftId, address user) internal {
         // If the FNFT is an old one, this just assigns to zero-value
         IRevest.FNFTConfig memory fnft = fnfts[salt];
-        address pipeTo = fnft.pipeToContract;
         uint256 amountToWithdraw;
 
-        address asset = fnft.asset == address(0) ? WETH : fnft.asset;
+        //When the user deposits Eth it stores the asset as address(0) but actual WETH is kept in the vault 
+        address transferAsset = fnft.asset == address(0) ? WETH : fnft.asset;
 
         bytes32 walletSalt = keccak256(abi.encode(fnftId, fnft.handler));
 
         address smartWallAdd = tokenVault.getAddress(walletSalt, address(this));
 
-        uint256 supplyBefore = 1;
-
-        amountToWithdraw = quantity.mulDivDown(IERC20(asset).balanceOf(smartWallAdd), supplyBefore);
+        amountToWithdraw = IERC20(transferAsset).balanceOf(smartWallAdd);
+        console.log("amount to withdraw: %i", amountToWithdraw);
 
         // Deploy the smart wallet object
-        address destination = (pipeTo == address(0)) ? user : pipeTo;
-        tokenVault.withdrawToken(walletSalt, asset, amountToWithdraw, address(this));
 
-        if (asset == address(0)) {
+        tokenVault.withdrawToken(walletSalt, transferAsset, amountToWithdraw, address(this));
+
+        if (fnft.asset == address(0)) {
             IWETH(WETH).withdraw(amountToWithdraw);
-            destination.safeTransferETH(amountToWithdraw);
+            user.safeTransferETH(amountToWithdraw);
         } else {
-            ERC20(asset).safeTransfer(destination, amountToWithdraw);
+            ERC20(fnft.asset).safeTransfer(user, amountToWithdraw);
         }
 
-        emit WithdrawERC20(asset, user, fnftId, amountToWithdraw, smartWallAdd);
+        emit WithdrawERC20(transferAsset, user, fnftId, amountToWithdraw, smartWallAdd);
 
         emit RedeemFNFT(salt, fnftId, user);
     }

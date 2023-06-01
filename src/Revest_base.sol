@@ -27,7 +27,6 @@ import "./lib/IWETH.sol";
 
 import "forge-std/console2.sol";
 
-
 abstract contract Revest_base is IRevest, IControllerExtendable, ERC1155Holder, ReentrancyGuard, Ownable {
     using SafeTransferLib for ERC20;
     using SafeTransferLib for address;
@@ -41,7 +40,7 @@ abstract contract Revest_base is IRevest, IControllerExtendable, ERC1155Holder, 
 
     address immutable WETH;
     ITokenVault immutable tokenVault;
-    IMetadataHandler metadataHandler;
+    IMetadataHandler public metadataHandler;
 
     //Deployed omni-chain to same address
     IAllowanceTransfer constant PERMIT2 = IAllowanceTransfer(0x000000000022D473030F116dDEE9F6B43aC78BA3);
@@ -72,7 +71,7 @@ abstract contract Revest_base is IRevest, IControllerExtendable, ERC1155Holder, 
         //TODO: Fix Events
         emit FNFTUnlocked(msg.sender, fnft.fnftId);
     }
-    
+
     /*//////////////////////////////////////////////////////////////
                     IResonate Functions
     //////////////////////////////////////////////////////////////*/
@@ -86,7 +85,8 @@ abstract contract Revest_base is IRevest, IControllerExtendable, ERC1155Holder, 
         bytes calldata _signature
     ) external payable nonReentrant returns (bytes32 salt, bytes32 lockId) {
         //Length check means to use permit2 for allowance but allowance has already been granted
-        if (_signature.length != 0) PERMIT2.permit(msg.sender, permits, _signature);
+        require(_signature.length != 0);
+        PERMIT2.permit(msg.sender, permits, _signature);
         return _mintTimeLock(endTime, recipients, quantities, fnftConfig, true);
     }
 
@@ -109,7 +109,8 @@ abstract contract Revest_base is IRevest, IControllerExtendable, ERC1155Holder, 
         bytes calldata _signature
     ) external payable virtual nonReentrant returns (bytes32 salt, bytes32 lockId) {
         //Length check means to use permit2 for allowance but allowance has already been granted
-        if (_signature.length != 0) PERMIT2.permit(msg.sender, permits, _signature);
+        require(_signature.length != 0);
+        PERMIT2.permit(msg.sender, permits, _signature);
         return _mintAddressLock(trigger, arguments, recipients, quantities, fnftConfig, true);
     }
 
@@ -154,7 +155,8 @@ abstract contract Revest_base is IRevest, IControllerExtendable, ERC1155Holder, 
         bytes calldata _signature
     ) external virtual returns (uint256 deposit) {
         //Length check means to use permit2 for allowance but allowance has already been granted
-        if (_signature.length != 0) PERMIT2.permit(msg.sender, permits, _signature);
+        require(_signature.length != 0);
+        PERMIT2.permit(msg.sender, permits, _signature);
         return _depositAdditionalToFNFT(salt, amount, true);
     }
 

@@ -156,7 +156,7 @@ contract Revest_1155 is Revest_base {
         //Require that the FNFT exists
         require(fnft.quantity != 0);
 
-        require(endTime > block.timestamp, "E007");
+        require(endTime > block.timestamp, "E015");
 
         IFNFTHandler fnftHandler = IFNFTHandler(handler);
 
@@ -305,26 +305,27 @@ contract Revest_1155 is Revest_base {
         IRevest.FNFTConfig memory fnft = fnfts[salt];
         uint256 amountToWithdraw;
 
-        address asset = fnft.asset == address(0) ? WETH : fnft.asset;
+        //When the user deposits Eth it stores the asset as address(0) but actual WETH is kept in the vault 
+        address transferAsset = fnft.asset == address(0) ? WETH : fnft.asset;
 
         address smartWalletAddr = getAddressForFNFT(salt);
 
         uint256 supplyBefore = IFNFTHandler(fnft.handler).totalSupply(fnftId) + quantity;
 
-        amountToWithdraw = quantity.mulDivDown(IERC20(asset).balanceOf(smartWalletAddr), supplyBefore);
+        amountToWithdraw = quantity.mulDivDown(IERC20(transferAsset).balanceOf(smartWalletAddr), supplyBefore);
 
         // Deploy the smart wallet object
+        tokenVault.withdrawToken(salt, transferAsset, amountToWithdraw, address(this));
 
-        tokenVault.withdrawToken(salt, asset, amountToWithdraw, address(this));
-
-        if (asset == WETH) {
+        //Return ETH to the user or WETH
+        if (fnft.asset == address(0)) {
             IWETH(WETH).withdraw(amountToWithdraw);
             destination.safeTransferETH(amountToWithdraw);
         } else {
-            ERC20(asset).safeTransfer(destination, amountToWithdraw);
+            ERC20(fnft.asset).safeTransfer(destination, amountToWithdraw);
         }
 
-        emit WithdrawERC20(asset, destination, fnftId, amountToWithdraw, smartWalletAddr);
+        emit WithdrawERC20(transferAsset, destination, fnftId, amountToWithdraw, smartWalletAddr);
 
         emit RedeemFNFT(salt, fnftId, destination);
     }

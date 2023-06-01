@@ -24,7 +24,6 @@ interface IRevest is IController {
         FNFTConfig fnftConfig
     );
 
-
     function mintTimeLockWithPermit(
         uint256 endTime,
         address[] memory recipients,

@@ -19,6 +19,4 @@ contract ExampleAddressLock is IAddressLock {
         //Makes Testing Easier
         return block.timestamp % 2 == 0;
     }
-
-  
 }

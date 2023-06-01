@@ -133,7 +133,7 @@ contract LockManager is ILockManager, ReentrancyGuard {
         bytes32 lockSalt,
         address token,
         address[] memory targets,
-        uint256[] memory,//We don't need values but its in the interface and good for users who want to bring their own lockManager
+        uint256[] memory, //We don't need values but its in the interface and good for users who want to bring their own lockManager
         bytes[] memory calldatas
     ) external view returns (bool) {
         bytes32 salt = keccak256(abi.encode(lockSalt, msg.sender));
@@ -142,10 +142,10 @@ contract LockManager is ILockManager, ReentrancyGuard {
             return true;
         } else {
             for (uint256 x = 0; x < calldatas.length;) {
-
                 //Restriction only enabled when the target is the token and not unlocked
-                if (targets[x] == token && blacklistedSelector[bytes4(calldatas[x])]) return false;
-
+                if (targets[x] == token && blacklistedSelector[bytes4(calldatas[x])]) {
+                    return false;
+                }
                 //Revest uses address(0) for asset when it is ETH, but stores WETH in the vault.
                 //This prevents the edge case for that
                 else if (targets[x] == WETH && token == address(0)) {
@@ -154,7 +154,7 @@ contract LockManager is ILockManager, ReentrancyGuard {
                         return false;
                     }
                 }
-                
+
                 unchecked {
                     ++x;
                 }
