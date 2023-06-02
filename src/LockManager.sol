@@ -43,8 +43,6 @@ contract LockManager is ILockManager, ReentrancyGuard {
         returns (bytes32 lockId)
     {
         lockId = keccak256(abi.encode(salt, msg.sender));
-        console.log("---generated lockId--");
-        console.logBytes32(lockId);
 
         // Extensive validation on creation
         ILockManager.Lock memory newLock;

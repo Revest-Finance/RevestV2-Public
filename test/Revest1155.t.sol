@@ -730,8 +730,6 @@ contract Revest1155Tests is Test {
             )
         );
 
-        console2.log("---Test digest---");
-        console2.logBytes32(digest);
 
         //Sign the permit info
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(PRIVATE_KEY, digest);
@@ -746,6 +744,15 @@ contract Revest1155Tests is Test {
             deadline: block.timestamp + 1 weeks,
             data: bytes("")
         });
+
+        skip(2 weeks);
+        vm.expectRevert(bytes("ERC1155: signature expired"));
+        fnftHandler.transferFromWithPermit(transferPermit, transferSignature);
+
+        rewind(2 weeks);
+
+        vm.expectRevert(bytes("E018"));
+        fnftHandler.transferFromWithPermit(transferPermit, "0xdead");
 
         //Do the transfer
         fnftHandler.transferFromWithPermit(transferPermit, transferSignature);
@@ -768,6 +775,14 @@ contract Revest1155Tests is Test {
         id = fnftHandler.getNextId();
         newRevest.mintTimeLock(block.timestamp + 1 weeks, recipients, amounts, config);
         assertEq(fnftHandler.balanceOf(alice, id), 1, "FNFT not minted to Alice");
+
+        uint[] memory transferAmounts = new uint[](1);
+        uint[] memory transferIds = new uint[](1);
+        transferAmounts[0] = 0;
+        transferIds[0] = id;
+        vm.expectRevert(bytes("E020"));
+        fnftHandler.safeBatchTransferFrom(alice, bob, transferIds, transferAmounts, "");
+
     }
 
     function testProxyCallFunctionality() public {
@@ -836,6 +851,10 @@ contract Revest1155Tests is Test {
         vm.expectRevert(bytes("E013"));
         revest.proxyCall(salt, targets, values, calldatas);
 
+        vm.expectRevert(bytes("E025"));
+        calldatas[0] = "0xdead";
+        targets[0] = address(USDC);
+        revest.proxyCall(salt, targets, values, calldatas);
     }
 
     function testMintTimeLockWithPermit2(uint160 amount) public {
@@ -866,6 +885,9 @@ contract Revest1155Tests is Test {
                 useETH: false,
                 nontransferrable: true
             });
+
+            vm.expectRevert(bytes("E024"));
+            revest.mintTimeLockWithPermit(block.timestamp + 1 weeks, recipients, amounts, config, permit, "");
 
             (salt, lockId) =
                 revest.mintTimeLockWithPermit(block.timestamp + 1 weeks, recipients, amounts, config, permit, signature);
@@ -909,6 +931,9 @@ contract Revest1155Tests is Test {
             useETH: false,
             nontransferrable: false
         });
+
+        vm.expectRevert(bytes("E024"));
+        revest.mintAddressLockWithPermit(address(addressLock), "", recipients, amounts, config, permit, "");
 
         (bytes32 salt, bytes32 lockId) =
             revest.mintAddressLockWithPermit(address(addressLock), "", recipients, amounts, config, permit, signature);
@@ -979,6 +1004,9 @@ contract Revest1155Tests is Test {
         address walletAddr = revest.getAddressForFNFT(salt);
         uint256 balanceBefore = USDC.balanceOf(walletAddr);
         uint256 aliceBalanceBeforeAdditionalDeposit = USDC.balanceOf(alice);
+
+        vm.expectRevert(bytes("E024"));
+        revest.depositAdditionalToFNFTWithPermit(salt, additionalDepositAmount, permit, "");
 
         revest.depositAdditionalToFNFTWithPermit(salt, additionalDepositAmount, permit, signature);
 

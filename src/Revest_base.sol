@@ -85,7 +85,7 @@ abstract contract Revest_base is IRevest, IControllerExtendable, ERC1155Holder, 
         bytes calldata _signature
     ) external payable nonReentrant returns (bytes32 salt, bytes32 lockId) {
         //Length check means to use permit2 for allowance but allowance has already been granted
-        require(_signature.length != 0);
+        require(_signature.length != 0, "E024");
         PERMIT2.permit(msg.sender, permits, _signature);
         return _mintTimeLock(endTime, recipients, quantities, fnftConfig, true);
     }
@@ -109,7 +109,7 @@ abstract contract Revest_base is IRevest, IControllerExtendable, ERC1155Holder, 
         bytes calldata _signature
     ) external payable virtual nonReentrant returns (bytes32 salt, bytes32 lockId) {
         //Length check means to use permit2 for allowance but allowance has already been granted
-        require(_signature.length != 0);
+        require(_signature.length != 0, "E024");
         PERMIT2.permit(msg.sender, permits, _signature);
         return _mintAddressLock(trigger, arguments, recipients, quantities, fnftConfig, true);
     }
@@ -155,7 +155,7 @@ abstract contract Revest_base is IRevest, IControllerExtendable, ERC1155Holder, 
         bytes calldata _signature
     ) external virtual returns (uint256 deposit) {
         //Length check means to use permit2 for allowance but allowance has already been granted
-        require(_signature.length != 0);
+        require(_signature.length != 0, "E024");
         PERMIT2.permit(msg.sender, permits, _signature);
         return _depositAdditionalToFNFT(salt, amount, true);
     }
