@@ -28,7 +28,8 @@ contract TokenVault is ITokenVault, ReentrancyGuard {
         uint256 quantity,
         address recipient //TODO: Can replace user with just send back to msg.sender but less optimized
     ) external override nonReentrant {
-        address payable walletAddr = payable(Clones.cloneDeterministic(TEMPLATE, keccak256(abi.encode(salt, msg.sender))));
+        address payable walletAddr =
+            payable(Clones.cloneDeterministic(TEMPLATE, keccak256(abi.encode(salt, msg.sender))));
 
         console.log("generated wallet address: ", walletAddr);
 
@@ -42,7 +43,8 @@ contract TokenVault is ITokenVault, ReentrancyGuard {
         nonReentrant
         returns (bytes[] memory outputs)
     {
-        address payable walletAddr = payable(Clones.cloneDeterministic(TEMPLATE, keccak256(abi.encode(salt, msg.sender))));
+        address payable walletAddr =
+            payable(Clones.cloneDeterministic(TEMPLATE, keccak256(abi.encode(salt, msg.sender))));
 
         //Proxy the calls through and selfDestruct itself when finished
         outputs = RevestSmartWallet(walletAddr).proxyCall(targets, values, calldatas);

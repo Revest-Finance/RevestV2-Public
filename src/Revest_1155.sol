@@ -55,7 +55,7 @@ contract Revest_1155 is Revest_base {
         IRevest.FNFTConfig memory fnftConfig,
         bool usePermit2
     ) internal override returns (bytes32 salt, bytes32 lockId) {
-        require(fnftConfig.handler.supportsInterface(type(IFNFTHandler).interfaceId));
+        require(fnftConfig.handler.supportsInterface(type(IFNFTHandler).interfaceId), "E001");
 
         fnftConfig.fnftId = IFNFTHandler(fnftConfig.handler).getNextId();
 
@@ -63,7 +63,7 @@ contract Revest_1155 is Revest_base {
         {
             salt = keccak256(abi.encode(fnftConfig.fnftId, fnftConfig.handler, 0));
 
-            require(fnfts[salt].quantity == 0, "E006");
+            require(fnfts[salt].quantity == 0, "E005");
 
             if (!ILockManager(fnftConfig.lockManager).lockExists(fnftConfig.lockId)) {
                 ILockManager.LockParam memory timeLock;
@@ -93,14 +93,14 @@ contract Revest_1155 is Revest_base {
         IRevest.FNFTConfig memory fnftConfig,
         bool usePermit2
     ) internal override returns (bytes32 salt, bytes32 lockId) {
-        require(fnftConfig.handler.supportsInterface(type(IFNFTHandler).interfaceId));
+        require(fnftConfig.handler.supportsInterface(type(IFNFTHandler).interfaceId), "E001");
 
         //If the handler is the Revest FNFT Contract get the new FNFT ID
         fnftConfig.fnftId = IFNFTHandler(fnftConfig.handler).getNextId();
 
         {
             salt = keccak256(abi.encode(fnftConfig.fnftId, fnftConfig.handler, 0));
-            require(fnfts[salt].quantity == 0, "E006"); //TODO: Double check that Error code
+            require(fnfts[salt].quantity == 0, "E005"); //TODO: Double check that Error code
 
             if (!ILockManager(fnftConfig.lockManager).lockExists(fnftConfig.lockId)) {
                 ILockManager.LockParam memory addressLock;
@@ -158,13 +158,11 @@ contract Revest_1155 is Revest_base {
         address handler = fnft.handler;
 
         //Require that the FNFT exists
-        require(fnft.quantity != 0);
+        require(fnft.quantity != 0, "E003");
 
         require(endTime > block.timestamp, "E015");
 
         IFNFTHandler fnftHandler = IFNFTHandler(handler);
-
-        require(fnftId < fnftHandler.getNextId(), "E003");
 
         uint256 supply = fnftHandler.totalSupply(fnftId);
 
@@ -208,8 +206,7 @@ contract Revest_1155 is Revest_base {
         uint256 fnftId = fnft.fnftId;
         address handler = fnft.handler;
 
-        require(fnft.quantity != 0);
-        require(fnftId < IFNFTHandler(handler).getNextId(), "E003");
+        require(fnft.quantity != 0, "E003");
 
         uint256 supply = IFNFTHandler(handler).totalSupply(fnftId);
 
@@ -253,7 +250,6 @@ contract Revest_1155 is Revest_base {
             } else {
                 totalQuantity = params.quantities[0];
             }
-
             require(totalQuantity > 0, "E012");
         }
 
@@ -309,7 +305,7 @@ contract Revest_1155 is Revest_base {
         IRevest.FNFTConfig memory fnft = fnfts[salt];
         uint256 amountToWithdraw;
 
-        //When the user deposits Eth it stores the asset as address(0) but actual WETH is kept in the vault 
+        //When the user deposits Eth it stores the asset as address(0) but actual WETH is kept in the vault
         address transferAsset = fnft.asset == address(0) ? WETH : fnft.asset;
 
         address smartWalletAddr = getAddressForFNFT(salt);
@@ -348,9 +344,7 @@ contract Revest_1155 is Revest_base {
         uint256 supply = FNFTHandler.totalSupply(fnft.fnftId);
         require(supply != 0 && FNFTHandler.balanceOf(msg.sender, fnft.fnftId) == supply, "E007");
 
-        require(
-            ILockManager(fnft.lockManager).proxyCallisApproved(fnft.asset, targets, values, calldatas), "E013"
-        );
+        require(ILockManager(fnft.lockManager).proxyCallisApproved(fnft.asset, targets, values, calldatas), "E013");
 
         return tokenVault.proxyCall(salt, targets, values, calldatas);
     }

@@ -25,6 +25,8 @@ interface IController {
         address asset; // The token being stored
         address lockManager;
         uint256 depositAmount; // The amount of each token being stored
+
+        //TODO: Pack Better
         uint256 nonce; // The FNFT number
         uint256 quantity; // How many FNFTs
         uint256 fnftId; //the ID of the NFT the FNFT was minted to

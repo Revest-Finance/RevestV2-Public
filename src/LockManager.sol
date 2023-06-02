@@ -52,7 +52,6 @@ contract LockManager is ILockManager, ReentrancyGuard {
         newLock.creator = msg.sender;
         console.log("timestamp: ", block.timestamp);
 
-
         if (lock.lockType == ILockManager.LockType.TimeLock) {
             require(lock.timeLockExpiry > block.timestamp, "E015");
             newLock.timeLockExpiry = lock.timeLockExpiry;
@@ -117,7 +116,6 @@ contract LockManager is ILockManager, ReentrancyGuard {
                     && IAddressLock(lock.addressLock).isUnlockable(fnftId, uint256(lockId))
             );
         }
-        
     }
 
     function lockTypes(bytes32 tokenId) external view override returns (ILockManager.LockType) {
@@ -139,7 +137,6 @@ contract LockManager is ILockManager, ReentrancyGuard {
             if (targets[x] == token && blacklistedSelector[bytes4(calldatas[x])]) {
                 return false;
             }
-
             //Revest uses address(0) for asset when it is ETH, but stores WETH in the vault.
             //This prevents the edge case for that
             else if (targets[x] == WETH && token == address(0)) {

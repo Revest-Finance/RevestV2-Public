@@ -57,13 +57,17 @@ contract Revest_721 is Revest_base {
         IRevest.FNFTConfig memory fnftConfig,
         bool usePermit2
     ) internal override returns (bytes32 salt, bytes32 lockId) {
+        require(fnftConfig.handler.supportsInterface(ERC721_INTERFACE_ID), "E001");
+
         //Each NFT for a handler as an identifier, so that you can mint multiple fnfts to the same nft
         fnftConfig.nonce = numfnfts[fnftConfig.handler][fnftConfig.fnftId]++;
 
         // Get or create lock based on time, assign lock to ID
         {
             salt = keccak256(abi.encode(fnftConfig.fnftId, fnftConfig.handler, fnftConfig.nonce));
-            require(fnfts[salt].quantity == 0, "E006");
+
+            //Can only be triggered by inadvertent hash collision
+            require(fnfts[salt].quantity == 0, "E005");
 
             if (!ILockManager(fnftConfig.lockManager).lockExists(fnftConfig.lockId)) {
                 ILockManager.LockParam memory timeLock;
@@ -92,12 +96,17 @@ contract Revest_721 is Revest_base {
         IRevest.FNFTConfig memory fnftConfig,
         bool usePermit2
     ) internal override returns (bytes32 salt, bytes32 lockId) {
+        require(fnftConfig.handler.supportsInterface(ERC721_INTERFACE_ID), "E001");
+
         //Each NFT for a handler as an identifier, so that you can mint multiple fnfts to the same nft
         fnftConfig.nonce = numfnfts[fnftConfig.handler][fnftConfig.fnftId]++;
 
         {
             salt = keccak256(abi.encode(fnftConfig.fnftId, fnftConfig.handler, fnftConfig.nonce));
-            require(fnfts[salt].quantity == 0, "E006"); //TODO: Double check that Error code
+
+            //Impossible to trigger manually, only be hash collision, but just in case
+            require(fnfts[salt].quantity == 0, "E005");
+
 
             if (!ILockManager(fnftConfig.lockManager).lockExists(fnftConfig.lockId)) {
                 ILockManager.LockParam memory addressLock;
@@ -149,7 +158,7 @@ contract Revest_721 is Revest_base {
         address handler = fnft.handler;
 
         //Require that the FNFT exists
-        require(fnft.quantity != 0);
+        require(fnft.quantity != 0, "E003");
 
         //Require that the new maturity is in the future
         require(endTime > block.timestamp, "E015");
@@ -201,7 +210,7 @@ contract Revest_721 is Revest_base {
 
         fnft.depositAmount += amount;
 
-        require(fnft.quantity != 0);
+        require(fnft.quantity != 0, "E003");
 
         //If the handler is an NFT then supply is 1
 
@@ -277,7 +286,7 @@ contract Revest_721 is Revest_base {
         IRevest.FNFTConfig memory fnft = fnfts[salt];
         uint256 amountToWithdraw;
 
-        //When the user deposits Eth it stores the asset as address(0) but actual WETH is kept in the vault 
+        //When the user deposits Eth it stores the asset as address(0) but actual WETH is kept in the vault
         address transferAsset = fnft.asset == address(0) ? WETH : fnft.asset;
 
         bytes32 walletSalt = keccak256(abi.encode(fnftId, fnft.handler));
@@ -307,14 +316,14 @@ contract Revest_721 is Revest_base {
         external
         returns (bytes[] memory)
     {
+        require(targets.length == values.length && targets.length == calldatas.length, "E026");
+
         IRevest.FNFTConfig memory fnft = fnfts[salt];
 
         //Only the NFT owner can call a function on the NFT
         require(IERC721(fnft.handler).ownerOf(fnft.fnftId) == msg.sender, "E023");
 
-        require(
-            ILockManager(fnft.lockManager).proxyCallisApproved(fnft.asset, targets, values, calldatas), "E013"
-        );
+        require(ILockManager(fnft.lockManager).proxyCallisApproved(fnft.asset, targets, values, calldatas), "E013");
 
         bytes32 walletSalt = keccak256(abi.encode(fnft.fnftId, fnft.handler));
 

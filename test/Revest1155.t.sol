@@ -130,6 +130,12 @@ contract Revest1155Tests is Test {
             nontransferrable: false
         });
 
+        config.handler = address(0);
+        vm.expectRevert(bytes("E001"));
+        revest.mintTimeLock(block.timestamp + 1 weeks, recipients, supplies, config);
+
+        config.handler = address(fnftHandler);
+
         uint256 currentTime = block.timestamp;
         (bytes32 salt, bytes32 lockId) = revest.mintTimeLock(block.timestamp + 1 weeks, recipients, supplies, config);
 
@@ -189,13 +195,12 @@ contract Revest1155Tests is Test {
         assertEq(revest.getAsset(salt), address(USDC), "asset was not set correctly");
         assertEq(revest.getValue(salt), amount, "value was not set correctly");
 
-
         //Test misc. branch for invalid lock type
         ILockManager.LockParam memory invalidLock;
         invalidLock.addressLock = address(addressLock);
 
         vm.expectRevert(bytes("E017"));
-        ILockManager(address(lockManager)).createLock(salt, invalidLock);    
+        ILockManager(address(lockManager)).createLock(salt, invalidLock);
     }
 
     function testBatchMintTimeLock(uint8 supply, uint256 amount) public {
@@ -230,6 +235,12 @@ contract Revest1155Tests is Test {
             nontransferrable: false
         });
 
+        config.handler = address(0);
+        vm.expectRevert(bytes("E001"));
+        revest.mintTimeLock(block.timestamp + 1 weeks, recipients, amounts, config);
+
+        config.handler = address(fnftHandler);
+
         (bytes32 salt, bytes32 lockId) = revest.mintTimeLock(block.timestamp + 1 weeks, recipients, amounts, config);
 
         address walletAddr = revest.getAddressForFNFT(salt);
@@ -259,6 +270,9 @@ contract Revest1155Tests is Test {
 
         vm.expectRevert(bytes("E006"));
         revest.withdrawFNFT(salt, supply / 2); //Should revert because lock is not expired
+
+        vm.expectRevert(bytes("E003"));
+        revest.withdrawFNFT(bytes32("0xdead"), supply / 2); //Should revert because lock is not expired
 
         skip(1 weeks);
 
@@ -371,6 +385,9 @@ contract Revest1155Tests is Test {
 
         uint256 tempSupply = supply / 2;
         {
+            vm.expectRevert(bytes("E003"));
+            revest.depositAdditionalToFNFT(bytes32("0xdead"), additionalDepositAmount);
+
             revest.depositAdditionalToFNFT(salt, additionalDepositAmount);
             assertEq(
                 USDC.balanceOf(walletAddr),
@@ -459,6 +476,9 @@ contract Revest1155Tests is Test {
             fnftHandler.safeTransferFrom(alice, bob, id, 1, "");
             vm.expectRevert(bytes("E008")); //Revert because you don't own the entire supply of the FNFT
             revest.extendFNFTMaturity(salt, block.timestamp + 2 weeks); //Extend a week beyond the current endDate
+
+            vm.expectRevert(bytes("E003")); //Revert because you don't own the entire supply of the FNFT
+            revest.extendFNFTMaturity(bytes32("0xdead"), block.timestamp + 2 weeks); //Extend a week beyond the current endDate
 
             //Send it back to Alice so she can extend maturity
             changePrank(bob);
@@ -730,7 +750,6 @@ contract Revest1155Tests is Test {
             )
         );
 
-
         //Sign the permit info
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(PRIVATE_KEY, digest);
         bytes memory transferSignature = abi.encodePacked(r, s, v);
@@ -776,13 +795,12 @@ contract Revest1155Tests is Test {
         newRevest.mintTimeLock(block.timestamp + 1 weeks, recipients, amounts, config);
         assertEq(fnftHandler.balanceOf(alice, id), 1, "FNFT not minted to Alice");
 
-        uint[] memory transferAmounts = new uint[](1);
-        uint[] memory transferIds = new uint[](1);
+        uint256[] memory transferAmounts = new uint[](1);
+        uint256[] memory transferIds = new uint[](1);
         transferAmounts[0] = 0;
         transferIds[0] = id;
         vm.expectRevert(bytes("E020"));
         fnftHandler.safeBatchTransferFrom(alice, bob, transferIds, transferAmounts, "");
-
     }
 
     function testProxyCallFunctionality() public {
@@ -854,6 +872,10 @@ contract Revest1155Tests is Test {
         vm.expectRevert(bytes("E025"));
         calldatas[0] = "0xdead";
         targets[0] = address(USDC);
+        revest.proxyCall(salt, targets, values, calldatas);
+
+        values = new uint[](2);
+        vm.expectRevert(bytes("E026"));
         revest.proxyCall(salt, targets, values, calldatas);
     }
 
@@ -965,7 +987,8 @@ contract Revest1155Tests is Test {
         assertEq(USDC.balanceOf(walletAddr), 0, "vault balance did not decrease by expected amount"); //All funds were removed from SmartWallet
     }
 
-    function testDepositAdditionalToToFNFTWithPermit2(uint8 supply, uint256 amount, uint256 additionalDepositAmount) public
+    function testDepositAdditionalToToFNFTWithPermit2(uint8 supply, uint256 amount, uint256 additionalDepositAmount)
+        public
     {
         vm.assume(supply % 2 == 0 && supply >= 2);
         vm.assume(amount >= 1e6 && amount <= 1e20);
@@ -1065,8 +1088,8 @@ contract Revest1155Tests is Test {
     }
 
     function testMetadataFunctions() public {
-        uint amount = 1e6;
-        uint supply = 1;
+        uint256 amount = 1e6;
+        uint256 supply = 1;
 
         address[] memory recipients = new address[](1);
         recipients[0] = alice;
