@@ -25,7 +25,6 @@ interface IController {
         address asset; // The token being stored
         address lockManager;
         uint256 depositAmount; // The amount of each token being stored
-
         //TODO: Pack Better
         uint256 nonce; // The FNFT number
         uint256 quantity; // How many FNFTs
@@ -62,5 +61,4 @@ interface IController {
 
     //They're public variables in Revest_base but its useful to define it in the interface also
     function numfnfts(address, uint256) external view returns (uint256);
-    function blacklistedFunctions(bytes4) external view returns (bool);
 }

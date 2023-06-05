@@ -47,7 +47,6 @@ abstract contract Revest_base is IRevest, IControllerExtendable, ERC1155Holder, 
 
     mapping(bytes32 => FNFTConfig) public fnfts;
     mapping(address handler => mapping(uint256 nftId => uint256 numfnfts)) public override numfnfts;
-    mapping(bytes4 selector => bool blackListed) public override blacklistedFunctions;
 
     /**
      * @dev Primary constructor to create the Revest controller contract
@@ -144,7 +143,8 @@ abstract contract Revest_base is IRevest, IControllerExtendable, ERC1155Holder, 
     /*//////////////////////////////////////////////////////////////
                     IController Extendable Functions
     //////////////////////////////////////////////////////////////*/
-    function depositAdditionalToFNFT(bytes32 salt, uint256 amount) external virtual returns (uint256 deposit) {
+    function depositAdditionalToFNFT(bytes32 salt, uint256 amount) external payable virtual returns (uint256 deposit) {
+        console2.log("msg value: ", msg.value);
         return _depositAdditionalToFNFT(salt, amount, false);
     }
 
@@ -164,6 +164,24 @@ abstract contract Revest_base is IRevest, IControllerExtendable, ERC1155Holder, 
         internal
         virtual
         returns (uint256 deposit);
+
+    /*//////////////////////////////////////////////////////////////
+                    Proxy Call Internal Functions
+    //////////////////////////////////////////////////////////////*/
+
+    function _proxyCall(
+        bytes32 salt,
+        address[] memory targets,
+        uint256[] memory values,
+        bytes[] memory calldatas,
+        address lockManager,
+        address asset
+    ) internal returns (bytes[] memory) {
+        require(targets.length == values.length && targets.length == calldatas.length, "E026");
+        require(ILockManager(lockManager).proxyCallisApproved(asset, targets, values, calldatas), "E013");
+
+        return tokenVault.proxyCall(salt, targets, values, calldatas);
+    }
 
     /*//////////////////////////////////////////////////////////////
                     IController View Functions
@@ -200,9 +218,7 @@ abstract contract Revest_base is IRevest, IControllerExtendable, ERC1155Holder, 
     /*//////////////////////////////////////////////////////////////
                         OnlyOwner
     //////////////////////////////////////////////////////////////*/
-    function changeSelectorVisibility(bytes4 selector, bool designation) external virtual onlyOwner {
-        blacklistedFunctions[selector] = designation;
-    }
+
 
     function changeMetadataHandler(address _newMetadataHandler) external onlyOwner {
         metadataHandler = IMetadataHandler(_newMetadataHandler);

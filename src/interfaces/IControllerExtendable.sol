@@ -16,7 +16,7 @@ interface IControllerExtendable {
         address indexed from, uint256 indexed newFNFTId, uint256 indexed quantity, uint256 mount
     );
 
-    function depositAdditionalToFNFT(bytes32 salt, uint256 amount) external returns (uint256);
+    function depositAdditionalToFNFT(bytes32 salt, uint256 amount) external payable returns (uint256);
     function depositAdditionalToFNFTWithPermit(
         bytes32 salt,
         uint256 amount,

@@ -107,7 +107,6 @@ contract Revest_721 is Revest_base {
             //Impossible to trigger manually, only be hash collision, but just in case
             require(fnfts[salt].quantity == 0, "E005");
 
-
             if (!ILockManager(fnftConfig.lockManager).lockExists(fnftConfig.lockId)) {
                 ILockManager.LockParam memory addressLock;
                 addressLock.addressLock = trigger;
@@ -218,7 +217,7 @@ contract Revest_721 is Revest_base {
         address smartWallet = tokenVault.getAddress(walletSalt, address(this));
 
         // Transfer to the smart wallet
-        if (fnft.asset != address(0) && amount != 0) {
+        if (fnft.asset != address(0xdead) && amount != 0) {
             if (usePermit2) {
                 console.log("amount to deposit: %i", amount);
                 PERMIT2.transferFrom(msg.sender, smartWallet, amount.toUint160(), fnft.asset);
@@ -227,7 +226,13 @@ contract Revest_721 is Revest_base {
             }
 
             emit DepositERC20(fnft.asset, msg.sender, fnftId, amount, smartWallet);
-        } //if (amount != zero)
+        } else {
+            require(msg.value == amount, "E027");
+
+            IWETH(WETH).deposit{value: msg.value}();
+
+            ERC20(WETH).safeTransfer(smartWallet, msg.value);
+        }
 
         emit FNFTAddionalDeposited(msg.sender, fnftId, 1, amount);
 
@@ -248,10 +253,7 @@ contract Revest_721 is Revest_base {
         * and since every FNFT has a difference nonce we need to remove it from the salt to be able to generate the same address
         */
         bytes32 WalletSalt = keccak256(abi.encode(params.fnftConfig.fnftId, params.fnftConfig.handler));
-        console.log("--- Wallet Salt on Deposit ---");
-        console.logBytes32(WalletSalt);
-        console.log("fnftId: %i", params.fnftConfig.fnftId);
-        console.log("handler: %s", params.fnftConfig.handler);
+       
 
         // Create the FNFT and update accounting within TokenVault
         params.fnftConfig.quantity = 1;
@@ -259,11 +261,9 @@ contract Revest_721 is Revest_base {
         // Now, we move the funds to token vault from the message sender
         address smartWallet = tokenVault.getAddress(WalletSalt, address(this));
 
-        console.log("smartWallet on deposit: %s", smartWallet);
-        console.log("amount: %i", params.fnftConfig.depositAmount);
 
         if (msg.value != 0) {
-            params.fnftConfig.asset = address(0);
+            params.fnftConfig.asset = address(0xdead);
             params.fnftConfig.depositAmount = msg.value;
             params.fnftConfig.useETH = true;
             IWETH(WETH).deposit{value: msg.value}(); //Convert it to WETH and send it back to this
@@ -286,8 +286,8 @@ contract Revest_721 is Revest_base {
         IRevest.FNFTConfig memory fnft = fnfts[salt];
         uint256 amountToWithdraw;
 
-        //When the user deposits Eth it stores the asset as address(0) but actual WETH is kept in the vault
-        address transferAsset = fnft.asset == address(0) ? WETH : fnft.asset;
+        //When the user deposits Eth it stores the asset as address(0xdead) but actual WETH is kept in the vault
+        address transferAsset = fnft.asset == address(0xdead) ? WETH : fnft.asset;
 
         bytes32 walletSalt = keccak256(abi.encode(fnftId, fnft.handler));
 
@@ -300,7 +300,7 @@ contract Revest_721 is Revest_base {
 
         tokenVault.withdrawToken(walletSalt, transferAsset, amountToWithdraw, address(this));
 
-        if (fnft.asset == address(0)) {
+        if (fnft.asset == address(0xdead)) {
             IWETH(WETH).withdraw(amountToWithdraw);
             user.safeTransferETH(amountToWithdraw);
         } else {
@@ -316,18 +316,14 @@ contract Revest_721 is Revest_base {
         external
         returns (bytes[] memory)
     {
-        require(targets.length == values.length && targets.length == calldatas.length, "E026");
-
         IRevest.FNFTConfig memory fnft = fnfts[salt];
 
         //Only the NFT owner can call a function on the NFT
         require(IERC721(fnft.handler).ownerOf(fnft.fnftId) == msg.sender, "E023");
 
-        require(ILockManager(fnft.lockManager).proxyCallisApproved(fnft.asset, targets, values, calldatas), "E013");
-
         bytes32 walletSalt = keccak256(abi.encode(fnft.fnftId, fnft.handler));
 
-        return tokenVault.proxyCall(walletSalt, targets, values, calldatas);
+        return _proxyCall(walletSalt, targets, values, calldatas, fnft.lockManager, fnft.asset);
     }
 
     //Takes in an FNFT Salt and generates a wallet salt from it

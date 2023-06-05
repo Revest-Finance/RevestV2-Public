@@ -26,3 +26,4 @@ E023 - Only the canonical NFT-owner can call this function
 E024 - Invalid signature length provided
 E025 - Proxy Call to external contract failed
 E026 - Invalid Proxy Call array lengths
+E027 - Invalid amount of eth sent with call

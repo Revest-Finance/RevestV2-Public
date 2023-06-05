@@ -67,7 +67,7 @@ contract Revest721Tests is Test {
 
         deal(address(WETH), alice, type(uint256).max);
         deal(address(USDC), alice, type(uint256).max);
-        deal(alice, 1000 ether);
+        deal(alice, type(uint256).max);
 
         fnftHandler.transferOwnership(address(revest)); //Transfer ownership to Revest from deployer
 
@@ -143,7 +143,6 @@ contract Revest721Tests is Test {
 
         config.handler = address(boredApe);
         (bytes32 salt, bytes32 lockId) = revest.mintTimeLock(block.timestamp + 1 weeks, recipients, amounts, config);
-
 
         address walletAddr = revest.getAddressForFNFT(salt);
         console.log("smart wallet in test: %s", walletAddr);
@@ -353,6 +352,7 @@ contract Revest721Tests is Test {
         vm.expectRevert(bytes("E023"));
         revest.proxyCall(salt, targets, values, calldatas);
 
+        changePrank(alice);
         values = new uint[](2);
         vm.expectRevert(bytes("E026"));
         revest.proxyCall(salt, targets, values, calldatas);
@@ -511,6 +511,7 @@ contract Revest721Tests is Test {
             changePrank(bob);
             revest.withdrawFNFT(salt, supply);
             destroyAccount(walletAddr, address(this));
+            boredApe.transferFrom(bob, alice, 1);
         }
 
         assertEq(
@@ -524,6 +525,32 @@ contract Revest721Tests is Test {
         assertEq(
             USDC.balanceOf(alice), preBal - USDC.balanceOf(bob), "alice balance did not increase by expected amount"
         );
+
+
+        console.log("------------------------");
+        changePrank(alice);
+        preBal = alice.balance;
+        config.depositAmount = 2 ether;
+        config.useETH = true;
+        (salt,) =
+            revest.mintTimeLock{value: 2 ether}(block.timestamp + 1 weeks, recipients, amounts, config);
+
+        vm.expectRevert(bytes("E027"));
+        revest.depositAdditionalToFNFT{value: 2 ether}(salt, 1 ether);
+        
+        revest.depositAdditionalToFNFT{value: 1 ether}(salt, 1 ether);
+        assertEq(alice.balance, preBal - (2 ether + 1 ether), "alice balance did not decrease by expected amountof ETH");
+        
+        IController.FNFTConfig memory storedConfig = revest.getFNFT(salt);
+        assertEq(storedConfig.useETH, true, "useETH was not set to true");
+        assertEq(storedConfig.asset, address(0xdead), "asset was not set to ETH");
+        assertEq(storedConfig.depositAmount, 2 ether + 1 ether, "deposit amount was not set to amount");
+
+        skip(1 weeks);
+
+
+        revest.withdrawFNFT(salt, 1);
+        assertEq(alice.balance, preBal, "alice balance did not increase by expected amount of ETH");
     }
 
     function testmintTimeLockAndExtendMaturity(uint256 amount) public {
@@ -654,7 +681,7 @@ contract Revest721Tests is Test {
 
         IController.FNFTConfig memory storedConfig = revest.getFNFT(salt);
         assertEq(storedConfig.useETH, true, "useETH was not set to true");
-        assertEq(storedConfig.asset, address(0), "asset was not set to ETH");
+        assertEq(storedConfig.asset, address(0xdead), "asset was not set to ETH");
         assertEq(storedConfig.depositAmount, amount, "deposit amount was not set to amount");
 
         skip(1 weeks);

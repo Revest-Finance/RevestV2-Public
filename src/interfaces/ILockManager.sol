@@ -44,4 +44,5 @@ interface ILockManager {
         uint256[] memory values,
         bytes[] memory calldatas
     ) external view returns (bool);
+
 }

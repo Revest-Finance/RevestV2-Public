@@ -2,7 +2,6 @@
 pragma solidity ^0.8.17;
 
 import {IAllowanceTransfer} from "../interfaces/IAllowanceTransfer.sol";
-import {ISignatureTransfer} from "../interfaces/ISignatureTransfer.sol";
 
 library PermitHash {
     bytes32 public constant _PERMIT_DETAILS_TYPEHASH =
@@ -56,79 +55,7 @@ library PermitHash {
         );
     }
 
-    function hash(ISignatureTransfer.PermitTransferFrom memory permit) internal view returns (bytes32) {
-        bytes32 tokenPermissionsHash = _hashTokenPermissions(permit.permitted);
-        return keccak256(
-            abi.encode(_PERMIT_TRANSFER_FROM_TYPEHASH, tokenPermissionsHash, msg.sender, permit.nonce, permit.deadline)
-        );
-    }
-
-    function hash(ISignatureTransfer.PermitBatchTransferFrom memory permit) internal view returns (bytes32) {
-        uint256 numPermitted = permit.permitted.length;
-        bytes32[] memory tokenPermissionHashes = new bytes32[](numPermitted);
-
-        for (uint256 i = 0; i < numPermitted; ++i) {
-            tokenPermissionHashes[i] = _hashTokenPermissions(permit.permitted[i]);
-        }
-
-        return keccak256(
-            abi.encode(
-                _PERMIT_BATCH_TRANSFER_FROM_TYPEHASH,
-                keccak256(abi.encodePacked(tokenPermissionHashes)),
-                msg.sender,
-                permit.nonce,
-                permit.deadline
-            )
-        );
-    }
-
-    function hashWithWitness(
-        ISignatureTransfer.PermitTransferFrom memory permit,
-        bytes32 witness,
-        string calldata witnessTypeString
-    ) internal view returns (bytes32) {
-        bytes32 typeHash = keccak256(abi.encodePacked(_PERMIT_TRANSFER_FROM_WITNESS_TYPEHASH_STUB, witnessTypeString));
-
-        bytes32 tokenPermissionsHash = _hashTokenPermissions(permit.permitted);
-        return keccak256(abi.encode(typeHash, tokenPermissionsHash, msg.sender, permit.nonce, permit.deadline, witness));
-    }
-
-    function hashWithWitness(
-        ISignatureTransfer.PermitBatchTransferFrom memory permit,
-        bytes32 witness,
-        string calldata witnessTypeString
-    ) internal view returns (bytes32) {
-        bytes32 typeHash =
-            keccak256(abi.encodePacked(_PERMIT_BATCH_WITNESS_TRANSFER_FROM_TYPEHASH_STUB, witnessTypeString));
-
-        uint256 numPermitted = permit.permitted.length;
-        bytes32[] memory tokenPermissionHashes = new bytes32[](numPermitted);
-
-        for (uint256 i = 0; i < numPermitted; ++i) {
-            tokenPermissionHashes[i] = _hashTokenPermissions(permit.permitted[i]);
-        }
-
-        return keccak256(
-            abi.encode(
-                typeHash,
-                keccak256(abi.encodePacked(tokenPermissionHashes)),
-                msg.sender,
-                permit.nonce,
-                permit.deadline,
-                witness
-            )
-        );
-    }
-
     function _hashPermitDetails(IAllowanceTransfer.PermitDetails memory details) private pure returns (bytes32) {
         return keccak256(abi.encode(_PERMIT_DETAILS_TYPEHASH, details));
-    }
-
-    function _hashTokenPermissions(ISignatureTransfer.TokenPermissions memory permitted)
-        private
-        pure
-        returns (bytes32)
-    {
-        return keccak256(abi.encode(_TOKEN_PERMISSIONS_TYPEHASH, permitted));
     }
 }

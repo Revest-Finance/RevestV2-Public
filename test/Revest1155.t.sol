@@ -3,7 +3,7 @@
 pragma solidity ^0.8.19;
 
 import "forge-std/Test.sol";
-import "forge-std/console2.sol";
+import "forge-std/console.sol";
 
 import "src/Revest_1155.sol";
 import "src/TokenVault.sol";
@@ -65,7 +65,7 @@ contract Revest1155Tests is Test {
 
         deal(address(WETH), alice, type(uint256).max);
         deal(address(USDC), alice, type(uint256).max);
-        deal(alice, 1000 ether);
+        deal(alice, type(uint256).max);
 
         fnftHandler.transferOwnership(address(revest)); //Transfer ownership to Revest from deployer
 
@@ -519,9 +519,11 @@ contract Revest1155Tests is Test {
         revest.extendFNFTMaturity(salt, block.timestamp + 2 weeks); //Extend a week beyond the current endDate
     }
 
-    function testMintFNFTWithEth(uint8 supply, uint256 amount) public {
-        vm.assume(amount >= 1 ether && amount < 1000 ether);
-        vm.assume(supply != 0);
+    function testMintFNFTWithEth(uint supply, uint256 amount) public {
+        vm.assume(amount >= 1 ether && amount <= 100 ether);
+        vm.assume(supply > 1 && supply <= 1e6);
+
+        startHoax(alice, alice);
 
         uint256 preBal = alice.balance;
 
@@ -559,10 +561,34 @@ contract Revest1155Tests is Test {
         assertEq(alice.balance, preBal - (supply * amount), "alice balance did not decrease by expected amountof ETH");
         IController.FNFTConfig memory storedConfig = revest.getFNFT(salt);
         assertEq(storedConfig.useETH, true, "useETH was not set to true");
-        assertEq(storedConfig.asset, address(0), "asset was not set to ETH");
+        assertEq(storedConfig.asset, address(0xdead), "asset was not set to ETH");
         assertEq(storedConfig.depositAmount, amount, "deposit amount was not set to amount");
 
         skip(1 weeks);
+        revest.withdrawFNFT(salt, supply);
+        assertEq(alice.balance, preBal, "alice balance did not increase by expected amount of ETH");
+
+
+        preBal = alice.balance;
+        (salt,) =
+            revest.mintTimeLock{value: amount * supply}(block.timestamp + 1 weeks, recipients, amounts, config);
+
+        vm.expectRevert(bytes("E027"));
+        revest.depositAdditionalToFNFT{value: 1 ether}(salt, 1 ether);
+        console.log("--------------------");
+        console.log("supply: %s", supply);
+        
+        revest.depositAdditionalToFNFT{value: (1 ether * supply)}(salt, 1 ether);
+        console.log("got here");
+        assertEq(alice.balance, preBal - (supply * (amount + 1 ether)), "alice balance did not decrease by expected amountof ETH");
+        
+        storedConfig = revest.getFNFT(salt);
+        assertEq(storedConfig.useETH, true, "useETH was not set to true");
+        assertEq(storedConfig.asset, address(0xdead), "asset was not set to ETH");
+        assertEq(storedConfig.depositAmount, amount + 1 ether, "deposit amount was not set to amount");
+
+        skip(1 weeks);
+
         revest.withdrawFNFT(salt, supply);
         assertEq(alice.balance, preBal, "alice balance did not increase by expected amount of ETH");
     }
@@ -813,8 +839,6 @@ contract Revest1155Tests is Test {
         bytes[] memory calldatas = new bytes[](1);
 
         //Blacklist transfer function
-        changePrank(revest.owner());
-        revest.changeSelectorVisibility(USDC.totalSupply.selector, true);
         changePrank(alice);
 
         //Transfer tokens out of the vault

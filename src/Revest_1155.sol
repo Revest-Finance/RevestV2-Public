@@ -210,6 +210,7 @@ contract Revest_1155 is Revest_base {
 
         uint256 supply = IFNFTHandler(handler).totalSupply(fnftId);
 
+
         address smartWallet = getAddressForFNFT(salt);
 
         fnft.depositAmount += amount;
@@ -217,7 +218,7 @@ contract Revest_1155 is Revest_base {
         deposit = supply * amount;
 
         // Transfer to the smart wallet
-        if (fnft.asset != address(0) && amount != 0) {
+        if (fnft.asset != address(0xdead) && amount != 0) {
             if (usePermit2) {
                 PERMIT2.transferFrom(msg.sender, smartWallet, deposit.toUint160(), fnft.asset);
             } else {
@@ -225,7 +226,14 @@ contract Revest_1155 is Revest_base {
             }
 
             emit DepositERC20(fnft.asset, msg.sender, fnftId, amount, smartWallet);
-        } //if (amount != zero)
+        } else {
+          
+            require(msg.value == deposit, "E027");
+
+            IWETH(WETH).deposit{value: msg.value}();
+
+            ERC20(WETH).safeTransfer(smartWallet, deposit);
+        }
 
         emit FNFTAddionalDeposited(msg.sender, fnftId, supply, amount);
     }
@@ -257,9 +265,9 @@ contract Revest_1155 is Revest_base {
         address smartWallet = getAddressForFNFT(salt);
 
         if (msg.value != 0) {
-            params.fnftConfig.asset = address(0);
+            params.fnftConfig.asset = address(0xdead);
             params.fnftConfig.depositAmount = msg.value / totalQuantity;
-            require(msg.value / totalQuantity != 0, "E026");
+            require(msg.value / totalQuantity != 0, "E027");
             params.fnftConfig.useETH = true;
             IWETH(WETH).deposit{value: msg.value}(); //Convert it to WETH and send it back to this
             IWETH(WETH).transfer(smartWallet, msg.value); //Transfer it to the smart wallet
@@ -305,8 +313,8 @@ contract Revest_1155 is Revest_base {
         IRevest.FNFTConfig memory fnft = fnfts[salt];
         uint256 amountToWithdraw;
 
-        //When the user deposits Eth it stores the asset as address(0) but actual WETH is kept in the vault
-        address transferAsset = fnft.asset == address(0) ? WETH : fnft.asset;
+        //When the user deposits Eth it stores the asset as address(0xdead) but actual WETH is kept in the vault
+        address transferAsset = fnft.asset == address(0xdead) ? WETH : fnft.asset;
 
         address smartWalletAddr = getAddressForFNFT(salt);
 
@@ -318,7 +326,7 @@ contract Revest_1155 is Revest_base {
         tokenVault.withdrawToken(salt, transferAsset, amountToWithdraw, address(this));
 
         //Return ETH to the user or WETH
-        if (fnft.asset == address(0)) {
+        if (fnft.asset == address(0xdead)) {
             IWETH(WETH).withdraw(amountToWithdraw);
             destination.safeTransferETH(amountToWithdraw);
         } else {
@@ -334,7 +342,10 @@ contract Revest_1155 is Revest_base {
         external
         returns (bytes[] memory)
     {
-        require(targets.length == values.length && targets.length == calldatas.length, "E026");
+        /*
+        * You inherit the actual proxyCall implementation from the revest_base and then only need to override
+        * the functionality to determine if the user is allowed to call the function on the FNFT
+        */
 
         IRevest.FNFTConfig memory fnft = fnfts[salt];
 
@@ -344,9 +355,7 @@ contract Revest_1155 is Revest_base {
         uint256 supply = FNFTHandler.totalSupply(fnft.fnftId);
         require(supply != 0 && FNFTHandler.balanceOf(msg.sender, fnft.fnftId) == supply, "E007");
 
-        require(ILockManager(fnft.lockManager).proxyCallisApproved(fnft.asset, targets, values, calldatas), "E013");
-
-        return tokenVault.proxyCall(salt, targets, values, calldatas);
+        return _proxyCall(salt, targets, values, calldatas, fnft.lockManager, fnft.asset);
     }
 
     function getAddressForFNFT(bytes32 salt) public view virtual returns (address smartWallet) {

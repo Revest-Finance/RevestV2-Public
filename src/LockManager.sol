@@ -139,8 +139,7 @@ contract LockManager is ILockManager, ReentrancyGuard {
             }
             //Revest uses address(0) for asset when it is ETH, but stores WETH in the vault.
             //This prevents the edge case for that
-            else if (targets[x] == WETH && token == address(0)) {
-                console.log("got here");
+            else if (targets[x] == WETH && token == address(0xdead)) {
                 if (bytes4(calldatas[x]) == IWETH.withdraw.selector) {
                     return false;
                 }
@@ -153,4 +152,5 @@ contract LockManager is ILockManager, ReentrancyGuard {
 
         return true;
     }
+    
 }
