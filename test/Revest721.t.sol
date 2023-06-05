@@ -532,6 +532,8 @@ contract Revest721Tests is Test {
         preBal = alice.balance;
         config.depositAmount = 2 ether;
         config.useETH = true;
+        
+        uint wethPreBal = WETH.balanceOf(alice);
         (salt,) =
             revest.mintTimeLock{value: 2 ether}(block.timestamp + 1 weeks, recipients, amounts, config);
 
@@ -539,18 +541,21 @@ contract Revest721Tests is Test {
         revest.depositAdditionalToFNFT{value: 2 ether}(salt, 1 ether);
         
         revest.depositAdditionalToFNFT{value: 1 ether}(salt, 1 ether);
+        revest.depositAdditionalToFNFT(salt, 1 ether);
+
         assertEq(alice.balance, preBal - (2 ether + 1 ether), "alice balance did not decrease by expected amountof ETH");
+        assertEq(WETH.balanceOf(alice), wethPreBal - 1 ether, "alice balance did not decrease by expected amount of WETH");
         
         IController.FNFTConfig memory storedConfig = revest.getFNFT(salt);
         assertEq(storedConfig.useETH, true, "useETH was not set to true");
         assertEq(storedConfig.asset, address(0xdead), "asset was not set to ETH");
-        assertEq(storedConfig.depositAmount, 2 ether + 1 ether, "deposit amount was not set to amount");
+        assertEq(storedConfig.depositAmount, 4 ether, "deposit amount was not set to amount");
 
         skip(1 weeks);
 
 
         revest.withdrawFNFT(salt, 1);
-        assertEq(alice.balance, preBal, "alice balance did not increase by expected amount of ETH");
+        assertEq(alice.balance, preBal + 1 ether, "alice balance did not increase by expected amount of ETH");
     }
 
     function testmintTimeLockAndExtendMaturity(uint256 amount) public {

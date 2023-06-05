@@ -216,22 +216,28 @@ contract Revest_721 is Revest_base {
         bytes32 walletSalt = keccak256(abi.encode(fnft.fnftId, fnft.handler));
         address smartWallet = tokenVault.getAddress(walletSalt, address(this));
 
-        // Transfer to the smart wallet
-        if (fnft.asset != address(0xdead) && amount != 0) {
-            if (usePermit2) {
-                console.log("amount to deposit: %i", amount);
-                PERMIT2.transferFrom(msg.sender, smartWallet, amount.toUint160(), fnft.asset);
-            } else {
-                ERC20(fnft.asset).safeTransferFrom(msg.sender, smartWallet, amount);
-            }
+        address depositAsset = fnft.asset;
 
-            emit DepositERC20(fnft.asset, msg.sender, fnftId, amount, smartWallet);
-        } else {
+         //Underlying is ETH, deposit ETH by wrapping to WETH
+        if (msg.value != 0 && fnft.asset == address(0xdead)) {
             require(msg.value == amount, "E027");
 
             IWETH(WETH).deposit{value: msg.value}();
 
-            ERC20(WETH).safeTransfer(smartWallet, msg.value);
+            ERC20(WETH).safeTransfer(smartWallet, amount);
+
+            return amount;
+        }
+
+        //Underlying is ETH, user wants to deposit WETH, no wrapping required
+        else if (msg.value == 0 && fnft.asset == address(0xdead) ) {
+           depositAsset = WETH;
+        }
+        
+        if (usePermit2) {
+            PERMIT2.transferFrom(msg.sender, smartWallet, amount.toUint160(), depositAsset);
+        } else {
+            ERC20(depositAsset).safeTransferFrom(msg.sender, smartWallet, amount);
         }
 
         emit FNFTAddionalDeposited(msg.sender, fnftId, 1, amount);

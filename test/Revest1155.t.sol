@@ -570,6 +570,7 @@ contract Revest1155Tests is Test {
 
 
         preBal = alice.balance;
+        uint wethPreBal = WETH.balanceOf(alice);
         (salt,) =
             revest.mintTimeLock{value: amount * supply}(block.timestamp + 1 weeks, recipients, amounts, config);
 
@@ -579,18 +580,22 @@ contract Revest1155Tests is Test {
         console.log("supply: %s", supply);
         
         revest.depositAdditionalToFNFT{value: (1 ether * supply)}(salt, 1 ether);
+        revest.depositAdditionalToFNFT(salt, 1 ether);
+
         console.log("got here");
-        assertEq(alice.balance, preBal - (supply * (amount + 1 ether)), "alice balance did not decrease by expected amountof ETH");
+        assertEq(alice.balance, preBal - (supply * (amount + 1 ether)), "alice balance did not decrease by expected amount of ETH");
+        assertEq(WETH.balanceOf(alice), wethPreBal - (supply * (1 ether)), "alice balance did not decrease by expected amount of WETH");
+
         
         storedConfig = revest.getFNFT(salt);
         assertEq(storedConfig.useETH, true, "useETH was not set to true");
         assertEq(storedConfig.asset, address(0xdead), "asset was not set to ETH");
-        assertEq(storedConfig.depositAmount, amount + 1 ether, "deposit amount was not set to amount");
+        assertEq(storedConfig.depositAmount, amount + 2 ether, "deposit amount was not set to amount");
 
         skip(1 weeks);
 
         revest.withdrawFNFT(salt, supply);
-        assertEq(alice.balance, preBal, "alice balance did not increase by expected amount of ETH");
+        assertEq(alice.balance, preBal+ (1 ether * supply), "alice balance did not increase by expected amount of ETH");
     }
 
     function testCantTransferANonTransferrableFNFT() public {

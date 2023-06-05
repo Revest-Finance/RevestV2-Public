@@ -217,22 +217,33 @@ contract Revest_1155 is Revest_base {
 
         deposit = supply * amount;
 
-        // Transfer to the smart wallet
-        if (fnft.asset != address(0xdead) && amount != 0) {
-            if (usePermit2) {
-                PERMIT2.transferFrom(msg.sender, smartWallet, deposit.toUint160(), fnft.asset);
-            } else {
-                ERC20(fnft.asset).safeTransferFrom(msg.sender, smartWallet, deposit);
-            }
+        address depositAsset = fnft.asset;
 
-            emit DepositERC20(fnft.asset, msg.sender, fnftId, amount, smartWallet);
-        } else {
-          
+        //Underlying is ETH, deposit ETH by wrapping to WETH
+        if (msg.value != 0 && fnft.asset == address(0xdead)) {
+            console2.log("---msg.value found---");
             require(msg.value == deposit, "E027");
 
             IWETH(WETH).deposit{value: msg.value}();
 
             ERC20(WETH).safeTransfer(smartWallet, deposit);
+
+            return deposit;
+        }
+
+        //Underlying is ETH, user wants to deposit WETH, no wrapping required
+        else if (msg.value == 0 && fnft.asset == address(0xdead) ) {
+            console2.log("---deposit asset set---");
+            depositAsset = WETH;
+        }
+
+        
+        if (usePermit2) {
+            PERMIT2.transferFrom(msg.sender, smartWallet, deposit.toUint160(), depositAsset);
+        } else {
+            console2.log("--- DOING TRANSFER OF ASSET---");
+            console2.log("asset: ", depositAsset);
+            ERC20(depositAsset).safeTransferFrom(msg.sender, smartWallet, deposit);
         }
 
         emit FNFTAddionalDeposited(msg.sender, fnftId, supply, amount);
