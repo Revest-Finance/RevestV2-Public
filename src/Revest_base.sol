@@ -204,11 +204,6 @@ abstract contract Revest_base is IRevest, IControllerExtendable, ERC1155Holder, 
         blacklistedFunctions[selector] = designation;
     }
 
-    function transferOwnershipFNFTHandler(address newRevest, address handler) external virtual onlyOwner {
-        //Ownership should be a timelocked controller.
-        Ownable(handler).transferOwnership(newRevest);
-    }
-
     function changeMetadataHandler(address _newMetadataHandler) external onlyOwner {
         metadataHandler = IMetadataHandler(_newMetadataHandler);
         //TODO: Emit Event

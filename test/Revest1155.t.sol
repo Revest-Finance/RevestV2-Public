@@ -779,28 +779,6 @@ contract Revest1155Tests is Test {
         assertEq(fnftHandler.balanceOf(alice, id), 0, "alice still owns FNFT");
         assertEq(fnftHandler.balanceOf(bob, id), 1, "bob does not own FNFT");
         assertEq(fnftHandler.isApprovedForAll(alice, bob), true);
-
-        changePrank(revest.owner());
-
-        Revest_1155 newRevest = new Revest_1155(address(WETH), address(vault), address(metadataHandler));
-
-        revest.transferOwnershipFNFTHandler(address(newRevest), address(fnftHandler));
-        assertEq(fnftHandler.owner(), address(newRevest), "handler ownership not transferred");
-
-        changePrank(alice, alice);
-
-        USDC.safeApprove(address(newRevest), type(uint256).max);
-
-        id = fnftHandler.getNextId();
-        newRevest.mintTimeLock(block.timestamp + 1 weeks, recipients, amounts, config);
-        assertEq(fnftHandler.balanceOf(alice, id), 1, "FNFT not minted to Alice");
-
-        uint256[] memory transferAmounts = new uint[](1);
-        uint256[] memory transferIds = new uint[](1);
-        transferAmounts[0] = 0;
-        transferIds[0] = id;
-        vm.expectRevert(bytes("E020"));
-        fnftHandler.safeBatchTransferFrom(alice, bob, transferIds, transferAmounts, "");
     }
 
     function testProxyCallFunctionality() public {
