@@ -143,6 +143,9 @@ contract Revest1155Tests is Test {
         uint256 currentTime = block.timestamp;
         (bytes32 salt, bytes32 lockId) = revest.mintTimeLock(block.timestamp + 1 weeks, recipients, supplies, config);
 
+        vm.expectRevert(bytes("E015"));
+        lockManager_timelock.createLock(keccak256(abi.encode("0xdead")), abi.encode(block.timestamp - 1 weeks));
+
         address walletAddr = revest.getAddressForFNFT(salt);
 
         //Check Minting was successful
@@ -182,6 +185,9 @@ contract Revest1155Tests is Test {
         console.log("first maturity check");
         assertFalse(lockManager_timelock.getLockMaturity(lockId, id));
 
+        vm.expectRevert(bytes("E016"));
+        lockManager_timelock.unlockFNFT(keccak256(abi.encode("0xdead")), 0);
+
         skip(1 weeks + 1 seconds);
         console.log("second maturity check");
         assertFalse(!lockManager_timelock.getLockMaturity(lockId, id));
@@ -198,6 +204,14 @@ contract Revest1155Tests is Test {
 
         assertEq(revest.getAsset(salt), address(USDC), "asset was not set correctly");
         assertEq(revest.getValue(salt), amount, "value was not set correctly");
+
+        supplies[0] = 0;
+        vm.expectRevert(bytes("E012"));
+        revest.mintTimeLock(block.timestamp + 1 weeks, recipients, supplies, config);
+
+        supplies = new uint[](2);
+        vm.expectRevert(bytes("E011"));
+        revest.mintTimeLock(block.timestamp + 1 weeks, recipients, supplies, config);
     }
 
     function testBatchMintTimeLock(uint8 supply, uint256 amount) public {
@@ -284,6 +298,16 @@ contract Revest1155Tests is Test {
         assertEq(
             fnftHandler.balanceOf(bob, id), fnftHandler.totalSupply(id), "expected and actual FNFT supply do not match"
         );
+
+
+        uint[] memory ids = new uint[](1);
+        ids[0] = id;
+
+        uint[] memory amounts2 = new uint[](1);
+        amounts2[0] = 0;
+        vm.expectRevert(bytes("E020"));
+        changePrank(bob);
+        fnftHandler.safeBatchTransferFrom(bob, alice, ids, amounts2, "");
     }
 
     function testMintAddressLock(uint8 supply, uint256 amount) public {
@@ -859,15 +883,20 @@ contract Revest1155Tests is Test {
         revest.proxyCall(salt, targets, values, calldatas);
 
         skip(1 weeks);
-        config.asset = address(0);
+        config.asset = address(0xdead);
         config.useETH = true;
         config.depositAmount = 1 ether;
         targets[0] = address(WETH);
         (salt,) = revest.mintTimeLock{value: 1 ether}(block.timestamp + 1 weeks, recipients, amounts, config);
         calldatas[0] = abi.encodeWithSelector(IWETH.withdraw.selector, 1 ether);
 
+        console.log("----------------");
+
         vm.expectRevert(bytes("E013"));
         revest.proxyCall(salt, targets, values, calldatas);
+
+        console.log("----------------");
+
 
         vm.expectRevert(bytes("E025"));
         calldatas[0] = "0xdead";
@@ -877,6 +906,8 @@ contract Revest1155Tests is Test {
         values = new uint[](2);
         vm.expectRevert(bytes("E026"));
         revest.proxyCall(salt, targets, values, calldatas);
+
+
     }
 
     function testMintTimeLockWithPermit2(uint160 amount) public {

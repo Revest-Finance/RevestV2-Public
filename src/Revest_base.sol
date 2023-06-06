@@ -62,7 +62,7 @@ abstract contract Revest_base is IRevest, IControllerExtendable, ERC1155Holder, 
     function unlockFNFT(bytes32 salt) external override nonReentrant {
         IRevest.FNFTConfig memory fnft = fnfts[salt];
 
-        // Works for value locks or time locks
+        // Works for all lock types
         ILockManager(fnft.lockManager).unlockFNFT(fnft.lockId, fnft.fnftId);
 
         //TODO: Fix Events

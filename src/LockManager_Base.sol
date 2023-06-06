@@ -71,14 +71,25 @@ abstract contract LockManager_Base is ILockManager, ReentrancyGuard {
         bytes[] memory calldatas
     ) external virtual view returns (bool) {
         for (uint256 x = 0; x < calldatas.length;) {
+
+            //TODO: Determine if potential security issue
+            // //No Calling EOAs
+            // if (targets[x].code.length == 0) return false;
+
+            console.log("targets[x]: %s", targets[x]);
+            console.log("token: %s", token);
+
             //Restriction only enabled when the target is the token and not unlocked
             if (targets[x] == token && blacklistedSelector[bytes4(calldatas[x])]) {
                 return false;
             }
             //Revest uses address(0) for asset when it is ETH, but stores WETH in the vault.
             //This prevents the edge case for that
+
             else if (targets[x] == WETH && token == address(0xdead)) {
+                console.log("got here");
                 if (bytes4(calldatas[x]) == IWETH.withdraw.selector) {
+                    console.log("and here");
                     return false;
                 }
             }
