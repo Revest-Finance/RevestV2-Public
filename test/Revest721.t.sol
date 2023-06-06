@@ -7,10 +7,11 @@ import "forge-std/console.sol";
 
 import "src/Revest_721.sol";
 import "src/TokenVault.sol";
-import "src/LockManager.sol";
+import "src/LockManager_Timelock.sol";
+import "src/LockManager_Addresslock.sol";
+
 import "src/FNFTHandler.sol";
 import "src/MetadataHandler.sol";
-import "./ExampleAddressLock.sol";
 
 import "src/lib/PermitHash.sol";
 import "src/interfaces/IAllowanceTransfer.sol";
@@ -25,9 +26,11 @@ contract Revest721Tests is Test {
 
     Revest_721 public immutable revest;
     TokenVault public immutable vault;
-    LockManager public immutable lockManager;
+    
+    LockManager_Timelock public immutable lockManager_timelock;
+    LockManager_Addresslock public immutable lockManager_addresslock;
+
     FNFTHandler public immutable fnftHandler;
-    ExampleAddressLock public immutable addressLock;
     MetadataHandler public immutable metadataHandler;
 
     uint256 PRIVATE_KEY = vm.envUint("PRIVATE_KEY"); //Useful for EIP-712 Testing
@@ -50,9 +53,11 @@ contract Revest721Tests is Test {
         vault = new TokenVault();
         metadataHandler = new MetadataHandler("");
         revest = new Revest_721(address(WETH), address(vault), address(metadataHandler));
-        lockManager = new LockManager(address(WETH));
+
+        lockManager_timelock = new LockManager_Timelock(address(WETH));
+        lockManager_addresslock = new LockManager_Addresslock(address(WETH));
+        
         fnftHandler = new FNFTHandler();
-        addressLock = new ExampleAddressLock();
 
         vm.label(alice, "alice");
         vm.label(bob, "bob");
@@ -60,8 +65,10 @@ contract Revest721Tests is Test {
         vm.label(address(revest), "revest");
         vm.label(address(vault), "tokenVault");
         vm.label(address(fnftHandler), "fnftHandler");
-        vm.label(address(lockManager), "lockManager");
-        vm.label(address(addressLock), "addressLock");
+        
+        vm.label(address(lockManager_timelock), "lockManager_timelock");
+        vm.label(address(lockManager_addresslock), "lockManager_addresslock");
+
         vm.label(address(USDC), "USDC");
         vm.label(address(WETH), "WETH");
 
@@ -126,7 +133,7 @@ contract Revest721Tests is Test {
             pipeToContract: address(0),
             handler: address(boredApe),
             asset: address(USDC),
-            lockManager: address(lockManager),
+            lockManager: address(lockManager_timelock),
             depositAmount: amount,
             nonce: nonce,
             quantity: 0,
@@ -159,8 +166,8 @@ contract Revest721Tests is Test {
             assertEq(USDC.balanceOf(walletAddr), amount, "vault balance did not increase by expected amount");
 
             //Lock was created
-            ILockManager.Lock memory lock = lockManager.getLock(lockId);
-            assertEq(uint256(lock.lockType), uint256(ILockManager.LockType.TimeLock), "lock type is not TimeLock");
+            ILockManager.Lock memory lock = lockManager_timelock.getLock(lockId);
+            assertEq(uint256(lockManager_timelock.lockType()), uint256(ILockManager.LockType.TimeLock), "lock type is not TimeLock");
             assertEq(lock.timeLockExpiry, block.timestamp + 1 weeks, "lock expiry is not expected value");
             assertEq(lock.unlocked, false);
 
@@ -181,7 +188,7 @@ contract Revest721Tests is Test {
         revest.withdrawFNFT(salt, 1);
         assertEq(USDC.balanceOf(bob), amount, "bob did not receive expected amount of USDC"); //All funds were returned to bob
         assertEq(USDC.balanceOf(walletAddr), 0, "vault balance did not decrease by expected amount"); //All funds were removed from SmartWallet
-        assertEq(lockManager.getLock(lockId).unlocked, true, "lock was not unlocked");
+        assertEq(lockManager_timelock.getLock(lockId).unlocked, true, "lock was not unlocked");
     }
 
     function testMintAddressLockToNFT(uint256 amount) public {
@@ -202,7 +209,7 @@ contract Revest721Tests is Test {
             pipeToContract: address(0),
             handler: address(boredApe),
             asset: address(USDC),
-            lockManager: address(lockManager),
+            lockManager: address(lockManager_addresslock),
             depositAmount: amount,
             nonce: nonce,
             quantity: 0,
@@ -216,7 +223,6 @@ contract Revest721Tests is Test {
         config.handler = address(0);
         vm.expectRevert(bytes("E001"));
         revest.mintAddressLock(
-            address(addressLock), //Set carol as the unlocker
             "",
             recipients,
             amounts,
@@ -226,7 +232,6 @@ contract Revest721Tests is Test {
         config.handler = address(boredApe);
 
         (bytes32 salt, bytes32 lockId) = revest.mintAddressLock(
-            address(addressLock), //Set carol as the unlocker
             "",
             recipients,
             amounts,
@@ -236,17 +241,16 @@ contract Revest721Tests is Test {
         address walletAddr = revest.getAddressForFNFT(salt);
 
         //Lock was created
-        ILockManager.Lock memory lock = lockManager.getLock(lockId);
-        assertEq(uint256(lock.lockType), uint256(ILockManager.LockType.AddressLock), "lock type is not AddressLock");
+        ILockManager.Lock memory lock = lockManager_addresslock.getLock(lockId);
+        assertEq(uint256(lockManager_addresslock.lockType()), uint256(ILockManager.LockType.AddressLock), "lock type is not AddressLock");
         assertEq(lock.unlocked, false);
-        assertEq(lock.addressLock, address(addressLock), "address lock is not expected value");
         assertEq(lock.creationTime, block.timestamp, "lock creation time is not expected value");
 
         config = revest.getFNFT(salt);
         assertEq(config.nonce, nonce, "nonce is not expected value");
         assertEq(revest.numfnfts(address(boredApe), id), nonce + 1, "nonce was not incremented");
 
-        vm.expectRevert(bytes("E021"));
+        vm.expectRevert(bytes("E006"));
         revest.withdrawFNFT(salt, 1); //Should revert because carol has not approved it yet
 
         //Have Carol unlock the FNFT
@@ -260,7 +264,7 @@ contract Revest721Tests is Test {
         //Check that the lock was unlocked and all funds returned to alice
         assertEq(USDC.balanceOf(alice), preBal, "bob did not receive expected amount of USDC"); //All funds were returned to bob
         assertEq(USDC.balanceOf(walletAddr), 0, "vault balance did not decrease by expected amount"); //All funds were removed from SmartWallet
-        assertEq(lockManager.getLock(lockId).unlocked, true, "lock was not unlocked");
+        assertEq(lockManager_addresslock.getLock(lockId).unlocked, true, "lock was not unlocked");
     }
 
     function testProxyCall(uint256 amount) public {
@@ -282,7 +286,7 @@ contract Revest721Tests is Test {
             pipeToContract: address(0),
             handler: address(boredApe),
             asset: address(USDC),
-            lockManager: address(lockManager),
+            lockManager: address(lockManager_timelock),
             depositAmount: amount,
             nonce: 0,
             quantity: 0,
@@ -309,8 +313,8 @@ contract Revest721Tests is Test {
             assertEq(USDC.balanceOf(walletAddr), amount, "vault balance did not increase by expected amount");
 
             //Lock was created
-            ILockManager.Lock memory lock = lockManager.getLock(lockId);
-            assertEq(uint256(lock.lockType), uint256(ILockManager.LockType.TimeLock), "lock type is not TimeLock");
+            ILockManager.Lock memory lock = lockManager_timelock.getLock(lockId);
+            assertEq(uint256(lockManager_timelock.lockType()), uint256(ILockManager.LockType.TimeLock), "lock type is not TimeLock");
             assertEq(lock.timeLockExpiry, block.timestamp + 1 weeks, "lock expiry is not expected value");
             assertEq(lock.unlocked, false);
 
@@ -378,7 +382,7 @@ contract Revest721Tests is Test {
             pipeToContract: address(0),
             handler: address(boredApe),
             asset: address(USDC),
-            lockManager: address(lockManager),
+            lockManager: address(lockManager_timelock),
             depositAmount: amount,
             nonce: 0,
             quantity: 0,
@@ -460,7 +464,7 @@ contract Revest721Tests is Test {
             pipeToContract: address(0),
             handler: address(boredApe),
             asset: address(USDC),
-            lockManager: address(lockManager),
+            lockManager: address(lockManager_timelock),
             depositAmount: amount,
             nonce: nonce,
             quantity: 0,
@@ -575,7 +579,7 @@ contract Revest721Tests is Test {
             pipeToContract: address(0),
             handler: address(boredApe),
             asset: address(USDC),
-            lockManager: address(lockManager),
+            lockManager: address(lockManager_timelock),
             depositAmount: amount,
             nonce: nonce,
             quantity: 0,
@@ -623,7 +627,7 @@ contract Revest721Tests is Test {
 
             bytes32 newLockId = revest.extendFNFTMaturity(salt, block.timestamp + 2 weeks); //Extend a week beyond the current endDate
 
-            uint256 newEndTime = lockManager.getLock(newLockId).timeLockExpiry;
+            uint256 newEndTime = lockManager_timelock.getLock(newLockId).timeLockExpiry;
             assertEq(newEndTime, block.timestamp + 2 weeks, "lock did not extend maturity by expected amount");
 
             skip(2 weeks);
@@ -666,7 +670,7 @@ contract Revest721Tests is Test {
             pipeToContract: address(0),
             handler: address(boredApe),
             asset: address(USDC),
-            lockManager: address(lockManager),
+            lockManager: address(lockManager_timelock),
             depositAmount: amount,
             nonce: nonce,
             quantity: 0,
@@ -717,7 +721,7 @@ contract Revest721Tests is Test {
                 pipeToContract: address(0),
                 handler: address(boredApe),
                 asset: address(USDC),
-                lockManager: address(lockManager),
+                lockManager: address(lockManager_timelock),
                 depositAmount: amount,
                 nonce: 0,
                 quantity: 0,
@@ -735,8 +739,8 @@ contract Revest721Tests is Test {
         assertEq(USDC.balanceOf(revest.getAddressForFNFT(salt)), amount, "USDC not deposited into vault");
 
         //Test that Lock was created
-        ILockManager.Lock memory lock = lockManager.getLock(lockId);
-        assertEq(uint256(lock.lockType), uint256(ILockManager.LockType.TimeLock), "lock type is not TimeLock");
+        ILockManager.Lock memory lock = lockManager_timelock.getLock(lockId);
+        assertEq(uint256(lockManager_timelock.lockType()), uint256(ILockManager.LockType.TimeLock), "lock type is not TimeLock");
         assertEq(lock.timeLockExpiry, block.timestamp + 1 weeks, "lock expiry is not expected value");
         assertEq(lock.unlocked, false);
 

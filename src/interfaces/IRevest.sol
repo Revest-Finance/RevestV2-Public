@@ -19,7 +19,6 @@ interface IRevest is IController {
         address indexed asset,
         address indexed from,
         uint256 indexed fnftId,
-        address trigger,
         uint256[] quantities,
         FNFTConfig fnftConfig
     );
@@ -41,7 +40,6 @@ interface IRevest is IController {
     ) external payable returns (bytes32, bytes32);
 
     function mintAddressLock(
-        address trigger,
         bytes memory arguments,
         address[] memory recipients,
         uint256[] memory quantities,
@@ -49,7 +47,6 @@ interface IRevest is IController {
     ) external payable returns (bytes32, bytes32);
 
     function mintAddressLockWithPermit(
-        address trigger,
         bytes memory arguments,
         address[] memory recipients,
         uint256[] memory quantities,
