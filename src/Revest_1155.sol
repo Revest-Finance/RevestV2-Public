@@ -14,7 +14,6 @@ import "./interfaces/IRevest.sol";
 import "./interfaces/ILockManager.sol";
 import "./interfaces/ITokenVault.sol";
 import "./interfaces/IFNFTHandler.sol";
-import "./interfaces/IAddressLock.sol";
 import "./interfaces/IAllowanceTransfer.sol";
 
 import "./Revest_base.sol";
@@ -63,14 +62,8 @@ contract Revest_1155 is Revest_base {
         {
             salt = keccak256(abi.encode(fnftConfig.fnftId, fnftConfig.handler, 0));
 
-            require(fnfts[salt].quantity == 0, "E005");
-
             if (!ILockManager(fnftConfig.lockManager).lockExists(fnftConfig.lockId)) {
-                ILockManager.LockParam memory timeLock;
-                timeLock.lockType = ILockManager.LockType.TimeLock;
-                timeLock.timeLockExpiry = endTime;
-
-                lockId = ILockManager(fnftConfig.lockManager).createLock(salt, timeLock);
+                lockId = ILockManager(fnftConfig.lockManager).createLock(salt, abi.encode(endTime));
                 fnftConfig.lockId = lockId;
             } else {
                 lockId = fnftConfig.lockId;
@@ -86,7 +79,6 @@ contract Revest_1155 is Revest_base {
     }
 
     function _mintAddressLock(
-        address trigger,
         bytes memory arguments,
         address[] memory recipients,
         uint256[] memory quantities,
@@ -100,21 +92,13 @@ contract Revest_1155 is Revest_base {
 
         {
             salt = keccak256(abi.encode(fnftConfig.fnftId, fnftConfig.handler, 0));
-            require(fnfts[salt].quantity == 0, "E005"); //TODO: Double check that Error code
 
             if (!ILockManager(fnftConfig.lockManager).lockExists(fnftConfig.lockId)) {
-                ILockManager.LockParam memory addressLock;
-                addressLock.addressLock = trigger;
-                addressLock.lockType = ILockManager.LockType.AddressLock;
-
+                
                 //Return the ID of the lock
-                lockId = ILockManager(fnftConfig.lockManager).createLock(salt, addressLock);
+                lockId = ILockManager(fnftConfig.lockManager).createLock(salt, arguments);
                 fnftConfig.lockId = lockId;
 
-                // The lock ID is already incremented prior to calling a method that could allow for reentry
-                if (trigger.supportsInterface(ADDRESS_LOCK_INTERFACE_ID)) {
-                    IAddressLock(trigger).createLock(fnftConfig.fnftId, uint256(lockId), arguments);
-                }
             } else {
                 lockId = fnftConfig.lockId;
                 fnftConfig.lockId = fnftConfig.lockId;
@@ -124,7 +108,7 @@ contract Revest_1155 is Revest_base {
         //Stack Too Deep Fixer
         doMint(MintParameters(0, recipients, quantities, fnftConfig, usePermit2));
 
-        emit FNFTAddressLockMinted(fnftConfig.asset, msg.sender, fnftConfig.fnftId, trigger, quantities, fnftConfig);
+        emit FNFTAddressLockMinted(fnftConfig.asset, msg.sender, fnftConfig.fnftId, quantities, fnftConfig);
     }
 
     function withdrawFNFT(bytes32 salt, uint256 quantity) external override nonReentrant {
@@ -175,19 +159,17 @@ contract Revest_1155 is Revest_base {
 
         // If it can't have its maturity extended, revert
         // Will also return false on non-time lock locks
-        require(fnft.maturityExtension && manager.lockTypes(fnft.lockId) == ILockManager.LockType.TimeLock, "E009");
+        require(fnft.maturityExtension && manager.lockType() == ILockManager.LockType.TimeLock, "E009");
 
         // If desired maturity is below existing date, reject operation
         ILockManager.Lock memory lockParam = manager.getLock(fnft.lockId);
         require(!lockParam.unlocked && lockParam.timeLockExpiry > block.timestamp, "E007");
         require(lockParam.timeLockExpiry < endTime, "E010");
 
-        // Update the lock
-        ILockManager.LockParam memory lock;
-        lock.lockType = ILockManager.LockType.TimeLock;
-        lock.timeLockExpiry = endTime;
+ 
+        bytes memory creationData = abi.encode(endTime); 
 
-        newLockId = manager.createLock(keccak256(abi.encode(block.timestamp, endTime, msg.sender)), lock);
+        newLockId = manager.createLock(keccak256(abi.encode(block.timestamp, endTime, msg.sender)), creationData);
         fnfts[salt].lockId = newLockId;
 
         emit FNFTMaturityExtended(newLockId, msg.sender, fnftId, endTime);

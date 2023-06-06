@@ -11,30 +11,24 @@ interface ILockManager {
         AddressLock
     }
 
-    struct LockParam {
-        address addressLock;
-        uint256 timeLockExpiry;
-        LockType lockType;
-    }
-
     struct Lock {
-        address addressLock;
         address creator;
-        LockType lockType;
+        bool unlocked;
+        
         uint256 timeLockExpiry;
         uint256 creationTime;
-        bool unlocked;
     }
 
-    function createLock(bytes32 fnftId, LockParam memory lock) external returns (bytes32);
+
+    function createLock(bytes32 fnftId, bytes calldata args) external returns (bytes32);
 
     function getLock(bytes32 lockId) external view returns (Lock memory);
 
-    function lockTypes(bytes32 fnftId) external view returns (LockType);
+    function lockType() external view returns (LockType);
 
     function unlockFNFT(bytes32 salt, uint256 fnftId) external;
 
-    function getLockMaturity(bytes32 salt, uint256 fnftId) external view returns (bool);
+    function getLockMaturity(bytes32 salt, uint fnftId) external view returns (bool);
 
     function lockExists(bytes32 lockSalt) external view returns (bool);
 

@@ -18,7 +18,6 @@ import "./interfaces/IRevest.sol";
 import "./interfaces/ILockManager.sol";
 import "./interfaces/ITokenVault.sol";
 import "./interfaces/IFNFTHandler.sol";
-import "./interfaces/IAddressLock.sol";
 import "./interfaces/IAllowanceTransfer.sol";
 import "./interfaces/IMetadataHandler.sol";
 import "./interfaces/IControllerExtendable.sol";
@@ -34,7 +33,6 @@ abstract contract Revest_base is IRevest, IControllerExtendable, ERC1155Holder, 
     using FixedPointMathLib for uint256;
     using SafeCast for uint256;
 
-    bytes4 public constant ADDRESS_LOCK_INTERFACE_ID = type(IAddressLock).interfaceId;
     bytes4 public constant FNFTHANDLER_INTERFACE_ID = type(IFNFTHandler).interfaceId;
     bytes4 public constant ERC721_INTERFACE_ID = type(IERC721).interfaceId;
 
@@ -64,7 +62,7 @@ abstract contract Revest_base is IRevest, IControllerExtendable, ERC1155Holder, 
     function unlockFNFT(bytes32 salt) external override nonReentrant {
         IRevest.FNFTConfig memory fnft = fnfts[salt];
 
-        // Works for value locks or time locks
+        // Works for all lock types
         ILockManager(fnft.lockManager).unlockFNFT(fnft.lockId, fnft.fnftId);
 
         //TODO: Fix Events
@@ -99,7 +97,6 @@ abstract contract Revest_base is IRevest, IControllerExtendable, ERC1155Holder, 
     }
 
     function mintAddressLockWithPermit(
-        address trigger,
         bytes memory arguments,
         address[] memory recipients,
         uint256[] memory quantities,
@@ -110,21 +107,19 @@ abstract contract Revest_base is IRevest, IControllerExtendable, ERC1155Holder, 
         //Length check means to use permit2 for allowance but allowance has already been granted
         require(_signature.length != 0, "E024");
         PERMIT2.permit(msg.sender, permits, _signature);
-        return _mintAddressLock(trigger, arguments, recipients, quantities, fnftConfig, true);
+        return _mintAddressLock(arguments, recipients, quantities, fnftConfig, true);
     }
 
     function mintAddressLock(
-        address trigger,
         bytes memory arguments,
         address[] memory recipients,
         uint256[] memory quantities,
         IRevest.FNFTConfig memory fnftConfig
     ) external payable virtual nonReentrant returns (bytes32 salt, bytes32 lockId) {
-        return _mintAddressLock(trigger, arguments, recipients, quantities, fnftConfig, false);
+        return _mintAddressLock(arguments, recipients, quantities, fnftConfig, false);
     }
 
     function _mintAddressLock(
-        address trigger,
         bytes memory arguments,
         address[] memory recipients,
         uint256[] memory quantities,

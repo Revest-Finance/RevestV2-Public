@@ -15,12 +15,11 @@ E012 - FNFT mint amounts must be greater than zero
 E013 - One or more of desired proxy call functions is not allowed
 E014 - Only the token vault may call this function
 E015 - Unlock date must be in the future
-E016 - Address lock address cannot be zero
+E016 - Lock does not exist
 E017 - Invalid Lock-Type provided
 E018 - Invalid Signature provided
 E019 - Signature deadline must be in the future
 E020 - FNFT transfer amount must be non-zero
-E021 - Address Lock has not matured yet
 E022 - FNFT is non-transferable, only burn transfers allowed
 E023 - Only the canonical NFT-owner can call this function
 E024 - Invalid signature length provided
