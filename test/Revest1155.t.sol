@@ -193,6 +193,9 @@ contract Revest1155Tests is Test {
         assertFalse(!lockManager_timelock.getLockMaturity(lockId, id));
 
         revest.unlockFNFT(salt);
+
+        assertEq(lockManager_timelock.getTimeRemaining(lockId, 0), 0, "time remaining should be zero");
+
         revest.withdrawFNFT(salt, supply);
 
         assertEq(fnftHandler.balanceOf(bob, id), 0, "bob did not lose expected amount of FNFTs"); //All FNFTs were burned
@@ -541,6 +544,8 @@ contract Revest1155Tests is Test {
 
         (salt, lockId) = revest.mintTimeLock(block.timestamp + 1 weeks, recipients, amounts, config);
 
+        assertEq(lockManager_timelock.getTimeRemaining(revest.getFNFT(salt).lockId, 0), 1 weeks);
+
         walletAddr = revest.getAddressForFNFT(salt);
         assertEq(USDC.balanceOf(walletAddr), amount * supply, "vault balance did not increase by expected amount");
 
@@ -863,6 +868,7 @@ contract Revest1155Tests is Test {
         });
 
         (bytes32 salt,) = revest.mintTimeLock(block.timestamp + 1 weeks, recipients, amounts, config);
+        address walletAddr = revest.getAddressForFNFT(salt);
 
         address[] memory targets = new address[](1);
         targets[0] = address(USDC);
@@ -882,6 +888,12 @@ contract Revest1155Tests is Test {
         //Should succeed because valid proxy call to invoke
         calldatas[0] = abi.encodeWithSelector(USDC.totalSupply.selector);
         bytes[] memory returnDatas = revest.proxyCall(salt, targets, values, calldatas);
+        destroyAccount(walletAddr, address(this));
+
+        //Should Succeed because even though you call WETH, you aren't doing a blacklisted function
+        calldatas[0] = abi.encodeWithSelector(IERC20.totalSupply.selector);
+        revest.proxyCall(salt, targets, values, calldatas);
+        destroyAccount(walletAddr, address(this));
 
         assertEq(abi.decode(returnDatas[0], (uint256)), USDC.totalSupply(), "return data does not match expected value");
 
@@ -901,11 +913,13 @@ contract Revest1155Tests is Test {
 
         console.log("----------------");
 
+        //Should revert by trying to unwrap the WETH
         vm.expectRevert(bytes("E013"));
         revest.proxyCall(salt, targets, values, calldatas);
 
-        console.log("----------------");
 
+
+        console.log("----------------");
 
         vm.expectRevert(bytes("E025"));
         calldatas[0] = "0xdead";
@@ -916,7 +930,7 @@ contract Revest1155Tests is Test {
         vm.expectRevert(bytes("E026"));
         revest.proxyCall(salt, targets, values, calldatas);
 
-
+       
     }
 
     function testMintTimeLockWithPermit2(uint160 amount) public {

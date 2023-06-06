@@ -14,7 +14,6 @@ interface ILockManager {
     struct Lock {
         address creator;
         bool unlocked;
-        
         uint256 timeLockExpiry;
         uint256 creationTime;
     }

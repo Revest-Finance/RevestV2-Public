@@ -58,5 +58,12 @@ contract LockManager_Timelock is LockManager_Base {
 
     }
 
+    function getTimeRemaining(bytes32 lockId, uint) public view returns (uint256) {
+        ILockManager.Lock memory lock = locks[lockId];
+
+        if (lock.unlocked || lock.timeLockExpiry == 0) return 0;
+
+        else return lock.timeLockExpiry - block.timestamp;
+    }
     
 }
