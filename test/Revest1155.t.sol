@@ -512,13 +512,17 @@ contract Revest1155Tests is Test {
             changePrank(alice);
 
             skip(2 weeks);
-            vm.expectRevert(bytes("E015")); //Revert because new FNFT maturity date has already passed
-            revest.extendFNFTMaturity(salt, block.timestamp - 2 weeks); //Extend a week beyond the current endDate
+            vm.expectRevert(bytes("E015")); //Revert because new FNFT maturity date is in the past
+            revest.extendFNFTMaturity(salt, block.timestamp - 2 weeks);
 
-            vm.expectRevert(bytes("E007")); //Revert because new FNFT maturity date has already passed
+             vm.expectRevert(bytes("E007")); //Revert because new FNFT maturity date has already passed
             revest.extendFNFTMaturity(salt, block.timestamp + 2 weeks); //Extend a week beyond the current endDate
-
+           
             rewind(2 weeks); //Go back 2 weeks to actually extend this time
+
+             //Should revert because new unlockTime is not after current unlockTime
+            vm.expectRevert(bytes("E010"));
+            revest.extendFNFTMaturity(salt, block.timestamp + 1 days);
 
             uint256 currTime = block.timestamp;
             bytes32 newLockId = revest.extendFNFTMaturity(salt, block.timestamp + 2 weeks); //Extend a week beyond the current endDate

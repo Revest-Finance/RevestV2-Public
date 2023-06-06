@@ -625,6 +625,9 @@ contract Revest721Tests is Test {
 
             console.log("current time stamp: %i", block.timestamp);
 
+            vm.expectRevert(bytes("E010"));
+            revest.extendFNFTMaturity(salt, block.timestamp + 1 weeks); //Extend a week beyond the current endDate
+
             bytes32 newLockId = revest.extendFNFTMaturity(salt, block.timestamp + 2 weeks); //Extend a week beyond the current endDate
 
             uint256 newEndTime = lockManager_timelock.getLock(newLockId).timeLockExpiry;

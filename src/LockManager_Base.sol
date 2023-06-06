@@ -87,9 +87,7 @@ abstract contract LockManager_Base is ILockManager, ReentrancyGuard {
             //This prevents the edge case for that
 
             else if (targets[x] == WETH && token == address(0xdead)) {
-                console.log("got here");
                 if (bytes4(calldatas[x]) == IWETH.withdraw.selector) {
-                    console.log("and here");
                     return false;
                 }
             }

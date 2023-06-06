@@ -65,9 +65,6 @@ contract Revest_721 is Revest_base {
         {
             salt = keccak256(abi.encode(fnftConfig.fnftId, fnftConfig.handler, fnftConfig.nonce));
 
-            //Can only be triggered by inadvertent hash collision
-            require(fnfts[salt].quantity == 0, "E005");
-
             if (!ILockManager(fnftConfig.lockManager).lockExists(fnftConfig.lockId)) {
 
                 lockId = ILockManager(fnftConfig.lockManager).createLock(salt, abi.encode(endTime));
@@ -99,9 +96,6 @@ contract Revest_721 is Revest_base {
 
         {
             salt = keccak256(abi.encode(fnftConfig.fnftId, fnftConfig.handler, fnftConfig.nonce));
-
-            //Impossible to trigger manually, only be hash collision, but just in case
-            require(fnfts[salt].quantity == 0, "E005");
 
             if (!ILockManager(fnftConfig.lockManager).lockExists(fnftConfig.lockId)) {
 
