@@ -34,7 +34,6 @@ abstract contract LockManager_Base is ILockManager, ReentrancyGuard {
         return locks[salt];
     }
 
-
     /**
      * @dev Sets the maturity of an address or value lock to mature – can only be called from main contract
      * if address, only if it is called by the address given permissions to
@@ -58,9 +57,9 @@ abstract contract LockManager_Base is ILockManager, ReentrancyGuard {
         locks[lockId] = tempLock;
     }
 
-    function getLockMaturity(bytes32 salt, uint fnftId) public virtual view returns (bool);
+    function getLockMaturity(bytes32 salt, uint256 fnftId) public view virtual returns (bool);
 
-    function lockExists(bytes32 lockSalt) external virtual view returns (bool) {
+    function lockExists(bytes32 lockSalt) external view virtual returns (bool) {
         return locks[lockSalt].creationTime != 0;
     }
 
@@ -69,23 +68,14 @@ abstract contract LockManager_Base is ILockManager, ReentrancyGuard {
         address[] memory targets,
         uint256[] memory, //We don't need values but its in the interface and good for users who want to bring their own lockManager
         bytes[] memory calldatas
-    ) external virtual view returns (bool) {
+    ) external view virtual returns (bool) {
         for (uint256 x = 0; x < calldatas.length;) {
-
-            //TODO: Determine if potential security issue
-            // //No Calling EOAs
-            // if (targets[x].code.length == 0) return false;
-
-            console.log("targets[x]: %s", targets[x]);
-            console.log("token: %s", token);
-
             //Restriction only enabled when the target is the token and not unlocked
             if (targets[x] == token && blacklistedSelector[bytes4(calldatas[x])]) {
                 return false;
             }
             //Revest uses address(0) for asset when it is ETH, but stores WETH in the vault.
             //This prevents the edge case for that
-
             else if (targets[x] == WETH && token == address(0xdead)) {
                 if (bytes4(calldatas[x]) == IWETH.withdraw.selector) {
                     return false;
@@ -99,5 +89,4 @@ abstract contract LockManager_Base is ILockManager, ReentrancyGuard {
 
         return true;
     }
-    
 }

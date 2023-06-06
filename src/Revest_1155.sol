@@ -20,8 +20,6 @@ import "./Revest_base.sol";
 
 import "./lib/IWETH.sol";
 
-import "forge-std/console2.sol";
-
 /**
  * This is the entrypoint for the frontend, as well as third-party Revest integrations.
  * Solidity style guide ordering: receive, fallback, external, public, internal, private - within a grouping, view and pure go last - https://docs.soliditylang.org/en/latest/style-guide.html
@@ -74,7 +72,6 @@ contract Revest_1155 is Revest_base {
         //Stack Too Deep Fixer
         doMint(MintParameters(endTime, recipients, quantities, fnftConfig, usePermit2));
 
-        //TODO: Fix Events
         emit FNFTTimeLockMinted(fnftConfig.asset, msg.sender, fnftConfig.fnftId, endTime, quantities, fnftConfig);
     }
 
@@ -87,18 +84,17 @@ contract Revest_1155 is Revest_base {
     ) internal override returns (bytes32 salt, bytes32 lockId) {
         require(fnftConfig.handler.supportsInterface(type(IFNFTHandler).interfaceId), "E001");
 
-        //If the handler is the Revest FNFT Contract get the new FNFT ID
+        //Get the ID of the next to-be-minted FNFT
         fnftConfig.fnftId = IFNFTHandler(fnftConfig.handler).getNextId();
 
         {
+            //Salt = kecccak256(fnftID || handler || nonce (which is always zero))
             salt = keccak256(abi.encode(fnftConfig.fnftId, fnftConfig.handler, 0));
 
             if (!ILockManager(fnftConfig.lockManager).lockExists(fnftConfig.lockId)) {
-                
                 //Return the ID of the lock
                 lockId = ILockManager(fnftConfig.lockManager).createLock(salt, arguments);
                 fnftConfig.lockId = lockId;
-
             } else {
                 lockId = fnftConfig.lockId;
                 fnftConfig.lockId = fnftConfig.lockId;
@@ -114,11 +110,10 @@ contract Revest_1155 is Revest_base {
     function withdrawFNFT(bytes32 salt, uint256 quantity) external override nonReentrant {
         IRevest.FNFTConfig memory fnft = fnfts[salt];
 
-        // Check if this many FNFTs exist in the first place for the given ID
+        // Check if FNFTs exist in the first place for the given ID
         require(fnft.quantity != 0, "E003");
 
         // Burn the FNFTs being exchanged
-        //TODO: Add a specific error revert message maybe?
         IFNFTHandler(fnft.handler).burn(msg.sender, fnft.fnftId, quantity);
 
         //Checks-effects because unlockFNFT has an external call which could be used for reentrancy
@@ -166,8 +161,7 @@ contract Revest_1155 is Revest_base {
         require(!lockParam.unlocked && lockParam.timeLockExpiry > block.timestamp, "E007");
         require(lockParam.timeLockExpiry < endTime, "E010");
 
- 
-        bytes memory creationData = abi.encode(endTime); 
+        bytes memory creationData = abi.encode(endTime);
 
         newLockId = manager.createLock(keccak256(abi.encode(block.timestamp, endTime, msg.sender)), creationData);
         fnfts[salt].lockId = newLockId;
@@ -192,7 +186,6 @@ contract Revest_1155 is Revest_base {
 
         uint256 supply = IFNFTHandler(handler).totalSupply(fnftId);
 
-
         address smartWallet = getAddressForFNFT(salt);
 
         fnft.depositAmount += amount;
@@ -201,9 +194,8 @@ contract Revest_1155 is Revest_base {
 
         address depositAsset = fnft.asset;
 
-        //Underlying is ETH, deposit ETH by wrapping to WETH
+        //Underlying is ETH, store it by wrapping to WETH first
         if (msg.value != 0 && fnft.asset == address(0xdead)) {
-            console2.log("---msg.value found---");
             require(msg.value == deposit, "E027");
 
             IWETH(WETH).deposit{value: msg.value}();
@@ -213,18 +205,14 @@ contract Revest_1155 is Revest_base {
             return deposit;
         }
 
-        //Underlying is ETH, user wants to deposit WETH, no wrapping required
-        else if (msg.value == 0 && fnft.asset == address(0xdead) ) {
-            console2.log("---deposit asset set---");
+        //Underlying is ETH, user wants to deposit WETH, without wrapping first
+        else if (msg.value == 0 && fnft.asset == address(0xdead)) {
             depositAsset = WETH;
         }
 
-        
         if (usePermit2) {
             PERMIT2.transferFrom(msg.sender, smartWallet, deposit.toUint160(), depositAsset);
         } else {
-            console2.log("--- DOING TRANSFER OF ASSET---");
-            console2.log("asset: ", depositAsset);
             ERC20(depositAsset).safeTransferFrom(msg.sender, smartWallet, deposit);
         }
 
@@ -257,18 +245,22 @@ contract Revest_1155 is Revest_base {
         params.fnftConfig.quantity = totalQuantity;
         address smartWallet = getAddressForFNFT(salt);
 
+        //If user depositing ETH, wrap it to WETH first
         if (msg.value != 0) {
             params.fnftConfig.asset = address(0xdead);
-            params.fnftConfig.depositAmount = msg.value / totalQuantity;
-            require(msg.value / totalQuantity != 0, "E027");
+
+            //User sent enough ETH to pay for all FNFTs
+            require(msg.value / totalQuantity == params.fnftConfig.depositAmount, "E027");
             params.fnftConfig.useETH = true;
+
             IWETH(WETH).deposit{value: msg.value}(); //Convert it to WETH and send it back to this
             IWETH(WETH).transfer(smartWallet, msg.value); //Transfer it to the smart wallet
+        
         } else if (params.usePermit2) {
             PERMIT2.transferFrom(
                 msg.sender,
                 smartWallet,
-                (totalQuantity * params.fnftConfig.depositAmount).toUint160(),
+                (totalQuantity * params.fnftConfig.depositAmount).toUint160(),//permit2 uses a uint160 for the amount
                 params.fnftConfig.asset
             );
         } else {
@@ -277,8 +269,6 @@ contract Revest_1155 is Revest_base {
             );
         }
 
-        //Saves a ton of gas remove the createFNFT method alltogether
-        fnfts[salt] = params.fnftConfig;
 
         //Mint FNFTs but only if the handler is the Revest FNFT Handler
         if (isSingular) {
@@ -297,6 +287,8 @@ contract Revest_1155 is Revest_base {
                 }
             }
         }
+
+        fnfts[salt] = params.fnftConfig;
 
         emit CreateFNFT(salt, params.fnftConfig.fnftId, msg.sender);
     }

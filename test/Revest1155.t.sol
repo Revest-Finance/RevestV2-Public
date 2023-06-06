@@ -164,7 +164,11 @@ contract Revest1155Tests is Test {
 
             //Lock was created
             ILockManager.Lock memory lock = lockManager_timelock.getLock(lockId);
-            assertEq(uint(lockManager_timelock.lockType()), uint256(ILockManager.LockType.TimeLock), "lock type is not TimeLock");
+            assertEq(
+                uint256(lockManager_timelock.lockType()),
+                uint256(ILockManager.LockType.TimeLock),
+                "lock type is not TimeLock"
+            );
 
             assertFalse(lock.timeLockExpiry == 0, "timeLock Expiry should not be zero");
             assertEq(currentTime + 1 weeks, lock.timeLockExpiry, "lock expiry is not expected value");
@@ -182,14 +186,12 @@ contract Revest1155Tests is Test {
         vm.expectRevert(bytes("E006"));
         revest.unlockFNFT(salt);
 
-        console.log("first maturity check");
         assertFalse(lockManager_timelock.getLockMaturity(lockId, id));
 
         vm.expectRevert(bytes("E016"));
         lockManager_timelock.unlockFNFT(keccak256(abi.encode("0xdead")), 0);
 
         skip(1 weeks + 1 seconds);
-        console.log("second maturity check");
         assertFalse(!lockManager_timelock.getLockMaturity(lockId, id));
 
         revest.unlockFNFT(salt);
@@ -274,7 +276,11 @@ contract Revest1155Tests is Test {
 
             //Lock was created
             ILockManager.Lock memory lock = lockManager_timelock.getLock(lockId);
-            assertEq(uint256(lockManager_timelock.lockType()), uint256(ILockManager.LockType.TimeLock), "lock type is not TimeLock");
+            assertEq(
+                uint256(lockManager_timelock.lockType()),
+                uint256(ILockManager.LockType.TimeLock),
+                "lock type is not TimeLock"
+            );
             assertEq(lock.timeLockExpiry, block.timestamp + 1 weeks, "lock expiry is not expected value");
             assertEq(lock.unlocked, false);
         }
@@ -302,11 +308,10 @@ contract Revest1155Tests is Test {
             fnftHandler.balanceOf(bob, id), fnftHandler.totalSupply(id), "expected and actual FNFT supply do not match"
         );
 
-
-        uint[] memory ids = new uint[](1);
+        uint256[] memory ids = new uint[](1);
         ids[0] = id;
 
-        uint[] memory amounts2 = new uint[](1);
+        uint256[] memory amounts2 = new uint[](1);
         amounts2[0] = 0;
         vm.expectRevert(bytes("E020"));
         changePrank(bob);
@@ -353,7 +358,11 @@ contract Revest1155Tests is Test {
 
         //Lock was created
         ILockManager.Lock memory lock = lockManager_addresslock.getLock(lockId);
-        assertEq(uint256(lockManager_addresslock.lockType()), uint256(ILockManager.LockType.AddressLock), "lock type is not AddressLock");
+        assertEq(
+            uint256(lockManager_addresslock.lockType()),
+            uint256(ILockManager.LockType.AddressLock),
+            "lock type is not AddressLock"
+        );
         assertEq(lock.unlocked, false);
         assertEq(lock.creationTime, block.timestamp, "lock creation time is not expected value");
 
@@ -518,12 +527,12 @@ contract Revest1155Tests is Test {
             vm.expectRevert(bytes("E015")); //Revert because new FNFT maturity date is in the past
             revest.extendFNFTMaturity(salt, block.timestamp - 2 weeks);
 
-             vm.expectRevert(bytes("E007")); //Revert because new FNFT maturity date has already passed
+            vm.expectRevert(bytes("E007")); //Revert because new FNFT maturity date has already passed
             revest.extendFNFTMaturity(salt, block.timestamp + 2 weeks); //Extend a week beyond the current endDate
-           
+
             rewind(2 weeks); //Go back 2 weeks to actually extend this time
 
-             //Should revert because new unlockTime is not after current unlockTime
+            //Should revert because new unlockTime is not after current unlockTime
             vm.expectRevert(bytes("E010"));
             revest.extendFNFTMaturity(salt, block.timestamp + 1 days);
 
@@ -553,7 +562,7 @@ contract Revest1155Tests is Test {
         revest.extendFNFTMaturity(salt, block.timestamp + 2 weeks); //Extend a week beyond the current endDate
     }
 
-    function testMintFNFTWithEth(uint supply, uint256 amount) public {
+    function testMintFNFTWithEth(uint256 supply, uint256 amount) public {
         vm.assume(amount >= 1 ether && amount <= 100 ether);
         vm.assume(supply > 1 && supply <= 1e6);
 
@@ -602,25 +611,27 @@ contract Revest1155Tests is Test {
         revest.withdrawFNFT(salt, supply);
         assertEq(alice.balance, preBal, "alice balance did not increase by expected amount of ETH");
 
-
         preBal = alice.balance;
-        uint wethPreBal = WETH.balanceOf(alice);
-        (salt,) =
-            revest.mintTimeLock{value: amount * supply}(block.timestamp + 1 weeks, recipients, amounts, config);
+        uint256 wethPreBal = WETH.balanceOf(alice);
+        (salt,) = revest.mintTimeLock{value: amount * supply}(block.timestamp + 1 weeks, recipients, amounts, config);
 
         vm.expectRevert(bytes("E027"));
         revest.depositAdditionalToFNFT{value: 1 ether}(salt, 1 ether);
-        console.log("--------------------");
-        console.log("supply: %s", supply);
-        
+
         revest.depositAdditionalToFNFT{value: (1 ether * supply)}(salt, 1 ether);
         revest.depositAdditionalToFNFT(salt, 1 ether);
 
-        console.log("got here");
-        assertEq(alice.balance, preBal - (supply * (amount + 1 ether)), "alice balance did not decrease by expected amount of ETH");
-        assertEq(WETH.balanceOf(alice), wethPreBal - (supply * (1 ether)), "alice balance did not decrease by expected amount of WETH");
+        assertEq(
+            alice.balance,
+            preBal - (supply * (amount + 1 ether)),
+            "alice balance did not decrease by expected amount of ETH"
+        );
+        assertEq(
+            WETH.balanceOf(alice),
+            wethPreBal - (supply * (1 ether)),
+            "alice balance did not decrease by expected amount of WETH"
+        );
 
-        
         storedConfig = revest.getFNFT(salt);
         assertEq(storedConfig.useETH, true, "useETH was not set to true");
         assertEq(storedConfig.asset, address(0xdead), "asset was not set to ETH");
@@ -629,7 +640,7 @@ contract Revest1155Tests is Test {
         skip(1 weeks);
 
         revest.withdrawFNFT(salt, supply);
-        assertEq(alice.balance, preBal+ (1 ether * supply), "alice balance did not increase by expected amount of ETH");
+        assertEq(alice.balance, preBal + (1 ether * supply), "alice balance did not increase by expected amount of ETH");
     }
 
     function testCantTransferANonTransferrableFNFT() public {
@@ -908,18 +919,12 @@ contract Revest1155Tests is Test {
         config.useETH = true;
         config.depositAmount = 1 ether;
         targets[0] = address(WETH);
-        (salt,) = revest.mintTimeLock{value: 1 ether}(block.timestamp + 1 weeks, recipients, amounts, config);
+        (salt,) = revest.mintTimeLock{value: 2 ether}(block.timestamp + 1 weeks, recipients, amounts, config);
         calldatas[0] = abi.encodeWithSelector(IWETH.withdraw.selector, 1 ether);
-
-        console.log("----------------");
 
         //Should revert by trying to unwrap the WETH
         vm.expectRevert(bytes("E013"));
         revest.proxyCall(salt, targets, values, calldatas);
-
-
-
-        console.log("----------------");
 
         vm.expectRevert(bytes("E025"));
         calldatas[0] = "0xdead";
@@ -929,8 +934,6 @@ contract Revest1155Tests is Test {
         values = new uint[](2);
         vm.expectRevert(bytes("E026"));
         revest.proxyCall(salt, targets, values, calldatas);
-
-       
     }
 
     function testMintTimeLockWithPermit2(uint160 amount) public {
@@ -974,7 +977,11 @@ contract Revest1155Tests is Test {
 
         //Test that Lock was created
         ILockManager.Lock memory lock = lockManager_timelock.getLock(lockId);
-        assertEq(uint256(lockManager_timelock.lockType()), uint256(ILockManager.LockType.TimeLock), "lock type is not TimeLock");
+        assertEq(
+            uint256(lockManager_timelock.lockType()),
+            uint256(ILockManager.LockType.TimeLock),
+            "lock type is not TimeLock"
+        );
         assertEq(lock.timeLockExpiry, block.timestamp + 1 weeks, "lock expiry is not expected value");
         assertEq(lock.unlocked, false);
     }
@@ -1018,7 +1025,11 @@ contract Revest1155Tests is Test {
 
         //Lock was created
         ILockManager.Lock memory lock = lockManager_addresslock.getLock(lockId);
-        assertEq(uint256(lockManager_addresslock.lockType()), uint256(ILockManager.LockType.AddressLock), "lock type is not AddressLock");
+        assertEq(
+            uint256(lockManager_addresslock.lockType()),
+            uint256(ILockManager.LockType.AddressLock),
+            "lock type is not AddressLock"
+        );
         assertEq(lock.unlocked, false);
         assertEq(lock.creationTime, block.timestamp, "lock creation time is not expected value");
 
@@ -1026,7 +1037,6 @@ contract Revest1155Tests is Test {
 
         vm.expectRevert(bytes("E006"));
         revest.withdrawFNFT(salt, supply); //Should revert because lock has not expired
-
 
         skip(1 seconds);
         revest.withdrawFNFT(salt, supply);

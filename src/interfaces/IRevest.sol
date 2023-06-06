@@ -16,11 +16,7 @@ interface IRevest is IController {
     );
 
     event FNFTAddressLockMinted(
-        address indexed asset,
-        address indexed from,
-        uint256 indexed fnftId,
-        uint256[] quantities,
-        FNFTConfig fnftConfig
+        address indexed asset, address indexed from, uint256 indexed fnftId, uint256[] quantities, FNFTConfig fnftConfig
     );
 
     function mintTimeLockWithPermit(

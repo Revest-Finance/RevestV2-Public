@@ -8,12 +8,7 @@ interface ITokenVault {
     /// Emitted when an FNFT is withdraw  to denote what tokens have been withdrawn
     event WithdrawERC20(address token, address indexed user, bytes32 indexed salt, uint256 amount, address smartWallet);
 
-    function withdrawToken(
-        bytes32 salt,
-        address token,
-        uint256 quantity,
-        address recipient //TODO: Can replace user with just send back to msg.sender but less optimized
-    ) external;
+    function withdrawToken(bytes32 salt, address token, uint256 quantity, address recipient) external;
 
     function getAddress(bytes32 salt, address caller) external view returns (address smartWallet);
 

@@ -12,8 +12,6 @@ import "./interfaces/IRevest.sol";
 import "./interfaces/IFNFTHandler.sol";
 import "./interfaces/IMetadataHandler.sol";
 
-import "forge-std/console2.sol";
-
 contract FNFTHandler is ERC1155, Ownable, IFNFTHandler {
     using ERC165Checker for address;
     using ECDSA for bytes32;
@@ -100,11 +98,8 @@ contract FNFTHandler is ERC1155, Ownable, IFNFTHandler {
             )
         );
 
-        console2.log("---FNFT digest---");
-        console2.logBytes32(digest);
-
         (address signer,) = digest.tryRecover(signature);
-        console2.log("signer: ", signer);
+
         require(signer != address(0) && signer == info.owner, "E018");
         require(block.timestamp < info.deadline, "ERC1155: signature expired");
 

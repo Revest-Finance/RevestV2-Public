@@ -4,7 +4,6 @@ pragma solidity ^0.8.12;
 
 interface IController {
     event FNFTWithdrawn(address indexed from, uint256 indexed fnftId, uint256 indexed quantity);
-
     event FNFTUnlocked(address indexed from, uint256 indexed fnftId);
 
     event DepositERC20(
@@ -16,26 +15,25 @@ interface IController {
     );
 
     event CreateFNFT(bytes32 salt, uint256 indexed fnftId, address indexed from);
-
     event RedeemFNFT(bytes32 indexed salt, uint256 indexed fnftId, address indexed from);
 
     struct FNFTConfig {
+        //Address = 20 bytes and bool = 1 byte -> combine for 1 slot each
         address pipeToContract; // Indicates if FNFT will pipe to another contract
+        bool maturityExtension; // Maturity extensions remaining
         address handler;
+        bool useETH;
         address asset; // The token being stored
+        bool nontransferrable;
         address lockManager;
         uint256 depositAmount; // The amount of each token being stored
-        //TODO: Pack Better
         uint256 nonce; // The FNFT number
         uint256 quantity; // How many FNFTs
         uint256 fnftId; //the ID of the NFT the FNFT was minted to
-        bytes32 lockId; // The salt used to generate the lock info
-        bool maturityExtension; // Maturity extensions remaining
-        bool useETH;
-        bool nontransferrable;
+        bytes32 lockId; // The ID of the lock, generated using the FNFTConfig salt itself
     }
 
-    //Used for stackTooDeep - TODO: See about removing this
+    //Used for stackTooDeep - ONly kept in memory, efficient packing not needed
     struct MintParameters {
         uint256 endTime;
         address[] recipients;

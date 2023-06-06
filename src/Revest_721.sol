@@ -66,7 +66,6 @@ contract Revest_721 is Revest_base {
             salt = keccak256(abi.encode(fnftConfig.fnftId, fnftConfig.handler, fnftConfig.nonce));
 
             if (!ILockManager(fnftConfig.lockManager).lockExists(fnftConfig.lockId)) {
-
                 lockId = ILockManager(fnftConfig.lockManager).createLock(salt, abi.encode(endTime));
 
                 fnftConfig.lockId = lockId;
@@ -78,7 +77,6 @@ contract Revest_721 is Revest_base {
         //Stack Too Deep Fixer
         doMint(MintParameters(endTime, recipients, quantities, fnftConfig, usePermit2));
 
-        //TODO: Fix Events
         emit FNFTTimeLockMinted(fnftConfig.asset, msg.sender, fnftConfig.fnftId, endTime, quantities, fnftConfig);
     }
 
@@ -98,7 +96,6 @@ contract Revest_721 is Revest_base {
             salt = keccak256(abi.encode(fnftConfig.fnftId, fnftConfig.handler, fnftConfig.nonce));
 
             if (!ILockManager(fnftConfig.lockManager).lockExists(fnftConfig.lockId)) {
-
                 //Return the ID of the lock
                 lockId = ILockManager(fnftConfig.lockManager).createLock(salt, arguments);
 
@@ -158,13 +155,11 @@ contract Revest_721 is Revest_base {
 
         require(!lockParam.unlocked && lockParam.timeLockExpiry > block.timestamp, "E007");
 
-        console.log("original end time: %i", lockParam.timeLockExpiry);
-        console.log("new end time: %i", endTime);
-
         require(lockParam.timeLockExpiry < endTime, "E010");
 
         //Just pick a salt, it doesn't matter as long as it's unique
-        bytes32 newLockId = manager.createLock(keccak256(abi.encode(block.timestamp, endTime, msg.sender)), abi.encode(endTime));
+        bytes32 newLockId =
+            manager.createLock(keccak256(abi.encode(block.timestamp, endTime, msg.sender)), abi.encode(endTime));
         fnft.lockId = newLockId;
 
         emit FNFTMaturityExtended(newLockId, msg.sender, fnftId, endTime);
@@ -195,7 +190,7 @@ contract Revest_721 is Revest_base {
 
         address depositAsset = fnft.asset;
 
-         //Underlying is ETH, deposit ETH by wrapping to WETH
+        //Underlying is ETH, deposit ETH by wrapping to WETH
         if (msg.value != 0 && fnft.asset == address(0xdead)) {
             require(msg.value == amount, "E027");
 
@@ -205,12 +200,11 @@ contract Revest_721 is Revest_base {
 
             return amount;
         }
-
         //Underlying is ETH, user wants to deposit WETH, no wrapping required
-        else if (msg.value == 0 && fnft.asset == address(0xdead) ) {
-           depositAsset = WETH;
+        else if (msg.value == 0 && fnft.asset == address(0xdead)) {
+            depositAsset = WETH;
         }
-        
+
         if (usePermit2) {
             PERMIT2.transferFrom(msg.sender, smartWallet, amount.toUint160(), depositAsset);
         } else {
@@ -236,14 +230,12 @@ contract Revest_721 is Revest_base {
         * and since every FNFT has a difference nonce we need to remove it from the salt to be able to generate the same address
         */
         bytes32 WalletSalt = keccak256(abi.encode(params.fnftConfig.fnftId, params.fnftConfig.handler));
-       
 
         // Create the FNFT and update accounting within TokenVault
         params.fnftConfig.quantity = 1;
 
         // Now, we move the funds to token vault from the message sender
         address smartWallet = tokenVault.getAddress(WalletSalt, address(this));
-
 
         if (msg.value != 0) {
             params.fnftConfig.asset = address(0xdead);
@@ -277,10 +269,8 @@ contract Revest_721 is Revest_base {
         address smartWallAdd = tokenVault.getAddress(walletSalt, address(this));
 
         amountToWithdraw = IERC20(transferAsset).balanceOf(smartWallAdd);
-        console.log("amount to withdraw: %i", amountToWithdraw);
 
         // Deploy the smart wallet object
-
         tokenVault.withdrawToken(walletSalt, transferAsset, amountToWithdraw, address(this));
 
         if (fnft.asset == address(0xdead)) {

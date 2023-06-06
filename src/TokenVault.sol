@@ -31,8 +31,6 @@ contract TokenVault is ITokenVault, ReentrancyGuard {
         address payable walletAddr =
             payable(Clones.cloneDeterministic(TEMPLATE, keccak256(abi.encode(salt, msg.sender))));
 
-        console.log("generated wallet address: ", walletAddr);
-
         //Withdraw the token, selfDestructs itself after
         RevestSmartWallet(walletAddr).withdraw(token, quantity, recipient);
         emit WithdrawERC20(token, recipient, salt, quantity, walletAddr);

@@ -13,19 +13,11 @@ import "./LockManager_Base.sol";
 import "forge-std/console.sol";
 
 contract LockManager_Timelock is LockManager_Base {
-
     ILockManager.LockType public constant override lockType = ILockManager.LockType.TimeLock;
 
-    constructor(address _WETH) LockManager_Base(_WETH) {
-    }
-     
+    constructor(address _WETH) LockManager_Base(_WETH) {}
 
-    function createLock(bytes32 salt, bytes calldata args)
-        external
-        override
-        nonReentrant
-        returns (bytes32 lockId)
-    {
+    function createLock(bytes32 salt, bytes calldata args) external override nonReentrant returns (bytes32 lockId) {
         lockId = keccak256(abi.encode(salt, msg.sender));
 
         // Extensive validation on creation
@@ -34,9 +26,7 @@ contract LockManager_Timelock is LockManager_Base {
         newLock.creationTime = block.timestamp;
         newLock.creator = msg.sender;
 
-        uint timeLockExpiry = abi.decode(args, (uint));
-
-        console.log("timestamp: ", block.timestamp);
+        uint256 timeLockExpiry = abi.decode(args, (uint256));
 
         require(timeLockExpiry > block.timestamp, "E015");
         newLock.timeLockExpiry = timeLockExpiry;
@@ -45,25 +35,21 @@ contract LockManager_Timelock is LockManager_Base {
         locks[lockId] = newLock;
     }
 
-
     /**
      * Return whether a lock of any type is mature. Use this for all locktypes.
      */
-    function getLockMaturity(bytes32 lockId, uint) public view override returns (bool hasMatured) {
+    function getLockMaturity(bytes32 lockId, uint256) public view override returns (bool hasMatured) {
         ILockManager.Lock memory lock = locks[lockId];
 
         if (lock.unlocked) return true;
 
         hasMatured = (lock.timeLockExpiry <= block.timestamp);
-
     }
 
-    function getTimeRemaining(bytes32 lockId, uint) public view returns (uint256) {
+    function getTimeRemaining(bytes32 lockId, uint256) public view returns (uint256) {
         ILockManager.Lock memory lock = locks[lockId];
 
         if (lock.unlocked || lock.timeLockExpiry == 0) return 0;
-
         else return lock.timeLockExpiry - block.timestamp;
     }
-    
 }

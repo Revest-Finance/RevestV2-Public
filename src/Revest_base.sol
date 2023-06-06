@@ -24,8 +24,6 @@ import "./interfaces/IControllerExtendable.sol";
 
 import "./lib/IWETH.sol";
 
-import "forge-std/console2.sol";
-
 abstract contract Revest_base is IRevest, IControllerExtendable, ERC1155Holder, ReentrancyGuard, Ownable {
     using SafeTransferLib for ERC20;
     using SafeTransferLib for address;
@@ -40,15 +38,12 @@ abstract contract Revest_base is IRevest, IControllerExtendable, ERC1155Holder, 
     ITokenVault immutable tokenVault;
     IMetadataHandler public metadataHandler;
 
-    //Deployed omni-chain to same address
+    //Was deployed to same address on every chain
     IAllowanceTransfer constant PERMIT2 = IAllowanceTransfer(0x000000000022D473030F116dDEE9F6B43aC78BA3);
 
     mapping(bytes32 => FNFTConfig) public fnfts;
     mapping(address handler => mapping(uint256 nftId => uint256 numfnfts)) public override numfnfts;
 
-    /**
-     * @dev Primary constructor to create the Revest controller contract
-     */
     constructor(address weth, address _tokenVault, address _metadataHandler) Ownable() {
         WETH = weth;
         tokenVault = ITokenVault(_tokenVault);
@@ -65,7 +60,6 @@ abstract contract Revest_base is IRevest, IControllerExtendable, ERC1155Holder, 
         // Works for all lock types
         ILockManager(fnft.lockManager).unlockFNFT(fnft.lockId, fnft.fnftId);
 
-        //TODO: Fix Events
         emit FNFTUnlocked(msg.sender, fnft.fnftId);
     }
 
@@ -139,7 +133,6 @@ abstract contract Revest_base is IRevest, IControllerExtendable, ERC1155Holder, 
                     IController Extendable Functions
     //////////////////////////////////////////////////////////////*/
     function depositAdditionalToFNFT(bytes32 salt, uint256 amount) external payable virtual returns (uint256 deposit) {
-        console2.log("msg value: ", msg.value);
         return _depositAdditionalToFNFT(salt, amount, false);
     }
 
@@ -149,7 +142,6 @@ abstract contract Revest_base is IRevest, IControllerExtendable, ERC1155Holder, 
         IAllowanceTransfer.PermitBatch calldata permits,
         bytes calldata _signature
     ) external virtual returns (uint256 deposit) {
-        //Length check means to use permit2 for allowance but allowance has already been granted
         require(_signature.length != 0, "E024");
         PERMIT2.permit(msg.sender, permits, _signature);
         return _depositAdditionalToFNFT(salt, amount, true);
@@ -213,7 +205,6 @@ abstract contract Revest_base is IRevest, IControllerExtendable, ERC1155Holder, 
     /*//////////////////////////////////////////////////////////////
                         OnlyOwner
     //////////////////////////////////////////////////////////////*/
-
 
     function changeMetadataHandler(address _newMetadataHandler) external onlyOwner {
         metadataHandler = IMetadataHandler(_newMetadataHandler);
