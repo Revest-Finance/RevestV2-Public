@@ -339,6 +339,11 @@ contract Revest1155Tests is Test {
             nontransferrable: false
         });
 
+        config.handler = address(0);
+        vm.expectRevert(bytes("E001"));
+        revest.mintAddressLock("", recipients, amounts, config);
+
+        config.handler = address(fnftHandler);
         (bytes32 salt, bytes32 lockId) = revest.mintAddressLock("", recipients, amounts, config);
 
         address walletAddr = revest.getAddressForFNFT(salt);

@@ -62,8 +62,6 @@ contract Revest_1155 is Revest_base {
         {
             salt = keccak256(abi.encode(fnftConfig.fnftId, fnftConfig.handler, 0));
 
-            require(fnfts[salt].quantity == 0, "E005");
-
             if (!ILockManager(fnftConfig.lockManager).lockExists(fnftConfig.lockId)) {
                 lockId = ILockManager(fnftConfig.lockManager).createLock(salt, abi.encode(endTime));
                 fnftConfig.lockId = lockId;
@@ -94,7 +92,6 @@ contract Revest_1155 is Revest_base {
 
         {
             salt = keccak256(abi.encode(fnftConfig.fnftId, fnftConfig.handler, 0));
-            require(fnfts[salt].quantity == 0, "E005"); //TODO: Double check that Error code
 
             if (!ILockManager(fnftConfig.lockManager).lockExists(fnftConfig.lockId)) {
                 
