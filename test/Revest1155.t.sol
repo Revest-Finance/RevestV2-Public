@@ -48,7 +48,7 @@ contract Revest1155Tests is Test {
 
     constructor() {
         vault = new TokenVault();
-        metadataHandler = new MetadataHandler(baseURI);
+        metadataHandler = new MetadataHandler(address(vault), baseURI);
         revest = new Revest_1155(address(WETH), address(vault), address(metadataHandler));
 
         lockManager_timelock = new LockManager_Timelock(address(WETH));

@@ -89,4 +89,9 @@ abstract contract LockManager_Base is ILockManager, ReentrancyGuard {
 
         return true;
     }
+
+    function getMetadata() external view returns (string memory) {
+        return "LockManager_Base";
+    }
+
 }

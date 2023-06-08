@@ -36,4 +36,6 @@ interface ILockManager {
         uint256[] memory values,
         bytes[] memory calldatas
     ) external view returns (bool);
+
+    function getMetadata() external view returns (string memory);
 }

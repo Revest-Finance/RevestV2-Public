@@ -204,7 +204,6 @@ contract Revest_1155 is Revest_base {
 
             return deposit;
         }
-
         //Underlying is ETH, user wants to deposit WETH, without wrapping first
         else if (msg.value == 0 && fnft.asset == address(0xdead)) {
             depositAsset = WETH;
@@ -255,12 +254,11 @@ contract Revest_1155 is Revest_base {
 
             IWETH(WETH).deposit{value: msg.value}(); //Convert it to WETH and send it back to this
             IWETH(WETH).transfer(smartWallet, msg.value); //Transfer it to the smart wallet
-        
         } else if (params.usePermit2) {
             PERMIT2.transferFrom(
                 msg.sender,
                 smartWallet,
-                (totalQuantity * params.fnftConfig.depositAmount).toUint160(),//permit2 uses a uint160 for the amount
+                (totalQuantity * params.fnftConfig.depositAmount).toUint160(), //permit2 uses a uint160 for the amount
                 params.fnftConfig.asset
             );
         } else {
@@ -268,7 +266,6 @@ contract Revest_1155 is Revest_base {
                 msg.sender, smartWallet, totalQuantity * params.fnftConfig.depositAmount
             );
         }
-
 
         //Mint FNFTs but only if the handler is the Revest FNFT Handler
         if (isSingular) {

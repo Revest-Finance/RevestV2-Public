@@ -51,8 +51,8 @@ interface IController {
     function getFNFT(bytes32 salt) external view returns (FNFTConfig memory);
 
     //Metadata Functions
-    function getTokenURI(uint256 fnftId) external view returns (string memory);
-    function renderTokenURI(uint256 tokenId, address owner)
+    function getTokenURI(bytes32 fnftId) external view returns (string memory);
+    function renderTokenURI(bytes32 tokenId, address owner)
         external
         view
         returns (string memory baseRenderURI, string[] memory parameters);

@@ -49,9 +49,11 @@ contract Revest721Tests is Test {
     bytes signature;
     IAllowanceTransfer.PermitBatch permit;
 
+    string baseURI = "https://ipfs.io/ipfs/";
+
     constructor() {
         vault = new TokenVault();
-        metadataHandler = new MetadataHandler("");
+        metadataHandler = new MetadataHandler(address(vault), baseURI);
         revest = new Revest_721(address(WETH), address(vault), address(metadataHandler));
 
         lockManager_timelock = new LockManager_Timelock(address(WETH));

@@ -190,11 +190,11 @@ abstract contract Revest_base is IRevest, IControllerExtendable, ERC1155Holder, 
     /*//////////////////////////////////////////////////////////////
                         Metadata
     //////////////////////////////////////////////////////////////*/
-    function getTokenURI(uint256 fnftId) public view returns (string memory) {
+    function getTokenURI(bytes32 fnftId) public view returns (string memory) {
         return metadataHandler.getTokenURI(fnftId);
     }
 
-    function renderTokenURI(uint256 tokenId, address owner)
+    function renderTokenURI(bytes32 tokenId, address owner)
         public
         view
         returns (string memory baseRenderURI, string[] memory parameters)
