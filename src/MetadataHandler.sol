@@ -30,7 +30,7 @@ contract MetadataHandler is IMetadataHandler {
     }
 
     function getTokenURI(bytes32 fnftId) external view override returns (string memory) {
-        return string(abi.encodePacked(animation_base, string(abi.encode(fnftId)), "&chainId=", block.chainid.toString()));
+        return string(abi.encodePacked(animation_base, bytes32ToLiteralString(fnftId), "&chainId=", block.chainid.toString()));
     }
 
     function setTokenURI(bytes32, string memory _uri) external override {
@@ -60,7 +60,7 @@ contract MetadataHandler is IMetadataHandler {
                 '", \n'
             )
         );
-        output = string(abi.encodePacked(output, properties, ",/n"));
+        output = string(abi.encodePacked(output, properties, ",\n"));
         output = string(abi.encodePacked(output, '"animation_type":"interactive", \n "parameters":', properties));
     }
 
@@ -75,13 +75,18 @@ contract MetadataHandler is IMetadataHandler {
 
         output = string(abi.encodePacked('"properties":{ \n "created":', lock.creationTime.toString(), ",\n"));
         output = string(abi.encodePacked(output, '"asset_ticker":"', getTicker(fnft.asset), '",\n'));
+        output = string(abi.encodePacked(output, '"handler":"', toAsciiString(fnft.handler), '",\n'));
+        output = string(abi.encodePacked(output, '"nonce":"', fnft.nonce.toString(), '",\n'));
+
         output = string(abi.encodePacked(output, '"asset_name":"', getName(fnft.asset), '",\n'));
         output = string(abi.encodePacked(output, '"asset_address":"', toAsciiString(fnft.asset), '",\n'));
-        output = string( 
-            abi.encodePacked(output, '"currentValue":"', amountToDecimal(fnft.depositAmount, fnft.asset), '",\n')
+        output = string(
+            abi.encodePacked(
+                output, '"currentValue":"', amountToDecimal(controller.getValue(fnftSalt), fnft.asset), '",\n'
+            )
         );
         output = string(abi.encodePacked(output, '"amount":"', amountToDecimal(fnft.depositAmount, fnft.asset), '",\n'));
-        output = string(abi.encodePacked(output, '"lock_type":"', lockManager.lockType(), '",\n'));
+        output = string(abi.encodePacked(output, '"lock_type":"', getLockType(lockManager.lockType()), '",\n'));
 
         if (lockManager.lockType() == ILockManager.LockType.TimeLock) {
             // Handle time lock encoding
@@ -104,7 +109,9 @@ contract MetadataHandler is IMetadataHandler {
         output = string(abi.encodePacked(output, '"maturity_extensions":', boolToString(fnft.maturityExtension), ",\n"));
         output = string(abi.encodePacked(output, '"nontransferrable":', boolToString(fnft.nontransferrable), ",\n"));
 
-        output = string(abi.encodePacked(output, '"id":', string(abi.encode(fnftSalt)), ",\n"));
+        output = string(abi.encodePacked(output, '"salt":', bytes32ToLiteralString(fnftSalt), ",\n"));
+        output = string(abi.encodePacked(output, '"fnft_id":', fnft.fnftId.toString(), ",\n"));
+
 
         //TODO: Removed Due to Output Receivers being deprecated
         // if(fnft.pipeToContract.supportsInterface(OUTPUT_RECEIVER_INTERFACE_ID)) ///See TokenVault.sol
@@ -147,6 +154,16 @@ contract MetadataHandler is IMetadataHandler {
         decStr = decimalString(decimals, 0);
     }
 
+    function getLockType(ILockManager.LockType lock) private pure returns (string memory lockType) {
+        if (lock == ILockManager.LockType.TimeLock) {
+            lockType = "Time";
+        } else if (lock == ILockManager.LockType.AddressLock) {
+            lockType = "Address";
+        } else {
+            lockType = "DEFAULT";
+        }
+    }
+
     function amountToDecimal(uint256 amt, address asset) private view returns (string memory decStr) {
         uint8 decimals;
         try IERC20Metadata(asset).decimals() returns (uint8 dec) {
@@ -167,6 +184,27 @@ contract MetadataHandler is IMetadataHandler {
             s[2 * i + 1] = char(lo);
         }
         return string(abi.encodePacked("0x", s));
+    }
+
+    function bytes32ToLiteralString(bytes32 data) public pure returns (string memory result) {
+        bytes memory temp = new bytes(65);
+        uint256 count;
+
+        for (uint256 i = 0; i < 32; i++) {
+            bytes1 currentByte = bytes1(data << (i * 8));
+
+            uint8 c1 = uint8(bytes1((currentByte << 4) >> 4));
+
+            uint8 c2 = uint8(bytes1((currentByte >> 4)));
+
+            if (c2 >= 0 && c2 <= 9) temp[++count] = bytes1(c2 + 48);
+            else temp[++count] = bytes1(c2 + 87);
+
+            if (c1 >= 0 && c1 <= 9) temp[++count] = bytes1(c1 + 48);
+            else temp[++count] = bytes1(c1 + 87);
+        }
+
+        result = string(temp);
     }
 
     function char(bytes1 b) public pure returns (bytes1 c) {

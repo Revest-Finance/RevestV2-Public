@@ -6,6 +6,7 @@ pragma solidity ^0.8.19;
  * @title Provider interface for Revest FNFTs
  */
 interface IControllerMetadata {
+    
     //You cannot declare an empty enum in Solidity, so we use this as a placeholder
     enum triggerUpdateType {NONE}
 

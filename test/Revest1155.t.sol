@@ -1178,13 +1178,21 @@ contract Revest1155Tests is Test {
         //TODO: Once we figure out the metadata handler
         //This is only meant to fill the coverage test
 
-        revest.mintTimeLock(block.timestamp + 1 weeks, recipients, supplies, config);
+        (bytes32 salt,) = revest.mintTimeLock(block.timestamp + 1 weeks, recipients, supplies, config);
 
         assert(fnftHandler.exists(id));
 
         //TODO
-        fnftHandler.uri(id);
-        fnftHandler.renderTokenURI(id, alice);
+        string memory uri = fnftHandler.uri(id);
+        (string memory baseRenderURI, string[] memory parameters) = fnftHandler.renderTokenURI(id, alice);
+
+        string memory metadata = metadataHandler.generateMetadata(address(revest), salt);
+
+        console.log("uri: %s", uri);
+        console.log("------------------");
+        console.log("baseRenderURI: %s", baseRenderURI);
+        console.log("------------------");
+        console.log("metadata: %s", metadata);
 
         changePrank(revest.owner());
         revest.changeMetadataHandler(address(0xdead));
