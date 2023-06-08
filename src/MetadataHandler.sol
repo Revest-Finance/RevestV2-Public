@@ -15,6 +15,9 @@ import "./interfaces/ILockManager.sol";
 import "./interfaces/IRevest.sol";
 import "./interfaces/ILockManager.sol";
 
+/** @title MetadataHandler
+ * @author 0xTraub
+ */
 contract MetadataHandler is IMetadataHandler {
     using ERC165Checker for address;
     using Strings for uint256;

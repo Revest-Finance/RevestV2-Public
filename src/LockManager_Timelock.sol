@@ -10,8 +10,9 @@ import "./lib/IWETH.sol";
 
 import "./LockManager_Base.sol";
 
-import "forge-std/console.sol";
-
+/** @title LockManager_Timelock
+ * @author 0xTraub
+ */
 contract LockManager_Timelock is LockManager_Base {
     ILockManager.LockType public constant override lockType = ILockManager.LockType.TimeLock;
 

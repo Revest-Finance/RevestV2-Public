@@ -11,8 +11,9 @@ import "./lib/IWETH.sol";
 
 import "./LockManager_Base.sol";
 
-import "forge-std/console.sol";
-
+/** @title LockManager_Addresslock
+ * @author 0xTraub
+ */
 contract LockManager_Addresslock is LockManager_Base {
     using ERC165Checker for address;
 

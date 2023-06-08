@@ -22,11 +22,8 @@ import "./Revest_base.sol";
 
 import "./lib/IWETH.sol";
 
-import "forge-std/console.sol";
-
-/**
- * This is the entrypoint for the frontend, as well as third-party Revest integrations.
- * Solidity style guide ordering: receive, fallback, external, public, internal, private - within a grouping, view and pure go last - https://docs.soliditylang.org/en/latest/style-guide.html
+/** @title Revest_721
+ * @author 0xTraub
  */
 contract Revest_721 is Revest_base {
     using SafeTransferLib for ERC20;
@@ -38,8 +35,8 @@ contract Revest_721 is Revest_base {
     /**
      * @dev Primary constructor to create the Revest controller contract
      */
-    constructor(address weth, address _tokenVault, address _metadataHandler)
-        Revest_base(weth, _tokenVault, _metadataHandler)
+    constructor(address weth, address _tokenVault, address _metadataHandler, address govController)
+        Revest_base(weth, _tokenVault, _metadataHandler, govController)
     {}
 
     /**

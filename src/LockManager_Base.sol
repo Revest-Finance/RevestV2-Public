@@ -12,8 +12,9 @@ import "./interfaces/IRevest.sol";
 import "./interfaces/ILockManager.sol";
 import "./lib/IWETH.sol";
 
-import "forge-std/console.sol";
-
+/** @title LockManager_Base
+ * @author 0xTraub
+ */
 abstract contract LockManager_Base is ILockManager, ReentrancyGuard {
     using ERC165Checker for address;
 

@@ -10,8 +10,9 @@ import "@openzeppelin/contracts/proxy/Clones.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-import "forge-std/console.sol";
-
+/** @title TokenVault
+ * @author 0xTraub
+ */
 contract TokenVault is ITokenVault, ReentrancyGuard {
     /// Address to use for EIP-1167 smart-wallet creation calls
     address public immutable TEMPLATE;

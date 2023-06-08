@@ -30,7 +30,6 @@ contract Revest721Tests is Test {
     LockManager_Timelock public immutable lockManager_timelock;
     LockManager_Addresslock public immutable lockManager_addresslock;
 
-    FNFTHandler public immutable fnftHandler;
     MetadataHandler public immutable metadataHandler;
 
     uint256 PRIVATE_KEY = vm.envUint("PRIVATE_KEY"); //Useful for EIP-712 Testing
@@ -51,22 +50,23 @@ contract Revest721Tests is Test {
 
     string baseURI = "https://ipfs.io/ipfs/";
 
+    address public constant govController = address(0xdead);
+
+
     constructor() {
         vault = new TokenVault();
         metadataHandler = new MetadataHandler(address(vault), baseURI);
-        revest = new Revest_721(address(WETH), address(vault), address(metadataHandler));
+        revest = new Revest_721(address(WETH), address(vault), address(metadataHandler), govController);
 
         lockManager_timelock = new LockManager_Timelock(address(WETH));
         lockManager_addresslock = new LockManager_Addresslock(address(WETH));
 
-        fnftHandler = new FNFTHandler();
 
         vm.label(alice, "alice");
         vm.label(bob, "bob");
         vm.label(carol, "carol");
         vm.label(address(revest), "revest");
         vm.label(address(vault), "tokenVault");
-        vm.label(address(fnftHandler), "fnftHandler");
 
         vm.label(address(lockManager_timelock), "lockManager_timelock");
         vm.label(address(lockManager_addresslock), "lockManager_addresslock");
@@ -77,8 +77,6 @@ contract Revest721Tests is Test {
         deal(address(WETH), alice, type(uint256).max);
         deal(address(USDC), alice, type(uint256).max);
         deal(alice, type(uint256).max);
-
-        fnftHandler.transferOwnership(address(revest)); //Transfer ownership to Revest from deployer
 
         startHoax(alice, alice);
         USDC.safeApprove(address(revest), type(uint256).max);

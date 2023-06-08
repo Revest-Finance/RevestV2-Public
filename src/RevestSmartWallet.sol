@@ -3,10 +3,11 @@
 import "@solmate/utils/SafeTransferLib.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-import "forge-std/console.sol";
-
 pragma solidity ^0.8.19;
 
+/** @title RevestSmartWallet
+ * @author 0xTraub
+ */
 contract RevestSmartWallet is ReentrancyGuard {
     using SafeTransferLib for ERC20;
 

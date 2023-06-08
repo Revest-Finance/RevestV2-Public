@@ -31,6 +31,8 @@ contract Revest1155Tests is Test {
     FNFTHandler public immutable fnftHandler;
     MetadataHandler public immutable metadataHandler;
 
+    address public constant govController = address(0xdead);
+
     uint256 PRIVATE_KEY = vm.envUint("PRIVATE_KEY"); //Useful for EIP-712 Testing
     address alice = vm.rememberKey(PRIVATE_KEY);
     address bob = makeAddr("bob");
@@ -49,12 +51,12 @@ contract Revest1155Tests is Test {
     constructor() {
         vault = new TokenVault();
         metadataHandler = new MetadataHandler(address(vault), baseURI);
-        revest = new Revest_1155(address(WETH), address(vault), address(metadataHandler));
+        revest = new Revest_1155(address(WETH), address(vault), address(metadataHandler), govController);
 
         lockManager_timelock = new LockManager_Timelock(address(WETH));
         lockManager_addresslock = new LockManager_Addresslock(address(WETH));
 
-        fnftHandler = new FNFTHandler();
+        fnftHandler = new FNFTHandler(address(revest), "");
 
         vm.label(alice, "alice");
         vm.label(bob, "bob");

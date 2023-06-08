@@ -12,6 +12,9 @@ import "./interfaces/IRevest.sol";
 import "./interfaces/IFNFTHandler.sol";
 import "./interfaces/IMetadataHandler.sol";
 
+/** @title FNFTHandler
+ * @author 0xTraub
+ */
 contract FNFTHandler is ERC1155, Ownable, IFNFTHandler {
     using ERC165Checker for address;
     using ECDSA for bytes32;
@@ -36,9 +39,11 @@ contract FNFTHandler is ERC1155, Ownable, IFNFTHandler {
      * @dev Primary constructor to create an instance of NegativeEntropy
      * Grants ADMIN and MINTER_ROLE to whoever creates the contract
      */
-    constructor() ERC1155("") Ownable() {
+    constructor(address _revest, string memory _uri) ERC1155(_uri) Ownable() {
         DOMAIN_SEPARATOR =
             keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes("Revest_FNFTHandler")), block.chainid, address(this)));
+
+        _transferOwnership(_revest);
     }
 
     /**

@@ -24,6 +24,9 @@ import "./interfaces/IControllerExtendable.sol";
 
 import "./lib/IWETH.sol";
 
+/** @title Revest_base
+ * @author 0xTraub
+ */
 abstract contract Revest_base is IRevest, IControllerExtendable, ERC1155Holder, ReentrancyGuard, Ownable {
     using SafeTransferLib for ERC20;
     using SafeTransferLib for address;
@@ -44,10 +47,12 @@ abstract contract Revest_base is IRevest, IControllerExtendable, ERC1155Holder, 
     mapping(bytes32 => FNFTConfig) public fnfts;
     mapping(address handler => mapping(uint256 nftId => uint256 numfnfts)) public override numfnfts;
 
-    constructor(address weth, address _tokenVault, address _metadataHandler) Ownable() {
+    constructor(address weth, address _tokenVault, address _metadataHandler, address govController) Ownable() {
         WETH = weth;
         tokenVault = ITokenVault(_tokenVault);
         metadataHandler = IMetadataHandler(_metadataHandler);
+
+        _transferOwnership(govController);
     }
 
     /*//////////////////////////////////////////////////////////////
