@@ -12,7 +12,8 @@ import "./interfaces/IRevest.sol";
 import "./interfaces/IFNFTHandler.sol";
 import "./interfaces/IMetadataHandler.sol";
 
-/** @title FNFTHandler
+/**
+ * @title FNFTHandler
  * @author 0xTraub
  */
 contract FNFTHandler is ERC1155, Ownable, IFNFTHandler {

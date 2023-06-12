@@ -50,7 +50,7 @@ contract Revest1155Tests is Test {
 
     constructor() {
         vault = new TokenVault();
-        metadataHandler = new MetadataHandler(address(vault), baseURI);
+        metadataHandler = new MetadataHandler(baseURI);
         revest = new Revest_1155(address(WETH), address(vault), address(metadataHandler), govController);
 
         lockManager_timelock = new LockManager_Timelock(address(WETH));
@@ -1149,7 +1149,7 @@ contract Revest1155Tests is Test {
     }
 
     function testMetadataFunctions() public {
-        uint256 amount = 1e6;
+        uint256 amount = 1.5e6;
         uint256 supply = 1;
 
         address[] memory recipients = new address[](1);
@@ -1178,13 +1178,13 @@ contract Revest1155Tests is Test {
         //TODO: Once we figure out the metadata handler
         //This is only meant to fill the coverage test
 
-        (bytes32 salt,) = revest.mintTimeLock(block.timestamp + 1 weeks, recipients, supplies, config);
+        (bytes32 salt,) = revest.mintTimeLock(block.timestamp + 1 weeks + 6 hours, recipients, supplies, config);
 
         assert(fnftHandler.exists(id));
 
         //TODO
         string memory uri = fnftHandler.uri(id);
-        (string memory baseRenderURI, string[] memory parameters) = fnftHandler.renderTokenURI(id, alice);
+        (string memory baseRenderURI,) = fnftHandler.renderTokenURI(id, alice);
 
         string memory metadata = metadataHandler.generateMetadata(address(revest), salt);
 

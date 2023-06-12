@@ -15,14 +15,10 @@ interface ICREATE3Factory {
     /// @param salt The deployer-specific salt for determining the deployed contract's address
     /// @param creationCode The creation code of the contract to deploy
     /// @return deployed The address of the deployed contract
-    function deploy(bytes32 salt, bytes memory creationCode)
-        external
-        payable
-        returns (address deployed);
+    function deploy(bytes32 salt, bytes memory creationCode) external payable returns (address deployed);
 }
 
 contract RevestV2_deployment is Script {
-    
     //Deployed Omni-Chain
     ICREATE3Factory factory = ICREATE3Factory(0x9fBB3DF7C40Da2e5A0dE984fFE2CCB7C47cd0ABf);
 
@@ -45,23 +41,30 @@ contract RevestV2_deployment is Script {
         address tokenVault = factory.deploy(keccak256(abi.encode("TokenVault")), type(TokenVault).creationCode);
 
         //Deploy Lock Manager Timelock Contract
-        bytes memory lockManager_creationCode = abi.encodePacked(type(LockManager_Timelock).creationCode, abi.encode(WETH));
+        bytes memory lockManager_creationCode =
+            abi.encodePacked(type(LockManager_Timelock).creationCode, abi.encode(WETH));
         address lockManager_timelock = factory.deploy(keccak256(abi.encode("")), lockManager_creationCode);
 
         //Deploy Metadata Handler
-        bytes memory MetadataHandler_creationCode = abi.encodePacked(type(MetadataHandler).creationCode, abi.encode(tokenVault, URI_BASE_METADATA_HANDLER));
+        bytes memory MetadataHandler_creationCode =
+            abi.encodePacked(type(MetadataHandler).creationCode, abi.encode(tokenVault, URI_BASE_METADATA_HANDLER));
         address metadataHandler = factory.deploy(keccak256(abi.encode("MetadataHandler")), MetadataHandler_creationCode);
 
         //Deploy Revest 1155
-        bytes memory Revest_1155_creationCode = abi.encodePacked(type(Revest_1155).creationCode, abi.encode(WETH, tokenVault, metadataHandler, govController));
+        bytes memory Revest_1155_creationCode = abi.encodePacked(
+            type(Revest_1155).creationCode, abi.encode(WETH, tokenVault, metadataHandler, govController)
+        );
         address revest_1155 = factory.deploy(keccak256(abi.encode("Revest_1155")), Revest_1155_creationCode);
 
         //Deploy Revest 721
-        bytes memory Revest_721_creationCode = abi.encodePacked(type(Revest_721).creationCode, abi.encode(WETH, tokenVault, metadataHandler, govController));
+        bytes memory Revest_721_creationCode = abi.encodePacked(
+            type(Revest_721).creationCode, abi.encode(WETH, tokenVault, metadataHandler, govController)
+        );
         address revest_721 = factory.deploy(keccak256(abi.encode("Revest_721")), Revest_721_creationCode);
 
         //Deploy FNFT Handler
-        bytes memory FNFTHandler_creationCode = abi.encodePacked(type(FNFTHandler).creationCode, abi.encode(revest_1155, URI_BASE_FNFT_HANDLER));
+        bytes memory FNFTHandler_creationCode =
+            abi.encodePacked(type(FNFTHandler).creationCode, abi.encode(revest_1155, URI_BASE_FNFT_HANDLER));
         address fnftHandler = factory.deploy(keccak256(abi.encode("FNFTHandler")), FNFTHandler_creationCode);
 
         //Transfer Ownership of FNFTHandler to 1155
@@ -76,8 +79,5 @@ contract RevestV2_deployment is Script {
         console.log("Revest 1155: %s: ", revest_1155);
         console.log("Revest 721: %s: ", revest_721);
         console.log("FNFT Handler: %s: ", fnftHandler);
-
     }
-
 }
-

@@ -12,7 +12,11 @@ import "./interfaces/IRevest.sol";
 import "./interfaces/ILockManager.sol";
 import "./lib/IWETH.sol";
 
-/** @title LockManager_Base
+import "@openzeppelin/contracts/utils/Strings.sol";
+
+
+/**
+ * @title LockManager_Base
  * @author 0xTraub
  */
 abstract contract LockManager_Base is ILockManager, ReentrancyGuard {
@@ -91,7 +95,11 @@ abstract contract LockManager_Base is ILockManager, ReentrancyGuard {
         return true;
     }
 
-    function getMetadata() external view returns (string memory) {
+    function getMetadata(bytes32) external view returns (string memory) {
+        return "TODO";
+    }
+
+    function lockDescription(bytes32) external view virtual returns (string memory) {
         return "LockManager_Base";
     }
 }

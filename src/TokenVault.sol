@@ -10,7 +10,8 @@ import "@openzeppelin/contracts/proxy/Clones.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-/** @title TokenVault
+/**
+ * @title TokenVault
  * @author 0xTraub
  */
 contract TokenVault is ITokenVault, ReentrancyGuard {

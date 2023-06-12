@@ -24,7 +24,8 @@ import "./interfaces/IControllerExtendable.sol";
 
 import "./lib/IWETH.sol";
 
-/** @title Revest_base
+/**
+ * @title Revest_base
  * @author 0xTraub
  */
 abstract contract Revest_base is IRevest, IControllerExtendable, ERC1155Holder, ReentrancyGuard, Ownable {

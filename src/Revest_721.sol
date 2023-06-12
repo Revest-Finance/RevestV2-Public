@@ -22,7 +22,8 @@ import "./Revest_base.sol";
 
 import "./lib/IWETH.sol";
 
-/** @title Revest_721
+/**
+ * @title Revest_721
  * @author 0xTraub
  */
 contract Revest_721 is Revest_base {

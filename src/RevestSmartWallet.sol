@@ -5,7 +5,8 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 pragma solidity ^0.8.19;
 
-/** @title RevestSmartWallet
+/**
+ * @title RevestSmartWallet
  * @author 0xTraub
  */
 contract RevestSmartWallet is ReentrancyGuard {
