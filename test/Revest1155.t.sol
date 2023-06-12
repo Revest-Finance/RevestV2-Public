@@ -73,8 +73,6 @@ contract Revest1155Tests is Test {
         deal(address(USDC), alice, type(uint256).max);
         deal(alice, type(uint256).max);
 
-        fnftHandler.transferOwnership(address(revest)); //Transfer ownership to Revest from deployer
-
         startHoax(alice, alice);
 
         USDC.safeApprove(address(revest), type(uint256).max);
