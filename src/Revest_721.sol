@@ -238,7 +238,6 @@ contract Revest_721 is Revest_base {
         if (msg.value != 0) {
             params.fnftConfig.asset = address(0xdead);
             params.fnftConfig.depositAmount = msg.value;
-            params.fnftConfig.useETH = true;
             IWETH(WETH).deposit{value: msg.value}(); //Convert it to WETH and send it back to this
             IWETH(WETH).transfer(smartWallet, msg.value); //Transfer it to the smart wallet
         } else if (params.usePermit2) {

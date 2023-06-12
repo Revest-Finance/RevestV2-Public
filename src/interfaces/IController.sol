@@ -19,18 +19,16 @@ interface IController {
 
     struct FNFTConfig {
         //Address = 20 bytes and bool = 1 byte -> combine for 1 slot each
-        address pipeToContract; // Indicates if FNFT will pipe to another contract
-        bool maturityExtension; // Maturity extensions remaining
-        address handler;
-        bool useETH;
         address asset; // The token being stored
         bool nontransferrable;
         address lockManager;
+        bool maturityExtension; // Maturity extensions remaining
         uint256 depositAmount; // The amount of each token being stored
         uint256 nonce; // The FNFT number
         uint256 quantity; // How many FNFTs
         uint256 fnftId; //the ID of the NFT the FNFT was minted to
         bytes32 lockId; // The ID of the lock, generated using the FNFTConfig salt itself
+        address handler;
     }
 
     //Used for stackTooDeep - ONly kept in memory, efficient packing not needed

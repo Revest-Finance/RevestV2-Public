@@ -13,8 +13,9 @@ import "@solmate/utils/FixedPointMathLib.sol";
 import "./interfaces/IRevest.sol";
 import "./interfaces/ILockManager.sol";
 import "./interfaces/ITokenVault.sol";
-import "./interfaces/IFNFTHandler.sol";
 import "./interfaces/IAllowanceTransfer.sol";
+
+import "./FNFTHandler.sol";
 
 import "./Revest_base.sol";
 
@@ -31,12 +32,16 @@ contract Revest_1155 is Revest_base {
     using FixedPointMathLib for uint256;
     using SafeCast for uint256;
 
+    IFNFTHandler public immutable fnftHandler;
+
     /**
      * @dev Primary constructor to create the Revest controller contract
      */
-    constructor(address weth, address _tokenVault, address _metadataHandler, address govController)
+    constructor(string memory tokenURI, address weth, address _tokenVault, address _metadataHandler, address govController)
         Revest_base(weth, _tokenVault, _metadataHandler, govController)
-    {}
+    {
+        fnftHandler = new FNFTHandler(address(this), tokenURI);
+    }
 
     /**
      * @dev creates a single time-locked NFT with <quantity> number of copies with <amount> of <asset> stored for each copy
@@ -52,13 +57,11 @@ contract Revest_1155 is Revest_base {
         IRevest.FNFTConfig memory fnftConfig,
         bool usePermit2
     ) internal override returns (bytes32 salt, bytes32 lockId) {
-        require(fnftConfig.handler.supportsInterface(type(IFNFTHandler).interfaceId), "E001");
-
-        fnftConfig.fnftId = IFNFTHandler(fnftConfig.handler).getNextId();
+        fnftConfig.fnftId = fnftHandler.getNextId();
 
         // Get or create lock based on time, assign lock to ID
         {
-            salt = keccak256(abi.encode(fnftConfig.fnftId, fnftConfig.handler, 0));
+            salt = keccak256(abi.encode(fnftConfig.fnftId));
 
             if (!ILockManager(fnftConfig.lockManager).lockExists(fnftConfig.lockId)) {
                 lockId = ILockManager(fnftConfig.lockManager).createLock(salt, abi.encode(endTime));
@@ -82,14 +85,13 @@ contract Revest_1155 is Revest_base {
         IRevest.FNFTConfig memory fnftConfig,
         bool usePermit2
     ) internal override returns (bytes32 salt, bytes32 lockId) {
-        require(fnftConfig.handler.supportsInterface(type(IFNFTHandler).interfaceId), "E001");
 
         //Get the ID of the next to-be-minted FNFT
-        fnftConfig.fnftId = IFNFTHandler(fnftConfig.handler).getNextId();
+        fnftConfig.fnftId = fnftHandler.getNextId();
 
         {
             //Salt = kecccak256(fnftID || handler || nonce (which is always zero))
-            salt = keccak256(abi.encode(fnftConfig.fnftId, fnftConfig.handler, 0));
+            salt = keccak256(abi.encode(fnftConfig.fnftId));
 
             if (!ILockManager(fnftConfig.lockManager).lockExists(fnftConfig.lockId)) {
                 //Return the ID of the lock
@@ -114,7 +116,7 @@ contract Revest_1155 is Revest_base {
         require(fnft.quantity != 0, "E003");
 
         // Burn the FNFTs being exchanged
-        IFNFTHandler(fnft.handler).burn(msg.sender, fnft.fnftId, quantity);
+        fnftHandler.burn(msg.sender, fnft.fnftId, quantity);
 
         //Checks-effects because unlockFNFT has an external call which could be used for reentrancy
         fnfts[salt].quantity -= quantity;
@@ -134,14 +136,11 @@ contract Revest_1155 is Revest_base {
     {
         IRevest.FNFTConfig memory fnft = fnfts[salt];
         uint256 fnftId = fnft.fnftId;
-        address handler = fnft.handler;
 
         //Require that the FNFT exists
         require(fnft.quantity != 0, "E003");
 
         require(endTime > block.timestamp, "E015");
-
-        IFNFTHandler fnftHandler = IFNFTHandler(handler);
 
         uint256 supply = fnftHandler.totalSupply(fnftId);
 
@@ -180,11 +179,10 @@ contract Revest_1155 is Revest_base {
     {
         IRevest.FNFTConfig storage fnft = fnfts[salt];
         uint256 fnftId = fnft.fnftId;
-        address handler = fnft.handler;
 
         require(fnft.quantity != 0, "E003");
 
-        uint256 supply = IFNFTHandler(handler).totalSupply(fnftId);
+        uint256 supply = fnftHandler.totalSupply(fnftId);
 
         address smartWallet = getAddressForFNFT(salt);
 
@@ -223,7 +221,7 @@ contract Revest_1155 is Revest_base {
     //
     function doMint(IRevest.MintParameters memory params) internal {
         bytes32 salt =
-            keccak256(abi.encode(params.fnftConfig.fnftId, params.fnftConfig.handler, params.fnftConfig.nonce));
+            keccak256(abi.encode(params.fnftConfig.fnftId));
 
         bool isSingular;
         uint256 totalQuantity;
@@ -250,7 +248,6 @@ contract Revest_1155 is Revest_base {
 
             //User sent enough ETH to pay for all FNFTs
             require(msg.value / totalQuantity == params.fnftConfig.depositAmount, "E027");
-            params.fnftConfig.useETH = true;
 
             IWETH(WETH).deposit{value: msg.value}(); //Convert it to WETH and send it back to this
             IWETH(WETH).transfer(smartWallet, msg.value); //Transfer it to the smart wallet
@@ -269,13 +266,13 @@ contract Revest_1155 is Revest_base {
 
         //Mint FNFTs but only if the handler is the Revest FNFT Handler
         if (isSingular) {
-            IFNFTHandler(params.fnftConfig.handler).mint(
+            fnftHandler.mint(
                 params.recipients[0], params.fnftConfig.fnftId, params.quantities[0], ""
             );
         } else {
-            IFNFTHandler(params.fnftConfig.handler).mint(address(this), params.fnftConfig.fnftId, totalQuantity, "");
+            fnftHandler.mint(address(this), params.fnftConfig.fnftId, totalQuantity, "");
             for (uint256 x = 0; x < params.recipients.length;) {
-                IFNFTHandler(params.fnftConfig.handler).safeTransferFrom(
+                fnftHandler.safeTransferFrom(
                     address(this), params.recipients[x], params.fnftConfig.fnftId, params.quantities[x], ""
                 );
 
@@ -300,7 +297,7 @@ contract Revest_1155 is Revest_base {
 
         address smartWalletAddr = getAddressForFNFT(salt);
 
-        uint256 supplyBefore = IFNFTHandler(fnft.handler).totalSupply(fnftId) + quantity;
+        uint256 supplyBefore = fnftHandler.totalSupply(fnftId) + quantity;
 
         amountToWithdraw = quantity.mulDivDown(supplyBefore * fnft.depositAmount, supplyBefore);
 
@@ -331,11 +328,9 @@ contract Revest_1155 is Revest_base {
 
         IRevest.FNFTConfig memory fnft = fnfts[salt];
 
-        IFNFTHandler FNFTHandler = IFNFTHandler(fnft.handler);
-
         //You Must own the entire supply to call a function on the FNFT
-        uint256 supply = FNFTHandler.totalSupply(fnft.fnftId);
-        require(supply != 0 && FNFTHandler.balanceOf(msg.sender, fnft.fnftId) == supply, "E007");
+        uint256 supply = fnftHandler.totalSupply(fnft.fnftId);
+        require(supply != 0 && fnftHandler.balanceOf(msg.sender, fnft.fnftId) == supply, "E007");
 
         return _proxyCall(salt, targets, values, calldatas, fnft.lockManager, fnft.asset);
     }
