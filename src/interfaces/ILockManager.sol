@@ -12,10 +12,9 @@ interface ILockManager {
     }
 
     struct Lock {
-        address creator;
         bool unlocked;
-        uint256 timeLockExpiry;
-        uint256 creationTime;
+        uint96 timeLockExpiry;
+        uint96 creationTime;
     }
 
     function createLock(bytes32 fnftId, bytes calldata args) external returns (bytes32);

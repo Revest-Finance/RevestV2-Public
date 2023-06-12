@@ -35,8 +35,9 @@ abstract contract Revest_base is IRevest, IControllerExtendable, ERC1155Holder, 
     using FixedPointMathLib for uint256;
     using SafeCast for uint256;
 
-    bytes4 public constant FNFTHANDLER_INTERFACE_ID = type(IFNFTHandler).interfaceId;
     bytes4 public constant ERC721_INTERFACE_ID = type(IERC721).interfaceId;
+
+    address public constant ETH_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
     address immutable WETH;
     ITokenVault immutable tokenVault;

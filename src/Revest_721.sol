@@ -189,7 +189,7 @@ contract Revest_721 is Revest_base {
         address depositAsset = fnft.asset;
 
         //Underlying is ETH, deposit ETH by wrapping to WETH
-        if (msg.value != 0 && fnft.asset == address(0xdead)) {
+        if (msg.value != 0 && fnft.asset == ETH_ADDRESS) {
             require(msg.value == amount, "E027");
 
             IWETH(WETH).deposit{value: msg.value}();
@@ -199,7 +199,7 @@ contract Revest_721 is Revest_base {
             return amount;
         }
         //Underlying is ETH, user wants to deposit WETH, no wrapping required
-        else if (msg.value == 0 && fnft.asset == address(0xdead)) {
+        else if (msg.value == 0 && fnft.asset == ETH_ADDRESS) {
             depositAsset = WETH;
         }
 
@@ -236,7 +236,7 @@ contract Revest_721 is Revest_base {
         address smartWallet = tokenVault.getAddress(WalletSalt, address(this));
 
         if (msg.value != 0) {
-            params.fnftConfig.asset = address(0xdead);
+            params.fnftConfig.asset = ETH_ADDRESS;
             params.fnftConfig.depositAmount = msg.value;
             IWETH(WETH).deposit{value: msg.value}(); //Convert it to WETH and send it back to this
             IWETH(WETH).transfer(smartWallet, msg.value); //Transfer it to the smart wallet
@@ -258,8 +258,8 @@ contract Revest_721 is Revest_base {
         IRevest.FNFTConfig memory fnft = fnfts[salt];
         uint256 amountToWithdraw;
 
-        //When the user deposits Eth it stores the asset as address(0xdead) but actual WETH is kept in the vault
-        address transferAsset = fnft.asset == address(0xdead) ? WETH : fnft.asset;
+        //When the user deposits Eth it stores the asset as the all E's address but actual WETH is kept in the vault
+        address transferAsset = fnft.asset == ETH_ADDRESS ? WETH : fnft.asset;
 
         bytes32 walletSalt = keccak256(abi.encode(fnftId, fnft.handler));
 
@@ -270,7 +270,7 @@ contract Revest_721 is Revest_base {
         // Deploy the smart wallet object
         tokenVault.withdrawToken(walletSalt, transferAsset, amountToWithdraw, address(this));
 
-        if (fnft.asset == address(0xdead)) {
+        if (fnft.asset == ETH_ADDRESS) {
             IWETH(WETH).withdraw(amountToWithdraw);
             user.safeTransferETH(amountToWithdraw);
         } else {

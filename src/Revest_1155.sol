@@ -21,6 +21,8 @@ import "./Revest_base.sol";
 
 import "./lib/IWETH.sol";
 
+import "forge-std/console.sol";
+
 /**
  * @title Revest_1155
  * @author 0xTraub
@@ -33,6 +35,8 @@ contract Revest_1155 is Revest_base {
     using SafeCast for uint256;
 
     IFNFTHandler public immutable fnftHandler;
+
+
 
     /**
      * @dev Primary constructor to create the Revest controller contract
@@ -193,7 +197,7 @@ contract Revest_1155 is Revest_base {
         address depositAsset = fnft.asset;
 
         //Underlying is ETH, store it by wrapping to WETH first
-        if (msg.value != 0 && fnft.asset == address(0xdead)) {
+        if (msg.value != 0 && fnft.asset == ETH_ADDRESS) {
             require(msg.value == deposit, "E027");
 
             IWETH(WETH).deposit{value: msg.value}();
@@ -203,7 +207,7 @@ contract Revest_1155 is Revest_base {
             return deposit;
         }
         //Underlying is ETH, user wants to deposit WETH, without wrapping first
-        else if (msg.value == 0 && fnft.asset == address(0xdead)) {
+        else if (msg.value == 0 && fnft.asset == ETH_ADDRESS) {
             depositAsset = WETH;
         }
 
@@ -244,7 +248,7 @@ contract Revest_1155 is Revest_base {
 
         //If user depositing ETH, wrap it to WETH first
         if (msg.value != 0) {
-            params.fnftConfig.asset = address(0xdead);
+            params.fnftConfig.asset = ETH_ADDRESS;
 
             //User sent enough ETH to pay for all FNFTs
             require(msg.value / totalQuantity == params.fnftConfig.depositAmount, "E027");
@@ -282,6 +286,7 @@ contract Revest_1155 is Revest_base {
             }
         }
 
+        console.log("non transferrable: %s", params.fnftConfig.nontransferrable);
         fnfts[salt] = params.fnftConfig;
 
         emit CreateFNFT(salt, params.fnftConfig.fnftId, msg.sender);
@@ -292,8 +297,8 @@ contract Revest_1155 is Revest_base {
         IRevest.FNFTConfig memory fnft = fnfts[salt];
         uint256 amountToWithdraw;
 
-        //When the user deposits Eth it stores the asset as address(0xdead) but actual WETH is kept in the vault
-        address transferAsset = fnft.asset == address(0xdead) ? WETH : fnft.asset;
+        //When the user deposits Eth it stores the asset as the all E's address but actual WETH is kept in the vault
+        address transferAsset = fnft.asset == ETH_ADDRESS ? WETH : fnft.asset;
 
         address smartWalletAddr = getAddressForFNFT(salt);
 
@@ -305,7 +310,7 @@ contract Revest_1155 is Revest_base {
         tokenVault.withdrawToken(salt, transferAsset, amountToWithdraw, address(this));
 
         //Return ETH to the user or WETH
-        if (fnft.asset == address(0xdead)) {
+        if (fnft.asset == ETH_ADDRESS) {
             IWETH(WETH).withdraw(amountToWithdraw);
             destination.safeTransferETH(amountToWithdraw);
         } else {
@@ -339,7 +344,7 @@ contract Revest_1155 is Revest_base {
         smartWallet = tokenVault.getAddress(salt, address(this));
     }
 
-    function fnftIdToRevestId(address handler, uint256 fnftId) public pure returns (bytes32 salt) {
-        salt = keccak256(abi.encode(fnftId, handler, 0));
+    function fnftIdToRevestId(uint256 fnftId) public pure returns (bytes32 salt) {
+        salt = keccak256(abi.encode(fnftId));
     }
 }

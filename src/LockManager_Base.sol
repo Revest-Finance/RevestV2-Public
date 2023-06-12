@@ -28,6 +28,8 @@ abstract contract LockManager_Base is ILockManager, ReentrancyGuard {
 
     address public immutable WETH;
 
+    address public constant ETH_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+
     constructor(address _WETH) {
         blacklistedSelector[IERC20.transfer.selector] = true;
         blacklistedSelector[IERC20.approve.selector] = true;
@@ -81,7 +83,7 @@ abstract contract LockManager_Base is ILockManager, ReentrancyGuard {
             }
             //Revest uses address(0) for asset when it is ETH, but stores WETH in the vault.
             //This prevents the edge case for that
-            else if (targets[x] == WETH && token == address(0xdead)) {
+            else if (targets[x] == WETH && token == ETH_ADDRESS) {
                 if (bytes4(calldatas[x]) == IWETH.withdraw.selector) {
                     return false;
                 }

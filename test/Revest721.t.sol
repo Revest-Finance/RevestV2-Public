@@ -43,6 +43,8 @@ contract Revest721Tests is Test {
     address PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
     IERC721 boredApe = IERC721(0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D);
 
+    address public constant ETH_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+
     uint256 nonce;
 
     bytes signature;
@@ -534,7 +536,7 @@ contract Revest721Tests is Test {
         );
 
         IController.FNFTConfig memory storedConfig = revest.getFNFT(salt);
-        assertEq(storedConfig.asset, address(0xdead), "asset was not set to ETH");
+        assertEq(storedConfig.asset, ETH_ADDRESS, "asset was not set to ETH");
         assertEq(storedConfig.depositAmount, 4 ether, "deposit amount was not set to amount");
 
         skip(1 weeks);
@@ -665,7 +667,7 @@ contract Revest721Tests is Test {
         assertEq(alice.balance, preBal - amount, "alice balance did not decrease by expected amountof ETH");
 
         IController.FNFTConfig memory storedConfig = revest.getFNFT(salt);
-        assertEq(storedConfig.asset, address(0xdead), "asset was not set to ETH");
+        assertEq(storedConfig.asset, ETH_ADDRESS, "asset was not set to ETH");
         assertEq(storedConfig.depositAmount, amount, "deposit amount was not set to amount");
 
         skip(1 weeks);

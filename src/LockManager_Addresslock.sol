@@ -28,8 +28,7 @@ contract LockManager_Addresslock is LockManager_Base {
         // Extensive validation on creation
         ILockManager.Lock memory newLock;
 
-        newLock.creationTime = block.timestamp;
-        newLock.creator = msg.sender;
+        newLock.creationTime = uint96(block.timestamp);
 
         //Use a single SSTORE
         locks[lockId] = newLock;

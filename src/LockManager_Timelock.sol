@@ -17,7 +17,7 @@ import "./lib/DateTime.sol";
  * @author 0xTraub
  */
 contract LockManager_Timelock is LockManager_Base {
-    using DateTime for uint256;
+    using DateTime for uint96;
     using DateTime for uint8;
     using Strings for *;
 
@@ -31,10 +31,9 @@ contract LockManager_Timelock is LockManager_Base {
         // Extensive validation on creation
         ILockManager.Lock memory newLock;
 
-        newLock.creationTime = block.timestamp;
-        newLock.creator = msg.sender;
+        newLock.creationTime = uint96(block.timestamp);
 
-        uint256 timeLockExpiry = abi.decode(args, (uint256));
+        uint96 timeLockExpiry = abi.decode(args, (uint96));
 
         require(timeLockExpiry > block.timestamp, "E015");
         newLock.timeLockExpiry = timeLockExpiry;

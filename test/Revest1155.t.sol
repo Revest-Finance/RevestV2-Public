@@ -42,6 +42,7 @@ contract Revest1155Tests is Test {
     ERC20 USDC = ERC20(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48);
 
     address PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
+    address public constant ETH_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
     bytes signature;
     IAllowanceTransfer.PermitBatch permit;
@@ -132,10 +133,6 @@ contract Revest1155Tests is Test {
             nontransferrable: false
         });
 
-        config.handler = address(0);
-        vm.expectRevert(bytes("E001"));
-        revest.mintTimeLock(block.timestamp + 1 weeks, recipients, supplies, config);
-
         config.handler = address(fnftHandler);
 
         uint256 currentTime = block.timestamp;
@@ -203,7 +200,7 @@ contract Revest1155Tests is Test {
         assertEq(fnftHandler.totalSupply(id), 0, "total supply of FNFTs did not decrease by expected amount"); //Total supply of FNFTs was decreased
         assertEq(USDC.balanceOf(walletAddr), 0, "vault balance did not decrease by expected amount"); //All funds were removed from SmartWallet
 
-        assertEq(revest.fnftIdToRevestId(address(fnftHandler), id), salt, "revestId was not set correctly");
+        assertEq(revest.fnftIdToRevestId(id), salt, "revestId was not set correctly");
 
         assertEq(revest.getAsset(salt), address(USDC), "asset was not set correctly");
         assertEq(revest.getValue(salt), amount, "value was not set correctly");
@@ -247,9 +244,6 @@ contract Revest1155Tests is Test {
             nontransferrable: false
         });
 
-        config.handler = address(0);
-        vm.expectRevert(bytes("E001"));
-        revest.mintTimeLock(block.timestamp + 1 weeks, recipients, amounts, config);
 
         config.handler = address(fnftHandler);
 
@@ -341,9 +335,7 @@ contract Revest1155Tests is Test {
             nontransferrable: false
         });
 
-        config.handler = address(0);
-        vm.expectRevert(bytes("E001"));
-        revest.mintAddressLock("", recipients, amounts, config);
+    
 
         config.handler = address(fnftHandler);
         (bytes32 salt, bytes32 lockId) = revest.mintAddressLock("", recipients, amounts, config);
@@ -591,7 +583,8 @@ contract Revest1155Tests is Test {
 
         assertEq(alice.balance, preBal - (supply * amount), "alice balance did not decrease by expected amountof ETH");
         IController.FNFTConfig memory storedConfig = revest.getFNFT(salt);
-        assertEq(storedConfig.asset, address(0xdead), "asset was not set to ETH");
+
+        assertEq(storedConfig.asset, ETH_ADDRESS, "asset was not set to ETH");
         assertEq(storedConfig.depositAmount, amount, "deposit amount was not set to amount");
 
         skip(1 weeks);
@@ -620,7 +613,7 @@ contract Revest1155Tests is Test {
         );
 
         storedConfig = revest.getFNFT(salt);
-        assertEq(storedConfig.asset, address(0xdead), "asset was not set to ETH");
+        assertEq(storedConfig.asset, ETH_ADDRESS, "asset was not set to ETH");
         assertEq(storedConfig.depositAmount, amount + 2 ether, "deposit amount was not set to amount");
 
         skip(1 weeks);
@@ -891,7 +884,7 @@ contract Revest1155Tests is Test {
         revest.proxyCall(salt, targets, values, calldatas);
 
         skip(1 weeks);
-        config.asset = address(0xdead);
+        config.asset = ETH_ADDRESS;
         config.depositAmount = 1 ether;
         targets[0] = address(WETH);
         (salt,) = revest.mintTimeLock{value: 2 ether}(block.timestamp + 1 weeks, recipients, amounts, config);

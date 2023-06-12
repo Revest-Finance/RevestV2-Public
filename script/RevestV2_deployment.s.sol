@@ -25,7 +25,7 @@ contract RevestV2_deployment is Script {
     //Replace with WETH on destination Chain
     address WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
 
-    //Replace with Timelock GovController on destination Chain
+    //TODO: Replace with Timelock GovController on destination Chain
     address govController = address(0xdead);
 
     string URI_BASE_METADATA_HANDLER = "";

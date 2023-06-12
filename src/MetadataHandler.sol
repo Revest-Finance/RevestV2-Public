@@ -20,7 +20,7 @@ import "./interfaces/ILockManager.sol";
  */
 contract MetadataHandler is IMetadataHandler {
     using ERC165Checker for address;
-    using Strings for uint256;
+    using Strings for *;
 
     string public renderURI;
     string private animation_base;
@@ -75,8 +75,7 @@ contract MetadataHandler is IMetadataHandler {
 
         ILockManager.Lock memory lock = lockManager.getLock(fnft.lockId);
 
-        output = string(abi.encodePacked('"properties":{ \n "created":', lock.creationTime.toString(), ",\n"));
-        output = string(abi.encodePacked(output, '"asset_ticker":"', getTicker(fnft.asset), '",\n'));
+        output = string(abi.encodePacked('"properties":{ \n "asset_ticker":', getTicker(fnft.asset), ",\n"));
         output = string(abi.encodePacked(output, '"handler":"', toAsciiString(fnft.handler), '",\n'));
         output = string(abi.encodePacked(output, '"nonce":"', fnft.nonce.toString(), '",\n'));
 
