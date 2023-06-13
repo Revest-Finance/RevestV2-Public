@@ -137,8 +137,8 @@ contract Revest721Tests is Test {
             nonce: nonce,
             fnftId: tokenId,
             lockId: bytes32(0),
-            maturityExtension: false,
-            nontransferrable: false
+            locksCreated: 0,
+            maturityExtension: false
         });
 
         config.handler = address(0);
@@ -211,8 +211,8 @@ contract Revest721Tests is Test {
             nonce: nonce,
             fnftId: id,
             lockId: bytes32(0),
-            maturityExtension: false,
-            nontransferrable: false
+            locksCreated: 0,
+            maturityExtension: false
         });
 
         config.handler = address(0);
@@ -279,8 +279,8 @@ contract Revest721Tests is Test {
             nonce: 0,
             fnftId: tokenId,
             lockId: bytes32(0),
-            maturityExtension: false,
-            nontransferrable: false
+            locksCreated: 0,
+            maturityExtension: false
         });
 
         (bytes32 salt, bytes32 lockId) = revest.mintTimeLock(block.timestamp + 1 weeks, recipients, amounts, config);
@@ -374,8 +374,8 @@ contract Revest721Tests is Test {
             nonce: 0,
             fnftId: 1,
             lockId: bytes32(0),
-            maturityExtension: false,
-            nontransferrable: false
+            locksCreated: 0,
+            maturityExtension: false
         });
 
         bytes32 salt1;
@@ -453,8 +453,8 @@ contract Revest721Tests is Test {
             nonce: nonce,
             fnftId: 1,
             lockId: bytes32(0),
-            maturityExtension: false,
-            nontransferrable: false
+            locksCreated: 0,
+            maturityExtension: false
         });
 
         (bytes32 salt,) = revest.mintTimeLock(block.timestamp + 1 weeks, recipients, amounts, config);
@@ -558,8 +558,8 @@ contract Revest721Tests is Test {
             nonce: nonce,
             fnftId: 1,
             lockId: bytes32(0),
-            maturityExtension: true,
-            nontransferrable: false
+            locksCreated: 0,
+            maturityExtension: true
         });
 
         (bytes32 salt, bytes32 lockId) = revest.mintTimeLock(block.timestamp + 1 weeks, recipients, amounts, config);
@@ -640,8 +640,8 @@ contract Revest721Tests is Test {
             nonce: nonce,
             fnftId: id,
             lockId: bytes32(0),
-            maturityExtension: false,
-            nontransferrable: false
+            locksCreated: 0,
+            maturityExtension: false
         });
 
         (bytes32 salt,) = revest.mintTimeLock{value: amount}(block.timestamp + 1 weeks, recipients, amounts, config);
@@ -687,8 +687,8 @@ contract Revest721Tests is Test {
                 nonce: 0,
                 fnftId: id,
                 lockId: bytes32(0),
-                maturityExtension: true,
-                nontransferrable: true
+                locksCreated: 0,
+                maturityExtension: true
             });
 
             (salt, lockId) =

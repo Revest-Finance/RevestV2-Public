@@ -118,7 +118,7 @@ contract Revest1155Tests is Test {
         uint256[] memory supplies = new uint[](1);
         supplies[0] = supply;
 
-        uint88 id = uint88(fnftHandler.getNextId());
+        uint256 id = fnftHandler.getNextId();
 
         IController.FNFTConfig memory config = IController.FNFTConfig({
             handler: address(fnftHandler),
@@ -128,8 +128,8 @@ contract Revest1155Tests is Test {
             nonce: 0,
             fnftId: 0,
             lockId: bytes32(0),
-            maturityExtension: false,
-            nontransferrable: false
+            locksCreated: 0,
+            maturityExtension: false
         });
 
         config.handler = address(fnftHandler);
@@ -228,7 +228,7 @@ contract Revest1155Tests is Test {
         amounts[0] = supply / 2;
         amounts[1] = supply / 2;
 
-        uint88 id = uint88(fnftHandler.getNextId());
+        uint256 id = fnftHandler.getNextId();
 
         IController.FNFTConfig memory config = IController.FNFTConfig({
             handler: address(fnftHandler),
@@ -238,8 +238,8 @@ contract Revest1155Tests is Test {
             nonce: 0,
             fnftId: 0,
             lockId: bytes32(0),
-            maturityExtension: false,
-            nontransferrable: false
+            locksCreated: 0,
+            maturityExtension: false
         });
 
 
@@ -310,7 +310,7 @@ contract Revest1155Tests is Test {
         uint256[] memory amounts = new uint[](1);
         amounts[0] = supply;
 
-        uint88 id = uint88(fnftHandler.getNextId());
+        uint256 id = fnftHandler.getNextId();
 
         IController.FNFTConfig memory config = IController.FNFTConfig({
             handler: address(0),
@@ -320,8 +320,8 @@ contract Revest1155Tests is Test {
             nonce: 0,
             fnftId: 0,
             lockId: bytes32(0),
-            maturityExtension: false,
-            nontransferrable: false
+            locksCreated: 0,
+            maturityExtension: false
         });
 
     
@@ -372,7 +372,7 @@ contract Revest1155Tests is Test {
 
         uint256 preBal = USDC.balanceOf(alice);
 
-        uint88 id = uint88(fnftHandler.getNextId());
+        uint256 id = fnftHandler.getNextId();
 
         IController.FNFTConfig memory config = IController.FNFTConfig({
             handler: address(0),
@@ -382,8 +382,8 @@ contract Revest1155Tests is Test {
             nonce: 0,
             fnftId: 0,
             lockId: bytes32(0),
-            maturityExtension: false,
-            nontransferrable: false
+            locksCreated: 0,
+            maturityExtension: false
         });
 
         (bytes32 salt,) = revest.mintTimeLock(block.timestamp + 1 weeks, recipients, amounts, config);
@@ -458,7 +458,7 @@ contract Revest1155Tests is Test {
         uint256[] memory amounts = new uint[](1);
         amounts[0] = supply;
 
-        uint88 id = uint88(fnftHandler.getNextId());
+        uint256 id = fnftHandler.getNextId();
 
         IController.FNFTConfig memory config = IController.FNFTConfig({
             handler: address(fnftHandler),
@@ -468,8 +468,8 @@ contract Revest1155Tests is Test {
             nonce: 0,
             fnftId: 0,
             lockId: bytes32(0),
-            maturityExtension: true,
-            nontransferrable: false
+            locksCreated: 0,
+            maturityExtension: true
         });
 
         (bytes32 salt, bytes32 lockId) = revest.mintTimeLock(block.timestamp + 1 weeks, recipients, amounts, config);
@@ -522,7 +522,8 @@ contract Revest1155Tests is Test {
 
         (salt, lockId) = revest.mintTimeLock(block.timestamp + 1 weeks, recipients, amounts, config);
 
-        assertEq(lockManager_timelock.getTimeRemaining(revest.getFNFT(salt).lockId, 0), 1 weeks);
+        bytes32 lockSalt = keccak256(abi.encode(keccak256(abi.encode(salt, 0)), address(revest)));
+        assertEq(lockManager_timelock.getTimeRemaining(lockSalt, 0), 1 weeks);
 
         walletAddr = revest.getAddressForFNFT(salt);
         assertEq(USDC.balanceOf(walletAddr), amount * supply, "vault balance did not increase by expected amount");
@@ -545,7 +546,7 @@ contract Revest1155Tests is Test {
         uint256[] memory amounts = new uint[](1);
         amounts[0] = supply;
 
-        uint88 id = uint88(fnftHandler.getNextId());
+        uint256 id = fnftHandler.getNextId();
 
         IController.FNFTConfig memory config = IController.FNFTConfig({
             handler: address(fnftHandler),
@@ -555,8 +556,8 @@ contract Revest1155Tests is Test {
             nonce: 0,
             fnftId: id,
             lockId: bytes32(0),
-            maturityExtension: true,
-            nontransferrable: false
+            locksCreated: 0,
+            maturityExtension: true
         });
 
         (bytes32 salt,) =
@@ -608,100 +609,6 @@ contract Revest1155Tests is Test {
         assertEq(alice.balance, preBal + (1 ether * supply), "alice balance did not increase by expected amount of ETH");
     }
 
-    function testMintFNFTWithExistingTimeLock() public {
-        uint256 preBal = USDC.balanceOf(alice);
-
-        address[] memory recipients = new address[](1);
-        recipients[0] = alice;
-
-        uint256[] memory amounts = new uint[](1);
-        amounts[0] = 1;
-
-        uint88 id = uint88(fnftHandler.getNextId());
-
-        IController.FNFTConfig memory config = IController.FNFTConfig({
-            handler: address(fnftHandler),
-            asset: address(USDC),
-            lockManager: address(lockManager_timelock),
-            depositAmount: 1e6,
-            nonce: 0,
-            fnftId: id,
-            lockId: bytes32(0),
-            maturityExtension: true,
-            nontransferrable: false
-        });
-
-        (bytes32 salt1, bytes32 lockId) = revest.mintTimeLock(block.timestamp + 1 weeks, recipients, amounts, config);
-
-        config.lockId = lockId;
-
-        (bytes32 salt2, bytes32 lockId2) = revest.mintTimeLock(block.timestamp + 3 weeks, recipients, amounts, config);
-
-        assertEq(lockId, lockId2, "lockIds returned do not match");
-
-        IController.FNFTConfig memory timelock1 = revest.getFNFT(salt1);
-        IController.FNFTConfig memory timelock2 = revest.getFNFT(salt2);
-        assertEq(timelock1.lockId, timelock2.lockId, "lockIds stored do not match");
-        ILockManager.Lock memory lock = lockManager_timelock.getLock(lockId);
-
-        assertEq(lock.timeLockExpiry, block.timestamp + 1 weeks, "lock end date is not expected amount");
-        skip(1 weeks);
-
-        revest.withdrawFNFT(salt1, 1);
-
-        bool unlocked = lockManager_timelock.getLockMaturity(lockId, id);
-        assertEq(unlocked, true, "lock was not unlocked");
-        revest.withdrawFNFT(salt2, 1);
-
-        assertEq(USDC.balanceOf(alice), preBal, "alice did not receive expected amount of USDC");
-    }
-
-    function testMintFNFTWithExistingAddressLock() public {
-        uint256 preBal = USDC.balanceOf(alice);
-
-        address[] memory recipients = new address[](1);
-        recipients[0] = alice;
-
-        uint256[] memory amounts = new uint[](1);
-        amounts[0] = 1;
-
-        uint88 id = uint88(fnftHandler.getNextId());
-
-        IController.FNFTConfig memory config = IController.FNFTConfig({
-            handler: address(fnftHandler),
-            asset: address(USDC),
-            lockManager: address(lockManager_addresslock),
-            depositAmount: 1e6,
-            nonce: 0,
-            fnftId: id,
-            lockId: bytes32(0),
-            maturityExtension: true,
-            nontransferrable: false
-        });
-
-        (bytes32 salt1, bytes32 lockId) = revest.mintAddressLock("", recipients, amounts, config);
-
-        config.lockId = lockId;
-        (bytes32 salt2, bytes32 lockId2) = revest.mintAddressLock("", recipients, amounts, config);
-
-        assertEq(lockId, lockId2, "lockIds returned do not match");
-
-        IController.FNFTConfig memory timelock1 = revest.getFNFT(salt1);
-        IController.FNFTConfig memory timelock2 = revest.getFNFT(salt2);
-        assertEq(timelock1.lockId, timelock2.lockId, "lockIds stored do not match");
-
-        if (block.timestamp % 2 != 0) skip(1 seconds);
-
-        changePrank(alice);
-        revest.withdrawFNFT(salt1, 1);
-
-        bool unlocked = lockManager_addresslock.getLockMaturity(lockId, id);
-        assertEq(unlocked, true, "lock was not unlocked");
-        revest.withdrawFNFT(salt2, 1);
-
-        assertEq(USDC.balanceOf(alice), preBal, "alice did not receive expected amount of USDC");
-    }
-
     function testTransferFNFTWithSignature() public {
         startHoax(alice);
 
@@ -711,7 +618,7 @@ contract Revest1155Tests is Test {
         uint256[] memory amounts = new uint[](1);
         amounts[0] = 1;
 
-        uint88 id = uint88(fnftHandler.getNextId());
+        uint256 id = fnftHandler.getNextId();
 
         IController.FNFTConfig memory config = IController.FNFTConfig({
             handler: address(fnftHandler),
@@ -721,8 +628,8 @@ contract Revest1155Tests is Test {
             nonce: 0,
             fnftId: id,
             lockId: bytes32(0),
-            maturityExtension: true,
-            nontransferrable: false
+            locksCreated: 0,
+            maturityExtension: true
         });
 
         revest.mintTimeLock(block.timestamp + 1 weeks, recipients, amounts, config);
@@ -783,7 +690,7 @@ contract Revest1155Tests is Test {
         uint256[] memory amounts = new uint[](1);
         amounts[0] = 2;
 
-        uint88 id = uint88(fnftHandler.getNextId());
+        uint256 id = fnftHandler.getNextId();
 
         IController.FNFTConfig memory config = IController.FNFTConfig({
             handler: address(fnftHandler),
@@ -793,8 +700,8 @@ contract Revest1155Tests is Test {
             nonce: 0,
             fnftId: id,
             lockId: bytes32(0),
-            maturityExtension: true,
-            nontransferrable: false
+            locksCreated: 0,
+            maturityExtension: true
         });
 
         (bytes32 salt,) = revest.mintTimeLock(block.timestamp + 1 weeks, recipients, amounts, config);
@@ -863,7 +770,7 @@ contract Revest1155Tests is Test {
         uint256[] memory amounts = new uint[](1);
         amounts[0] = 1;
 
-        uint88 id = uint88(fnftHandler.getNextId());
+        uint256 id = fnftHandler.getNextId();
 
         bytes32 salt;
         bytes32 lockId;
@@ -876,8 +783,8 @@ contract Revest1155Tests is Test {
                 nonce: 0,
                 fnftId: id,
                 lockId: bytes32(0),
-                maturityExtension: true,
-                nontransferrable: true
+                locksCreated: 0,
+                maturityExtension: true
             });
 
             vm.expectRevert(bytes("E024"));
@@ -913,7 +820,7 @@ contract Revest1155Tests is Test {
         uint256[] memory amounts = new uint[](1);
         amounts[0] = supply;
 
-        uint88 id = uint88(fnftHandler.getNextId());
+        uint256 id = fnftHandler.getNextId();
 
         IController.FNFTConfig memory config = IController.FNFTConfig({
             handler: address(fnftHandler),
@@ -923,8 +830,8 @@ contract Revest1155Tests is Test {
             nonce: 0,
             fnftId: 0,
             lockId: bytes32(0),
-            maturityExtension: false,
-            nontransferrable: false
+            locksCreated: 0,
+            maturityExtension: false
         });
 
         vm.expectRevert(bytes("E024"));
@@ -975,7 +882,7 @@ contract Revest1155Tests is Test {
 
         uint256 preBal = USDC.balanceOf(alice);
 
-        uint88 id = uint88(fnftHandler.getNextId());
+        uint256 id = fnftHandler.getNextId();
 
         bytes32 salt;
         {
@@ -987,8 +894,8 @@ contract Revest1155Tests is Test {
                 nonce: 0,
                 fnftId: 0,
                 lockId: bytes32(0),
-                maturityExtension: false,
-                nontransferrable: false
+                locksCreated: 0,
+                maturityExtension: false
             });
 
             (salt,) = revest.mintTimeLock(block.timestamp + 1 weeks, recipients, amounts, config);
@@ -1067,7 +974,7 @@ contract Revest1155Tests is Test {
         uint256[] memory supplies = new uint[](1);
         supplies[0] = supply;
 
-        uint88 id = uint88(fnftHandler.getNextId());
+        uint256 id = fnftHandler.getNextId();
 
         IController.FNFTConfig memory config = IController.FNFTConfig({
             handler: address(fnftHandler),
@@ -1077,8 +984,8 @@ contract Revest1155Tests is Test {
             nonce: 0,
             fnftId: 0,
             lockId: bytes32(0),
-            maturityExtension: false,
-            nontransferrable: false
+            locksCreated: 0,
+            maturityExtension: false
         });
 
         //TODO: Once we figure out the metadata handler

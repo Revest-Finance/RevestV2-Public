@@ -61,19 +61,17 @@ contract Revest_1155 is Revest_base {
     ) internal override returns (bytes32 salt, bytes32 lockId) {
 
         //You can safely cast this since getNextId is an incrementing variable
-        fnftConfig.fnftId = fnftHandler.getNextId().toUint88();
+        fnftConfig.fnftId = fnftHandler.getNextId();
 
         // Get or create lock based on time, assign lock to ID
         {
+            //Salt = kecccak256(fnftID)
             salt = keccak256(abi.encode(fnftConfig.fnftId));
 
-            if (!ILockManager(fnftConfig.lockManager).lockExists(fnftConfig.lockId)) {
-                lockId = ILockManager(fnftConfig.lockManager).createLock(salt, abi.encode(endTime));
-                fnftConfig.lockId = lockId;
-            } else {
-                lockId = fnftConfig.lockId;
-                fnftConfig.lockId = fnftConfig.lockId;
-            }
+            bytes32 lockSalt = keccak256(abi.encode(salt, 0));
+
+            lockId = ILockManager(fnftConfig.lockManager).createLock(lockSalt, abi.encode(endTime));
+           
         }
 
         //Stack Too Deep Fixer
@@ -91,20 +89,16 @@ contract Revest_1155 is Revest_base {
     ) internal override returns (bytes32 salt, bytes32 lockId) {
 
         //Get the ID of the next to-be-minted FNFT
-        fnftConfig.fnftId = fnftHandler.getNextId().toUint88();
+        fnftConfig.fnftId = fnftHandler.getNextId();
 
         {
             //Salt = kecccak256(fnftID || handler || nonce (which is always zero))
             salt = keccak256(abi.encode(fnftConfig.fnftId));
 
-            if (!ILockManager(fnftConfig.lockManager).lockExists(fnftConfig.lockId)) {
-                //Return the ID of the lock
-                lockId = ILockManager(fnftConfig.lockManager).createLock(salt, arguments);
-                fnftConfig.lockId = lockId;
-            } else {
-                lockId = fnftConfig.lockId;
-                fnftConfig.lockId = fnftConfig.lockId;
-            }
+            bytes32 lockSalt = keccak256(abi.encode(salt, 0));
+
+            //Return the ID of the lock
+            lockId = ILockManager(fnftConfig.lockManager).createLock(lockSalt, arguments);
         }
 
         //Stack Too Deep Fixer
@@ -123,7 +117,9 @@ contract Revest_1155 is Revest_base {
         // Burn the FNFTs being exchanged
         fnftHandler.burn(msg.sender, fnft.fnftId, quantity);
 
-        ILockManager(fnft.lockManager).unlockFNFT(fnft.lockId, fnft.fnftId);
+        bytes32 lockId = keccak256(abi.encode(keccak256(abi.encode(salt, fnft.locksCreated)), address(this)));
+
+        ILockManager(fnft.lockManager).unlockFNFT(lockId, fnft.fnftId);
 
         withdrawToken(salt, fnft.fnftId, quantity, msg.sender);
 
@@ -158,14 +154,15 @@ contract Revest_1155 is Revest_base {
         require(fnft.maturityExtension && manager.lockType() == ILockManager.LockType.TimeLock, "E009");
 
         // If desired maturity is below existing date, reject operation
-        ILockManager.Lock memory lockParam = manager.getLock(fnft.lockId);
+        bytes32 lockId = keccak256(abi.encode(keccak256(abi.encode(salt, fnft.locksCreated)), address(this)));
+        ILockManager.Lock memory lockParam = manager.getLock(lockId);
         require(!lockParam.unlocked && lockParam.timeLockExpiry > block.timestamp, "E007");
         require(lockParam.timeLockExpiry < endTime, "E010");
 
         bytes memory creationData = abi.encode(endTime);
 
-        newLockId = manager.createLock(keccak256(abi.encode(block.timestamp, endTime, msg.sender)), creationData);
-        fnfts[salt].lockId = newLockId;
+        newLockId = manager.createLock(keccak256(abi.encode(salt, ++fnft.locksCreated)), creationData);
+        fnfts[salt].locksCreated++;
 
         emit FNFTMaturityExtended(newLockId, msg.sender, fnftId, endTime);
     }
@@ -283,7 +280,6 @@ contract Revest_1155 is Revest_base {
             }
         }
 
-        console.log("non transferrable: %s", params.fnftConfig.nontransferrable);
         fnfts[salt] = params.fnftConfig;
 
         emit CreateFNFT(salt, params.fnftConfig.fnftId, msg.sender);

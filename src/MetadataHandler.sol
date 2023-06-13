@@ -110,7 +110,6 @@ contract MetadataHandler is IMetadataHandler {
         }
 
         output = string(abi.encodePacked(output, '"maturity_extensions":', boolToString(fnft.maturityExtension), ",\n"));
-        output = string(abi.encodePacked(output, '"nontransferrable":', boolToString(fnft.nontransferrable), ",\n"));
 
         output = string(abi.encodePacked(output, '"salt":', bytes32ToLiteralString(fnftSalt), ",\n"));
         output = string(abi.encodePacked(output, '"fnft_id":', fnft.fnftId.toString(), ",\n"));
