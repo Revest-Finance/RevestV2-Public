@@ -56,6 +56,7 @@ contract Revest_1155 is Revest_base {
         uint256 endTime,
         address[] memory recipients,
         uint256[] memory quantities,
+        uint depositAmount,
         IRevest.FNFTConfig memory fnftConfig,
         bool usePermit2
     ) internal override returns (bytes32 salt, bytes32 lockId) {
@@ -75,7 +76,7 @@ contract Revest_1155 is Revest_base {
         }
 
         //Stack Too Deep Fixer
-        doMint(MintParameters(endTime, recipients, quantities, fnftConfig, usePermit2));
+        doMint(MintParameters(endTime, recipients, quantities, depositAmount, fnftConfig, usePermit2));
 
         emit FNFTTimeLockMinted(fnftConfig.asset, msg.sender, fnftConfig.fnftId, endTime, quantities, fnftConfig);
     }
@@ -84,6 +85,7 @@ contract Revest_1155 is Revest_base {
         bytes memory arguments,
         address[] memory recipients,
         uint256[] memory quantities,
+        uint depositAmount,
         IRevest.FNFTConfig memory fnftConfig,
         bool usePermit2
     ) internal override returns (bytes32 salt, bytes32 lockId) {
@@ -102,7 +104,7 @@ contract Revest_1155 is Revest_base {
         }
 
         //Stack Too Deep Fixer
-        doMint(MintParameters(0, recipients, quantities, fnftConfig, usePermit2));
+        doMint(MintParameters(0, recipients, quantities, depositAmount, fnftConfig, usePermit2));
 
         emit FNFTAddressLockMinted(fnftConfig.asset, msg.sender, fnftConfig.fnftId, quantities, fnftConfig);
     }
@@ -185,8 +187,6 @@ contract Revest_1155 is Revest_base {
 
         address smartWallet = getAddressForFNFT(salt);
 
-        fnft.depositAmount += amount;
-
         deposit = supply * amount;
 
         address depositAsset = fnft.asset;
@@ -245,20 +245,21 @@ contract Revest_1155 is Revest_base {
             params.fnftConfig.asset = ETH_ADDRESS;
 
             //User sent enough ETH to pay for all FNFTs
-            require(msg.value / totalQuantity == params.fnftConfig.depositAmount, "E027");
+            require(msg.value / totalQuantity == params.depositAmount, "E027");
 
             IWETH(WETH).deposit{value: msg.value}(); //Convert it to WETH and send it back to this
             IWETH(WETH).transfer(smartWallet, msg.value); //Transfer it to the smart wallet
+
         } else if (params.usePermit2) {
             PERMIT2.transferFrom(
                 msg.sender,
                 smartWallet,
-                (totalQuantity * params.fnftConfig.depositAmount).toUint160(), //permit2 uses a uint160 for the amount
+                (totalQuantity * params.depositAmount).toUint160(), //permit2 uses a uint160 for the amount
                 params.fnftConfig.asset
             );
         } else {
             ERC20(params.fnftConfig.asset).safeTransferFrom(
-                msg.sender, smartWallet, totalQuantity * params.fnftConfig.depositAmount
+                msg.sender, smartWallet, totalQuantity * params.depositAmount
             );
         }
 
@@ -297,7 +298,9 @@ contract Revest_1155 is Revest_base {
 
         uint256 supplyBefore = fnftHandler.totalSupply(fnftId) + quantity;
 
-        amountToWithdraw = quantity.mulDivDown(supplyBefore * fnft.depositAmount, supplyBefore);
+        uint depositAmount = IERC20(transferAsset).balanceOf(smartWalletAddr);
+
+        amountToWithdraw = quantity.mulDivDown(depositAmount, supplyBefore);
 
         // Deploy the smart wallet object
         tokenVault.withdrawToken(salt, transferAsset, amountToWithdraw, address(this));
@@ -335,6 +338,19 @@ contract Revest_1155 is Revest_base {
 
     function getAddressForFNFT(bytes32 salt) public view virtual returns (address smartWallet) {
         smartWallet = tokenVault.getAddress(salt, address(this));
+    }
+
+
+    function getValue(bytes32 fnftId) external view virtual returns (uint256) {
+        IRevest.FNFTConfig memory fnft = fnfts[fnftId];
+
+        uint supply = fnftHandler.totalSupply(fnft.fnftId);
+        if (supply == 0) return 0;
+
+        address asset = fnft.asset == ETH_ADDRESS ? WETH : fnft.asset;
+        uint balanceOf = IERC20(asset).balanceOf(getAddressForFNFT(fnftId));
+
+        return balanceOf / supply;
     }
 
     function fnftIdToRevestId(uint256 fnftId) public pure returns (bytes32 salt) {

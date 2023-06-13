@@ -64,8 +64,6 @@ abstract contract Revest_base is IRevest, IControllerExtendable, ERC1155Holder, 
     function unlockFNFT(bytes32 salt) external override nonReentrant {
         IRevest.FNFTConfig memory fnft = fnfts[salt];
 
-
-
         bytes32 lockId = keccak256(abi.encode(keccak256(abi.encode(salt, fnft.locksCreated)), address(this)));
 
         // Works for all lock types
@@ -82,6 +80,7 @@ abstract contract Revest_base is IRevest, IControllerExtendable, ERC1155Holder, 
         uint256 endTime,
         address[] memory recipients,
         uint256[] memory quantities,
+        uint depositAmount,
         IRevest.FNFTConfig memory fnftConfig,
         IAllowanceTransfer.PermitBatch calldata permits,
         bytes calldata _signature
@@ -89,22 +88,24 @@ abstract contract Revest_base is IRevest, IControllerExtendable, ERC1155Holder, 
         //Length check means to use permit2 for allowance but allowance has already been granted
         require(_signature.length != 0, "E024");
         PERMIT2.permit(msg.sender, permits, _signature);
-        return _mintTimeLock(endTime, recipients, quantities, fnftConfig, true);
+        return _mintTimeLock(endTime, recipients, quantities, depositAmount, fnftConfig, true);
     }
 
     function mintTimeLock(
         uint256 endTime,
         address[] memory recipients,
         uint256[] memory quantities,
+        uint depositAmount,
         IRevest.FNFTConfig memory fnftConfig
     ) external payable virtual nonReentrant returns (bytes32 salt, bytes32 lockId) {
-        return _mintTimeLock(endTime, recipients, quantities, fnftConfig, false);
+        return _mintTimeLock(endTime, recipients, quantities, depositAmount, fnftConfig, false);
     }
 
     function mintAddressLockWithPermit(
         bytes memory arguments,
         address[] memory recipients,
         uint256[] memory quantities,
+        uint depositAmount,
         IRevest.FNFTConfig memory fnftConfig,
         IAllowanceTransfer.PermitBatch calldata permits,
         bytes calldata _signature
@@ -112,22 +113,24 @@ abstract contract Revest_base is IRevest, IControllerExtendable, ERC1155Holder, 
         //Length check means to use permit2 for allowance but allowance has already been granted
         require(_signature.length != 0, "E024");
         PERMIT2.permit(msg.sender, permits, _signature);
-        return _mintAddressLock(arguments, recipients, quantities, fnftConfig, true);
+        return _mintAddressLock(arguments, recipients, quantities, depositAmount, fnftConfig, true);
     }
 
     function mintAddressLock(
         bytes memory arguments,
         address[] memory recipients,
         uint256[] memory quantities,
+        uint depositAmount,
         IRevest.FNFTConfig memory fnftConfig
     ) external payable virtual nonReentrant returns (bytes32 salt, bytes32 lockId) {
-        return _mintAddressLock(arguments, recipients, quantities, fnftConfig, false);
+        return _mintAddressLock(arguments, recipients, quantities, depositAmount, fnftConfig, false);
     }
 
     function _mintAddressLock(
         bytes memory arguments,
         address[] memory recipients,
         uint256[] memory quantities,
+        uint depositAmount,
         IRevest.FNFTConfig memory fnftConfig,
         bool usePermit2
     ) internal virtual returns (bytes32 salt, bytes32 lockId);
@@ -136,6 +139,7 @@ abstract contract Revest_base is IRevest, IControllerExtendable, ERC1155Holder, 
         uint256 endTime,
         address[] memory recipients,
         uint256[] memory quantities,
+        uint depositAmount,
         IRevest.FNFTConfig memory fnftConfig,
         bool usePermit2
     ) internal virtual returns (bytes32 salt, bytes32 lockId);
@@ -194,9 +198,7 @@ abstract contract Revest_base is IRevest, IControllerExtendable, ERC1155Holder, 
         return fnfts[fnftId].asset;
     }
 
-    function getValue(bytes32 fnftId) external view virtual returns (uint256) {
-        return fnfts[fnftId].depositAmount;
-    }
+
 
     /*//////////////////////////////////////////////////////////////
                         Metadata

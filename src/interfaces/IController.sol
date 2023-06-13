@@ -28,19 +28,18 @@ interface IController {
         bool maturityExtension; // Maturity extensions remaining
 
         uint256 fnftId; //type(uint88).max = 3.1e23
-        uint256 depositAmount;
 
         //2 Slots but only Used by the Revest-721 -> Are left empty for 1155 to save gas
         address handler;
         bytes32 lockId;
     }
 
-    //Used for stackTooDeep - ONly kept in memory, efficient packing not needed
+    //Used for stackTooDeep - Only kept in memory, efficient packing not needed
     struct MintParameters {
         uint256 endTime;
         address[] recipients;
         uint256[] quantities;
-
+        uint depositAmount;
         FNFTConfig fnftConfig;
         bool usePermit2;
     }

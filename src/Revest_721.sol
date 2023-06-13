@@ -51,6 +51,7 @@ contract Revest_721 is Revest_base {
         uint256 endTime,
         address[] memory recipients,
         uint256[] memory quantities,
+        uint depositAmount,
         IRevest.FNFTConfig memory fnftConfig,
         bool usePermit2
     ) internal override returns (bytes32 salt, bytes32 lockId) {
@@ -73,7 +74,7 @@ contract Revest_721 is Revest_base {
         lockId = fnftConfig.lockId;
 
         //Stack Too Deep Fixer
-        doMint(MintParameters(endTime, recipients, quantities, fnftConfig, usePermit2));
+        doMint(MintParameters(endTime, recipients, quantities, depositAmount, fnftConfig, usePermit2));
 
         emit FNFTTimeLockMinted(fnftConfig.asset, msg.sender, fnftConfig.fnftId, endTime, quantities, fnftConfig);
     }
@@ -82,6 +83,7 @@ contract Revest_721 is Revest_base {
         bytes memory arguments,
         address[] memory recipients,
         uint256[] memory quantities,
+        uint depositAmount,
         IRevest.FNFTConfig memory fnftConfig,
         bool usePermit2
     ) internal override returns (bytes32 salt, bytes32 lockId) {
@@ -104,7 +106,7 @@ contract Revest_721 is Revest_base {
         lockId = fnftConfig.lockId;
 
         //Stack Too Deep Fixer
-        doMint(MintParameters(0, recipients, quantities, fnftConfig, usePermit2));
+        doMint(MintParameters(0, recipients, quantities, depositAmount, fnftConfig, usePermit2));
 
         emit FNFTAddressLockMinted(fnftConfig.asset, msg.sender, fnftConfig.fnftId, quantities, fnftConfig);
     }
@@ -169,8 +171,6 @@ contract Revest_721 is Revest_base {
         IRevest.FNFTConfig storage fnft = fnfts[salt];
         uint256 fnftId = fnft.fnftId;
 
-        fnft.depositAmount += amount;
-
         //If the handler is an NFT then supply is 1
 
         bytes32 walletSalt = keccak256(abi.encode(fnft.fnftId, fnft.handler));
@@ -226,15 +226,14 @@ contract Revest_721 is Revest_base {
 
         if (msg.value != 0) {
             params.fnftConfig.asset = ETH_ADDRESS;
-            params.fnftConfig.depositAmount = msg.value;
             IWETH(WETH).deposit{value: msg.value}(); //Convert it to WETH and send it back to this
             IWETH(WETH).transfer(smartWallet, msg.value); //Transfer it to the smart wallet
         } else if (params.usePermit2) {
             PERMIT2.transferFrom(
-                msg.sender, smartWallet, (params.fnftConfig.depositAmount).toUint160(), params.fnftConfig.asset
+                msg.sender, smartWallet, (params.depositAmount).toUint160(), params.fnftConfig.asset
             );
         } else {
-            ERC20(params.fnftConfig.asset).safeTransferFrom(msg.sender, smartWallet, params.fnftConfig.depositAmount);
+            ERC20(params.fnftConfig.asset).safeTransferFrom(msg.sender, smartWallet, params.depositAmount);
         }
 
         fnfts[fnftSalt] = params.fnftConfig;
@@ -283,6 +282,16 @@ contract Revest_721 is Revest_base {
         bytes32 walletSalt = keccak256(abi.encode(fnft.fnftId, fnft.handler));
 
         return _proxyCall(walletSalt, targets, values, calldatas, fnft.lockManager, fnft.asset);
+    }
+
+    function getValue(bytes32 fnftId) external view virtual returns (uint256) {
+        IRevest.FNFTConfig memory fnft = fnfts[fnftId];
+
+        address asset = fnft.asset == ETH_ADDRESS ? WETH : fnft.asset;
+
+        return IERC20(asset).balanceOf(getAddressForFNFT(fnftId));
+
+       
     }
 
     //Takes in an FNFT Salt and generates a wallet salt from it

@@ -86,7 +86,10 @@ contract MetadataHandler is IMetadataHandler {
                 output, '"currentValue":"', amountToDecimal(controller.getValue(fnftSalt), fnft.asset), '",\n'
             )
         );
-        output = string(abi.encodePacked(output, '"amount":"', amountToDecimal(fnft.depositAmount, fnft.asset), '",\n'));
+
+        uint depositAmount = controller.getValue(fnftSalt);
+
+        output = string(abi.encodePacked(output, '"amount":"', amountToDecimal(depositAmount, fnft.asset), '",\n'));
         output = string(abi.encodePacked(output, '"lock_type":"', getLockType(lockManager.lockType()), '",\n'));
 
         if (lockManager.lockType() == ILockManager.LockType.TimeLock) {
@@ -138,7 +141,8 @@ contract MetadataHandler is IMetadataHandler {
             '</text> <text x="50%" y="310" dy= "30" dominant-baseline="middle" text-anchor="middle" class="amount" fill="#fff"> '
         );
 
-        image = string.concat(image, amountToDecimal(config.depositAmount, config.asset), " ", getTicker(config.asset), '</text>');
+        uint depositAmount = IRevest(revest).getValue(salt);
+        image = string.concat(image, amountToDecimal(depositAmount, config.asset), " ", getTicker(config.asset), '</text>');
      
         image = string.concat(image, ILockManager(config.lockManager).lockDescription(config.lockId));
 
@@ -146,7 +150,7 @@ contract MetadataHandler is IMetadataHandler {
         image = string.concat(image, '</svg>');
 
         string memory description =
-            renderDescription(assetName, assetSymbol, config.depositAmount, lockType, config.lockManager);
+            renderDescription(assetName, assetSymbol, depositAmount, lockType, config.lockManager);
 
         string memory json = string.concat(
             '{"name" : "Time Lock FNFT - RVST",',
