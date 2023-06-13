@@ -136,6 +136,9 @@ contract Revest1155Tests is Test {
         uint256 currentTime = block.timestamp;
         (bytes32 salt, bytes32 lockId) = revest.mintTimeLock(block.timestamp + 1 weeks, recipients, supplies, amount, config);
 
+        assertEq(revest.fnftIdToRevestId(id), salt, "salt was not calculated correctly");
+        assertEq(revest.fnftIdToLockId(id), lockId, "lockId was not calculated correctly");
+
         vm.expectRevert(bytes("E015"));
         lockManager_timelock.createLock(keccak256(abi.encode("0xdead")), abi.encode(block.timestamp - 1 weeks));
 
@@ -201,7 +204,7 @@ contract Revest1155Tests is Test {
         assertEq(revest.fnftIdToRevestId(id), salt, "revestId was not set correctly");
 
         assertEq(revest.getAsset(salt), address(USDC), "asset was not set correctly");
-        
+
         assertEq(revest.getValue(salt), 0, "value was not set correctly");
 
         supplies[0] = 0;

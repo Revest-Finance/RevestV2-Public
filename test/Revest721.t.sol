@@ -149,6 +149,8 @@ contract Revest721Tests is Test {
 
         address walletAddr = revest.getAddressForFNFT(salt);
 
+        assertEq(revest.getSaltFromId(address(boredApe), 1, 0), salt, "salt is not expected value");
+
         //Check Minting was successful
         {
             //Funds were deducted from alice

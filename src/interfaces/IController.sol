@@ -18,7 +18,7 @@ interface IController {
     event RedeemFNFT(bytes32 indexed salt, uint256 indexed fnftId, address indexed from);
 
     struct FNFTConfig {
-        //20 + 8 + 1 = 29 bytes -> 1 slot
+        //20 + 4 + 1 = 25 bytes -> 1 slot
         address asset; // The token being stored
         uint32 nonce;
         uint8 locksCreated; // Number of locks created
@@ -29,7 +29,7 @@ interface IController {
 
         uint256 fnftId; //type(uint88).max = 3.1e23
 
-        //2 Slots but only Used by the Revest-721 -> Are left empty for 1155 to save gas
+        //2 Slots but only Used by the Revest-721 -> Are left empty at the end for 1155 to save ~40k gas
         address handler;
         bytes32 lockId;
     }

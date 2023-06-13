@@ -294,6 +294,10 @@ contract Revest_721 is Revest_base {
        
     }
 
+    function getSaltFromId(address handler, uint256 fnftId, uint256 nonce) public pure returns (bytes32) {
+        return keccak256(abi.encode(fnftId, handler, nonce));
+    }
+
     //Takes in an FNFT Salt and generates a wallet salt from it
     function getAddressForFNFT(bytes32 salt) public view virtual returns (address smartWallet) {
         IRevest.FNFTConfig memory fnft = fnfts[salt];

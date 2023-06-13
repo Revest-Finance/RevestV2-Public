@@ -356,4 +356,11 @@ contract Revest_1155 is Revest_base {
     function fnftIdToRevestId(uint256 fnftId) public pure returns (bytes32 salt) {
         salt = keccak256(abi.encode(fnftId));
     }
+
+    function fnftIdToLockId(uint256 fnftId) public view returns (bytes32 lockId) {
+        bytes32 salt = keccak256(abi.encode(fnftId));
+        bytes32 locksalt = keccak256(abi.encode(salt, fnfts[salt].locksCreated));
+
+        return keccak256(abi.encode(locksalt, address(this)));
+    }
 }
