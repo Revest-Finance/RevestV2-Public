@@ -127,7 +127,6 @@ contract Revest1155Tests is Test {
             nonce: 0,
             fnftId: 0,
             lockId: bytes32(0),
-            locksCreated: 0,
             maturityExtension: false
         });
 
@@ -240,7 +239,6 @@ contract Revest1155Tests is Test {
             nonce: 0,
             fnftId: 0,
             lockId: bytes32(0),
-            locksCreated: 0,
             maturityExtension: false
         });
 
@@ -321,7 +319,6 @@ contract Revest1155Tests is Test {
             nonce: 0,
             fnftId: 0,
             lockId: bytes32(0),
-            locksCreated: 0,
             maturityExtension: false
         });
 
@@ -382,7 +379,6 @@ contract Revest1155Tests is Test {
             nonce: 0,
             fnftId: 0,
             lockId: bytes32(0),
-            locksCreated: 0,
             maturityExtension: false
         });
 
@@ -467,7 +463,6 @@ contract Revest1155Tests is Test {
             nonce: 0,
             fnftId: 0,
             lockId: bytes32(0),
-            locksCreated: 0,
             maturityExtension: true
         });
 
@@ -521,8 +516,8 @@ contract Revest1155Tests is Test {
 
         (salt, lockId) = revest.mintTimeLock(block.timestamp + 1 weeks, recipients, amounts, amount, config);
 
-        bytes32 lockSalt = keccak256(abi.encode(keccak256(abi.encode(salt, 0)), address(revest)));
-        assertEq(lockManager_timelock.getTimeRemaining(lockSalt, 0), 1 weeks);
+        bytes32 lockSalt = keccak256(abi.encode(salt, address(revest)));
+        assertEq(lockManager_timelock.getTimeRemaining(lockSalt, 0), 1 weeks, "expected time not remaining");
 
         walletAddr = revest.getAddressForFNFT(salt);
         assertEq(USDC.balanceOf(walletAddr), amount * supply, "vault balance did not increase by expected amount");
@@ -554,7 +549,6 @@ contract Revest1155Tests is Test {
             nonce: 0,
             fnftId: id,
             lockId: bytes32(0),
-            locksCreated: 0,
             maturityExtension: true
         });
 
@@ -625,7 +619,6 @@ contract Revest1155Tests is Test {
             nonce: 0,
             fnftId: id,
             lockId: bytes32(0),
-            locksCreated: 0,
             maturityExtension: true
         });
 
@@ -696,7 +689,6 @@ contract Revest1155Tests is Test {
             nonce: 0,
             fnftId: id,
             lockId: bytes32(0),
-            locksCreated: 0,
             maturityExtension: true
         });
 
@@ -777,7 +769,6 @@ contract Revest1155Tests is Test {
                 nonce: 0,
                 fnftId: id,
                 lockId: bytes32(0),
-                locksCreated: 0,
                 maturityExtension: true
             });
 
@@ -823,7 +814,6 @@ contract Revest1155Tests is Test {
             nonce: 0,
             fnftId: 0,
             lockId: bytes32(0),
-            locksCreated: 0,
             maturityExtension: false
         });
 
@@ -886,7 +876,6 @@ contract Revest1155Tests is Test {
                 nonce: 0,
                 fnftId: 0,
                 lockId: bytes32(0),
-                locksCreated: 0,
                 maturityExtension: false
             });
 
@@ -975,7 +964,6 @@ contract Revest1155Tests is Test {
             nonce: 0,
             fnftId: 0,
             lockId: bytes32(0),
-            locksCreated: 0,
             maturityExtension: false
         });
 

@@ -64,7 +64,7 @@ abstract contract Revest_base is IRevest, IControllerExtendable, ERC1155Holder, 
     function unlockFNFT(bytes32 salt) external override nonReentrant {
         IRevest.FNFTConfig memory fnft = fnfts[salt];
 
-        bytes32 lockId = keccak256(abi.encode(keccak256(abi.encode(salt, fnft.locksCreated)), address(this)));
+        bytes32 lockId = keccak256(abi.encode(salt, address(this)));
 
         // Works for all lock types
         ILockManager(fnft.lockManager).unlockFNFT(lockId, fnft.fnftId);
@@ -197,7 +197,6 @@ abstract contract Revest_base is IRevest, IControllerExtendable, ERC1155Holder, 
     function getAsset(bytes32 fnftId) external view virtual returns (address) {
         return fnfts[fnftId].asset;
     }
-
 
 
     /*//////////////////////////////////////////////////////////////

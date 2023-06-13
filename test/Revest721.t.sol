@@ -136,7 +136,6 @@ contract Revest721Tests is Test {
             nonce: nonce,
             fnftId: tokenId,
             lockId: bytes32(0),
-            locksCreated: 0,
             maturityExtension: false
         });
 
@@ -211,7 +210,6 @@ contract Revest721Tests is Test {
             nonce: nonce,
             fnftId: id,
             lockId: bytes32(0),
-            locksCreated: 0,
             maturityExtension: false
         });
 
@@ -278,7 +276,6 @@ contract Revest721Tests is Test {
             nonce: 0,
             fnftId: tokenId,
             lockId: bytes32(0),
-            locksCreated: 0,
             maturityExtension: false
         });
 
@@ -372,7 +369,6 @@ contract Revest721Tests is Test {
             nonce: 0,
             fnftId: 1,
             lockId: bytes32(0),
-            locksCreated: 0,
             maturityExtension: false
         });
 
@@ -442,7 +438,6 @@ contract Revest721Tests is Test {
             nonce: nonce,
             fnftId: 1,
             lockId: bytes32(0),
-            locksCreated: 0,
             maturityExtension: false
         });
 
@@ -548,7 +543,6 @@ contract Revest721Tests is Test {
             nonce: nonce,
             fnftId: 1,
             lockId: bytes32(0),
-            locksCreated: 0,
             maturityExtension: true
         });
 
@@ -629,7 +623,6 @@ contract Revest721Tests is Test {
             nonce: nonce,
             fnftId: id,
             lockId: bytes32(0),
-            locksCreated: 0,
             maturityExtension: false
         });
 
@@ -675,7 +668,6 @@ contract Revest721Tests is Test {
                 nonce: 0,
                 fnftId: id,
                 lockId: bytes32(0),
-                locksCreated: 0,
                 maturityExtension: true
             });
 

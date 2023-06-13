@@ -69,9 +69,7 @@ contract Revest_1155 is Revest_base {
             //Salt = kecccak256(fnftID)
             salt = keccak256(abi.encode(fnftConfig.fnftId));
 
-            bytes32 lockSalt = keccak256(abi.encode(salt, 0));
-
-            lockId = ILockManager(fnftConfig.lockManager).createLock(lockSalt, abi.encode(endTime));
+            lockId = ILockManager(fnftConfig.lockManager).createLock(salt, abi.encode(endTime));
            
         }
 
@@ -97,10 +95,8 @@ contract Revest_1155 is Revest_base {
             //Salt = kecccak256(fnftID || handler || nonce (which is always zero))
             salt = keccak256(abi.encode(fnftConfig.fnftId));
 
-            bytes32 lockSalt = keccak256(abi.encode(salt, 0));
-
             //Return the ID of the lock
-            lockId = ILockManager(fnftConfig.lockManager).createLock(lockSalt, arguments);
+            lockId = ILockManager(fnftConfig.lockManager).createLock(salt, arguments);
         }
 
         //Stack Too Deep Fixer
@@ -119,7 +115,7 @@ contract Revest_1155 is Revest_base {
         // Burn the FNFTs being exchanged
         fnftHandler.burn(msg.sender, fnft.fnftId, quantity);
 
-        bytes32 lockId = keccak256(abi.encode(keccak256(abi.encode(salt, fnft.locksCreated)), address(this)));
+        bytes32 lockId = keccak256(abi.encode(salt, address(this)));
 
         ILockManager(fnft.lockManager).unlockFNFT(lockId, fnft.fnftId);
 
@@ -156,15 +152,14 @@ contract Revest_1155 is Revest_base {
         require(fnft.maturityExtension && manager.lockType() == ILockManager.LockType.TimeLock, "E009");
 
         // If desired maturity is below existing date, reject operation
-        bytes32 lockId = keccak256(abi.encode(keccak256(abi.encode(salt, fnft.locksCreated)), address(this)));
+        bytes32 lockId = keccak256(abi.encode(salt, address(this)));
         ILockManager.Lock memory lockParam = manager.getLock(lockId);
         require(!lockParam.unlocked && lockParam.timeLockExpiry > block.timestamp, "E007");
         require(lockParam.timeLockExpiry < endTime, "E010");
 
         bytes memory creationData = abi.encode(endTime);
 
-        newLockId = manager.createLock(keccak256(abi.encode(salt, ++fnft.locksCreated)), creationData);
-        fnfts[salt].locksCreated++;
+        newLockId = manager.createLock(salt, creationData);
 
         emit FNFTMaturityExtended(newLockId, msg.sender, fnftId, endTime);
     }
@@ -359,8 +354,7 @@ contract Revest_1155 is Revest_base {
 
     function fnftIdToLockId(uint256 fnftId) public view returns (bytes32 lockId) {
         bytes32 salt = keccak256(abi.encode(fnftId));
-        bytes32 locksalt = keccak256(abi.encode(salt, fnfts[salt].locksCreated));
 
-        return keccak256(abi.encode(locksalt, address(this)));
+        return keccak256(abi.encode(salt, address(this)));
     }
 }

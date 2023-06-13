@@ -21,12 +21,12 @@ interface IController {
         //20 + 4 + 1 = 25 bytes -> 1 slot
         address asset; // The token being stored
         uint32 nonce;
-        uint8 locksCreated; // Number of locks created
 
         //20 + 1 + 11 = 32 bytes -> 1 slot 
         address lockManager;
         bool maturityExtension; // Maturity extensions remaining
 
+        //A storage slot can be saved by reducing this to a uint88 and casting when needed
         uint256 fnftId; //type(uint88).max = 3.1e23
 
         //2 Slots but only Used by the Revest-721 -> Are left empty at the end for 1155 to save ~40k gas
