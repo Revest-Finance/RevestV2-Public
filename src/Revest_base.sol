@@ -47,7 +47,7 @@ abstract contract Revest_base is IRevest, IControllerExtendable, ERC1155Holder, 
     IAllowanceTransfer constant PERMIT2 = IAllowanceTransfer(0x000000000022D473030F116dDEE9F6B43aC78BA3);
 
     mapping(bytes32 => FNFTConfig) public fnfts;
-    mapping(address handler => mapping(uint256 nftId => uint256 numfnfts)) public override numfnfts;
+    mapping(address handler => mapping(uint256 nftId => uint32 numfnfts)) public override numfnfts;
 
     constructor(address weth, address _tokenVault, address _metadataHandler, address govController) Ownable() {
         WETH = weth;

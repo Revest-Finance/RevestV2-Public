@@ -112,13 +112,8 @@ contract Revest_721 is Revest_base {
     function withdrawFNFT(bytes32 salt, uint256) external override nonReentrant {
         IRevest.FNFTConfig memory fnft = fnfts[salt];
 
-        // Check if this many FNFTs exist in the first place for the given ID
-        require(fnft.quantity > 0, "E003");
-
         address currentOwner = IERC721(fnft.handler).ownerOf(fnft.fnftId);
         require(msg.sender == currentOwner, "E023");
-
-        fnfts[salt].quantity -= 1;
 
         ILockManager(fnft.lockManager).unlockFNFT(fnft.lockId, fnft.fnftId);
 
@@ -132,9 +127,6 @@ contract Revest_721 is Revest_base {
         IRevest.FNFTConfig storage fnft = fnfts[salt];
         uint256 fnftId = fnft.fnftId;
         address handler = fnft.handler;
-
-        //Require that the FNFT exists
-        require(fnft.quantity != 0, "E003");
 
         //Require that the new maturity is in the future
         require(endTime > block.timestamp, "E015");
@@ -178,8 +170,6 @@ contract Revest_721 is Revest_base {
         uint256 fnftId = fnft.fnftId;
 
         fnft.depositAmount += amount;
-
-        require(fnft.quantity != 0, "E003");
 
         //If the handler is an NFT then supply is 1
 
@@ -229,9 +219,8 @@ contract Revest_721 is Revest_base {
         */
         bytes32 WalletSalt = keccak256(abi.encode(params.fnftConfig.fnftId, params.fnftConfig.handler));
 
-        // Create the FNFT and update accounting within TokenVault
-        params.fnftConfig.quantity = 1;
 
+        // Create the FNFT and update accounting within TokenVault
         // Now, we move the funds to token vault from the message sender
         address smartWallet = tokenVault.getAddress(WalletSalt, address(this));
 

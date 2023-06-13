@@ -36,8 +36,6 @@ contract Revest_1155 is Revest_base {
 
     IFNFTHandler public immutable fnftHandler;
 
-
-
     /**
      * @dev Primary constructor to create the Revest controller contract
      */
@@ -61,7 +59,9 @@ contract Revest_1155 is Revest_base {
         IRevest.FNFTConfig memory fnftConfig,
         bool usePermit2
     ) internal override returns (bytes32 salt, bytes32 lockId) {
-        fnftConfig.fnftId = fnftHandler.getNextId();
+
+        //You can safely cast this since getNextId is an incrementing variable
+        fnftConfig.fnftId = fnftHandler.getNextId().toUint88();
 
         // Get or create lock based on time, assign lock to ID
         {
@@ -91,7 +91,7 @@ contract Revest_1155 is Revest_base {
     ) internal override returns (bytes32 salt, bytes32 lockId) {
 
         //Get the ID of the next to-be-minted FNFT
-        fnftConfig.fnftId = fnftHandler.getNextId();
+        fnftConfig.fnftId = fnftHandler.getNextId().toUint88();
 
         {
             //Salt = kecccak256(fnftID || handler || nonce (which is always zero))
@@ -117,19 +117,17 @@ contract Revest_1155 is Revest_base {
         IRevest.FNFTConfig memory fnft = fnfts[salt];
 
         // Check if FNFTs exist in the first place for the given ID
-        require(fnft.quantity != 0, "E003");
+
+        require(fnftHandler.totalSupply(fnft.fnftId) != 0, "E003");
 
         // Burn the FNFTs being exchanged
         fnftHandler.burn(msg.sender, fnft.fnftId, quantity);
-
-        //Checks-effects because unlockFNFT has an external call which could be used for reentrancy
-        fnfts[salt].quantity -= quantity;
 
         ILockManager(fnft.lockManager).unlockFNFT(fnft.lockId, fnft.fnftId);
 
         withdrawToken(salt, fnft.fnftId, quantity, msg.sender);
 
-        emit FNFTWithdrawn(msg.sender, fnft.fnftId, fnft.quantity);
+        emit FNFTWithdrawn(msg.sender, fnft.fnftId, quantity);
     }
 
     function extendFNFTMaturity(bytes32 salt, uint256 endTime)
@@ -142,7 +140,7 @@ contract Revest_1155 is Revest_base {
         uint256 fnftId = fnft.fnftId;
 
         //Require that the FNFT exists
-        require(fnft.quantity != 0, "E003");
+        require(fnftHandler.totalSupply(fnftId) != 0, "E003");
 
         require(endTime > block.timestamp, "E015");
 
@@ -184,7 +182,7 @@ contract Revest_1155 is Revest_base {
         IRevest.FNFTConfig storage fnft = fnfts[salt];
         uint256 fnftId = fnft.fnftId;
 
-        require(fnft.quantity != 0, "E003");
+        require(fnftHandler.totalSupply(fnftId) != 0, "E003");
 
         uint256 supply = fnftHandler.totalSupply(fnftId);
 
@@ -243,7 +241,6 @@ contract Revest_1155 is Revest_base {
             require(totalQuantity > 0, "E012");
         }
 
-        params.fnftConfig.quantity = totalQuantity;
         address smartWallet = getAddressForFNFT(salt);
 
         //If user depositing ETH, wrap it to WETH first

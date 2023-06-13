@@ -45,7 +45,7 @@ contract Revest721Tests is Test {
 
     address public constant ETH_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
-    uint256 nonce;
+    uint32 nonce;
 
     bytes signature;
     IAllowanceTransfer.PermitBatch permit;
@@ -122,7 +122,7 @@ contract Revest721Tests is Test {
 
         uint256 preBal = USDC.balanceOf(alice);
 
-        uint256 tokenId = 1;
+        uint88 tokenId = 1;
         address[] memory recipients = new address[](1);
         recipients[0] = alice;
 
@@ -135,7 +135,6 @@ contract Revest721Tests is Test {
             lockManager: address(lockManager_timelock),
             depositAmount: amount,
             nonce: nonce,
-            quantity: 0,
             fnftId: tokenId,
             lockId: bytes32(0),
             maturityExtension: false,
@@ -202,7 +201,7 @@ contract Revest721Tests is Test {
         uint256[] memory amounts = new uint[](1);
         amounts[0] = amount;
 
-        uint256 id = 1;
+        uint88 id = 1;
 
         IController.FNFTConfig memory config = IController.FNFTConfig({
             handler: address(boredApe),
@@ -210,7 +209,6 @@ contract Revest721Tests is Test {
             lockManager: address(lockManager_addresslock),
             depositAmount: amount,
             nonce: nonce,
-            quantity: 0,
             fnftId: id,
             lockId: bytes32(0),
             maturityExtension: false,
@@ -265,7 +263,7 @@ contract Revest721Tests is Test {
 
         uint256 preBal = USDC.balanceOf(alice);
 
-        uint256 tokenId = 1;
+        uint88 tokenId = 1;
 
         address[] memory recipients = new address[](1);
         recipients[0] = alice;
@@ -279,7 +277,6 @@ contract Revest721Tests is Test {
             lockManager: address(lockManager_timelock),
             depositAmount: amount,
             nonce: 0,
-            quantity: 0,
             fnftId: tokenId,
             lockId: bytes32(0),
             maturityExtension: false,
@@ -362,7 +359,7 @@ contract Revest721Tests is Test {
         uint256 preBalUSDC = USDC.balanceOf(bob);
         uint256 preBalWETH = WETH.balanceOf(bob);
 
-        // uint256 tokenId = 1;
+        // uint88 tokenId = 1;
         address[] memory recipients = new address[](1);
         recipients[0] = alice;
 
@@ -375,7 +372,6 @@ contract Revest721Tests is Test {
             lockManager: address(lockManager_timelock),
             depositAmount: amount,
             nonce: 0,
-            quantity: 0,
             fnftId: 1,
             lockId: bytes32(0),
             maturityExtension: false,
@@ -455,7 +451,6 @@ contract Revest721Tests is Test {
             lockManager: address(lockManager_timelock),
             depositAmount: amount,
             nonce: nonce,
-            quantity: 0,
             fnftId: 1,
             lockId: bytes32(0),
             maturityExtension: false,
@@ -469,9 +464,6 @@ contract Revest721Tests is Test {
         uint256 aliceBalanceBeforeAdditionalDeposit = USDC.balanceOf(alice);
 
         {
-            vm.expectRevert(bytes("E003"));
-            revest.depositAdditionalToFNFT(bytes32("0xdead"), additionalDepositAmount);
-
             revest.depositAdditionalToFNFT(salt, additionalDepositAmount);
 
             assertEq(
@@ -564,7 +556,6 @@ contract Revest721Tests is Test {
             lockManager: address(lockManager_timelock),
             depositAmount: amount,
             nonce: nonce,
-            quantity: 0,
             fnftId: 1,
             lockId: bytes32(0),
             maturityExtension: true,
@@ -582,9 +573,6 @@ contract Revest721Tests is Test {
 
             vm.expectRevert(bytes("E023")); //Revert because you don't own the FNFT anymore
             revest.extendFNFTMaturity(salt, block.timestamp + 1 weeks); //Extend a week beyond the current endDate
-
-            vm.expectRevert(bytes("E003"));
-            revest.extendFNFTMaturity(bytes32("0xdead"), block.timestamp + 1 weeks); //Extend a week beyond the current endDate
 
             //Send it back to Alice so she can extend maturity
             changePrank(bob);
@@ -611,8 +599,6 @@ contract Revest721Tests is Test {
             assertEq(newEndTime, block.timestamp + 2 weeks, "lock did not extend maturity by expected amount");
 
             skip(2 weeks);
-            vm.expectRevert(bytes("E003"));
-            revest.withdrawFNFT(bytes32("0xdead"), 1);
 
             revest.withdrawFNFT(salt, 1);
 
@@ -644,7 +630,7 @@ contract Revest721Tests is Test {
         uint256[] memory amounts = new uint[](1);
         amounts[0] = 1;
 
-        uint256 id = 1;
+        uint88 id = 1;
 
         IController.FNFTConfig memory config = IController.FNFTConfig({
             handler: address(boredApe),
@@ -652,7 +638,6 @@ contract Revest721Tests is Test {
             lockManager: address(lockManager_timelock),
             depositAmount: amount,
             nonce: nonce,
-            quantity: 0,
             fnftId: id,
             lockId: bytes32(0),
             maturityExtension: false,
@@ -689,7 +674,7 @@ contract Revest721Tests is Test {
         uint256[] memory amounts = new uint[](1);
         amounts[0] = 1;
 
-        uint256 id = 1;
+        uint88 id = 1;
 
         bytes32 salt;
         bytes32 lockId;
@@ -700,7 +685,6 @@ contract Revest721Tests is Test {
                 lockManager: address(lockManager_timelock),
                 depositAmount: amount,
                 nonce: 0,
-                quantity: 0,
                 fnftId: id,
                 lockId: bytes32(0),
                 maturityExtension: true,

@@ -12,6 +12,8 @@ import "./interfaces/IRevest.sol";
 import "./interfaces/IFNFTHandler.sol";
 import "./interfaces/IMetadataHandler.sol";
 
+import "forge-std/console.sol";
+
 /**
  * @title FNFTHandler
  * @author 0xTraub
@@ -114,36 +116,6 @@ contract FNFTHandler is ERC1155, Ownable, IFNFTHandler {
     }
 
     // OVERIDDEN ERC-1155 METHODS
-
-    function _beforeTokenTransfer(
-        address,
-        address from,
-        address to,
-        uint256[] memory ids,
-        uint256[] memory amounts,
-        bytes memory
-    ) internal view override {
-        // Loop because all batch transfers must be checked
-        // Will only execute once on singular transfer
-        if (from != address(0)) {
-            IRevest revest = IRevest(owner());
-
-            for (uint256 x = 0; x < ids.length;) {
-                bytes32 salt = keccak256(abi.encode(ids[x], address(this), 0));
-
-                require(amounts[x] != 0, "E020");
-                IRevest.FNFTConfig memory config = revest.getFNFT(salt);
-
-                //OZ-1155 prevents transfers to the zero-address so we use dead address instead
-                require(!config.nontransferrable || to == address(0xdead), "E022");
-
-                unchecked {
-                    ++x;
-                }
-            }
-        }
-    }
-
     function uri(uint256 fnftId) public view override(ERC1155, IFNFTHandler) returns (string memory) {
         bytes32 salt = keccak256(abi.encode(fnftId, address(this), 0));
         return IRevest(owner()).getTokenURI(salt);

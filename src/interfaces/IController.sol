@@ -18,16 +18,20 @@ interface IController {
     event RedeemFNFT(bytes32 indexed salt, uint256 indexed fnftId, address indexed from);
 
     struct FNFTConfig {
-        //Address = 20 bytes and bool = 1 byte -> combine for 1 slot each
+        //20 + 1 + 10 = 31 bytes -> 1 slot
         address asset; // The token being stored
         bool nontransferrable;
+
+        //20 + 1 + 11 = 32 bytes -> 1 slot 
         address lockManager;
         bool maturityExtension; // Maturity extensions remaining
+        uint88 fnftId; //type(uint88).max = 3.1e23
+        
         uint256 depositAmount; // The amount of each token being stored
-        uint256 nonce; // The FNFT number
-        uint256 quantity; // How many FNFTs
-        uint256 fnftId; //the ID of the NFT the FNFT was minted to
         bytes32 lockId; // The ID of the lock, generated using the FNFTConfig salt itself
+        
+        //20 + 4 = 24 bytes -> 1 slot
+        uint32 nonce;
         address handler;
     }
 
@@ -56,5 +60,5 @@ interface IController {
         returns (string memory baseRenderURI, string[] memory parameters);
 
     //They're public variables in Revest_base but its useful to define it in the interface also
-    function numfnfts(address, uint256) external view returns (uint256);
+    function numfnfts(address, uint256) external view returns (uint32);
 }
