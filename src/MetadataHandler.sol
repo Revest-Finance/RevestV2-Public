@@ -14,6 +14,8 @@ import "./interfaces/ILockManager.sol";
 import "./interfaces/IRevest.sol";
 import "./interfaces/ILockManager.sol";
 
+import "forge-std/console.sol";
+
 /**
  * @title MetadataHandler
  * @author 0xTraub
@@ -24,6 +26,9 @@ contract MetadataHandler is IMetadataHandler {
 
     string public renderURI;
     string private animation_base;
+
+    string public constant isUnlockedColor = '#00ff54';
+    string public constant isLockedColor = '#e4a238';
 
     constructor(string memory animBase) {
         animation_base = animBase;
@@ -58,7 +63,7 @@ contract MetadataHandler is IMetadataHandler {
         output = string(
             abi.encodePacked(
                 '{"name":"Revest FNFT", \n "description":"This Financial Non-Fungible Token is part of the Revest Protocol", \n "image":"',
-                getImage(fnftId),
+                renderFNFT(controller, fnftId),
                 '", \n'
             )
         );
@@ -119,38 +124,79 @@ contract MetadataHandler is IMetadataHandler {
         output = string(abi.encodePacked(output, '"fnft_id":', fnft.fnftId.toString(), ",\n"));
 
         output = string(abi.encodePacked(output, '"network":', block.chainid.toString(), ",\n"));
-        output = string(abi.encodePacked(output, '"image":', render(_controller, fnftSalt), "\n }"));
+        output = string(abi.encodePacked(output, '"image":', renderFNFT(_controller, fnftSalt), "\n }"));
     }
 
-    function render(address revest, bytes32 salt) internal view returns (string memory) {
+    function renderFNFT(address revest, bytes32 salt) internal view returns (string memory) {
         IRevest.FNFTConfig memory config = IRevest(revest).getFNFT(salt);
 
         string memory assetName = getName(config.asset);
         string memory assetSymbol = getTicker(config.asset);
 
-        bytes32 lockId = keccak256(abi.encodePacked(salt, revest));
+        bytes32 lockId = keccak256(abi.encode(salt, revest));
+
+        bool isUnlocked = ILockManager(config.lockManager).getLockMaturity(lockId, config.fnftId);
+        console.log("is unlocked: %s", isUnlocked);
+
+        ILockManager.LockType typeOfLock = ILockManager(config.lockManager).lockType();
 
         string memory lockType = string.concat(
             "Lock Type: ",
-            ILockManager(config.lockManager).lockType() == ILockManager.LockType.TimeLock ? "Time" : "Address"
+            typeOfLock == ILockManager.LockType.TimeLock ? "Time" : "Address"
         );
 
         string memory image =
-            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 480"> <style> .tokens { font: bold 30px sans-serif; } .fee { font: bold 26px sans-serif; } .amount { font: bold 26px sans-serif ; fill: #e4a238; } .underLine { font: normal 13px sans-serif; } .cls-2{fill: #e4a238;} .interest { font: bold 12px sans-serif; } .tick { font: normal 18px sans-serif; } .button { fill: #007bbf; pointer: cursor; } .button:hover { fill: #0069d9; } </style> <rect width="300" height="480" fill="hsl(0,0%,100%)" /> <rect x="30" y="30" width="240" height="420" rx="15" ry="15" fill="hsl(0,0%,18%)" stroke="#000" /> <svg id="Default" width = "15" x = "81%" y= "-190" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 576"><defs><style>.cls-1{fill:#ccc;}</style></defs><path class="cls-1" d="M449.42,254.32l-.51-.51" transform="translate(-18 -108)"/><path class="cls-1" d="M306,108C147.09,108,18,237.09,18,396S147.09,684,306,684,594,554.91,594,396,464.91,108,306,108Zm0,521.6C177.1,629.6,72.4,524.9,72.4,396S177.1,162.4,306,162.4,539.6,267.1,539.6,396,434.9,629.6,306,629.6Z" transform="translate(-18 -108)"/><path class="cls-1" d="M226.14,416.62l-87.57,95.31a203.68,203.68,0,0,1-30.43-164.15l118,68.84" transform="translate(-18 -108)"/><path class="cls-1" d="M159.84,537.8l95.63-104.08L306,463.2l50.53-29.48L452.16,537.8a203.62,203.62,0,0,1-292.32,0" transform="translate(-18 -108)"/><path class="cls-1" d="M473.43,511.93l-87.57-95.31,118-68.84a203.68,203.68,0,0,1-30.43,164.15" transform="translate(-18 -108)"/><path class="cls-1" d="M118.88,315.64,306,424.8,493.12,315.64a203.64,203.64,0,0,0-374.24,0" transform="translate(-18 -108)"/></svg> <svg xmlns="http://www.w3.org/2000/svg"  width = "15" x = "14%" y= "-190" viewBox="0 0 1000 1000" enable-background="new 0 0 1000 1000" xml:space="preserve" class="cls-2"> <g><path d="M174,535.4c-23.5-147,57.2-295.5,201.4-351.7c106.8-41.7,222-21.7,303.6,37.8L609.6,334l311.3-1.2L809.6,10l-57,92.3C632.4,24.5,468.6-1,325.1,54.9C126.4,132.4,12,332.8,34.5,535.4H174L174,535.4z"/><path d="M826.1,455c23.5,147-57.2,295.5-201.4,351.7c-98.3,38.3-206.6,23.9-289.9-27.8c15.9-25.7,62.7-101.6,62.7-101.6L62.8,657.6L204.5,990l59.4-96.2c120.2,77.8,267.6,97.6,411,41.7C873.6,858,988,657.6,965.5,455L826.1,455L826.1,455z"/></g> </svg> <svg width = "200" x = "50" y = "-80" id="Default" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576.01 575.06"> <defs> <style>.cls-1{fill:#ffa800;}</style> </defs> <path class="cls-2" d="M287.62,676a4.72,4.72,0,0,0-4.33-4.7C135.92,659.1,24.4,532.85,30.49,385.11S158.13,120.73,306,120.73,575.42,237.36,581.51,385.11s-105.43,274-252.8,286.17a4.72,4.72,0,0,0-4.33,4.7v2.84a4.74,4.74,0,0,0,1.52,3.46,4.68,4.68,0,0,0,3.58,1.23c154-12.59,270.59-144.43,264.28-298.79S460.49,108.47,306,108.47,24.54,230.36,18.24,384.72s110.31,286.2,264.28,298.79a4.71,4.71,0,0,0,5.1-4.69V676" transform="translate(-18 -108.47)"/> </svg> <svg width = "30" x = "135"   y = "-80" id="Default" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 549.88 768"><defs><style>.cls-1{fill:#ccc;}</style></defs><path class="cls-1" d="M196,340.1H113.54V204.46C113.54,98.26,199.8,12,306,12S498.46,98.26,498.46,204.46V340.1H416V204.46a110,110,0,0,0-220,0V340.1" transform="translate(-31.06 -12)"/><path class="cls-1" d="M31.06,725a55,55,0,0,0,55,55H526a55,55,0,0,0,55-55V450.07a55,55,0,0,0-55-55H86.05a55,55,0,0,0-55,55V725" transform="translate(-31.06 -12)"/></svg> <svg width = "180" version="1.1" id="Default" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="60px" y="-80" viewBox="0 0 514.7 514.7" style="enable-background:new 0 0 514.7 514.7;" xml:space="preserve"> <style type="text/css"> .st0{fill:#7d7d7d;} </style> <path class="st0" d="M0.7,276.9c-6.3-83,27.9-163.9,91.8-217.2l142.2,82.1L0.7,276.9"/> <path class="st0" d="M146,489.4c-75-36-128-106.1-142.2-188.2L146,219.1V489.4"/> <path class="st0" d="M112.1,44.9c68.7-47,155.9-57.8,234-29.1V180L112.1,44.9"/> <path class="st0" d="M368.8,25.4c75,36,128,106.1,142.2,188.1l-142.2,82.1V25.4"/> <path class="st0" d="M514,237.8c6.3,83-27.9,163.9-91.8,217.2L280,372.9L514,237.8"/> <path class="st0" d="M402.6,469.8c-68.7,47-155.9,57.8-234,29.1V334.7L402.6,469.8"/> </svg> <text x="50%" y="310" dominant-baseline="middle" text-anchor="middle" class="fee" fill="#fff">';
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 480"> <style> .tokens { font: bold 30px sans-serif; } .fee { font: bold 26px sans-serif; } .amount { font: bold 26px sans-serif ; fill: ';
+            
+        {
+            //Changes the Color of the Token Amount and Name to Green
+            if (isUnlocked) image = string.concat(image, isUnlockedColor);
+            else image = string.concat(image, isLockedColor);
+            
+            //Something Else?
+            image = string.concat(image, '; } .underLine { font: normal 13px sans-serif; } .cls-1{fill: #ccc;} .cls-2{fill: ');
+            if (isUnlocked) image = string.concat(image, isUnlockedColor);
+            else image = string.concat(image, isLockedColor);
 
-        image = string.concat(image, getName(config.asset));
-        image = string.concat(
-            image,
-            '</text> <text x="50%" y="310" dy= "30" dominant-baseline="middle" text-anchor="middle" class="amount" fill="#fff"> '
-        );
+            image = string.concat(image, ';} .cls-3{fill: #e4a238} .interest { font: bold 12px sans-serif; } .tick { font: normal 18px sans-serif; } .button { fill: #007bbf; pointer: cursor; } .button:hover { fill: #0069d9; } </style> <rect width="300" height="480" fill="hsl(0,0%,100%)" /> <rect x="30" y="30" width="240" height="420" rx="15" ry="15" fill="hsl(0,0%,18%)" stroke="#000" />');
+            
+            // The Little Icon in the top-right Corner
+            if (typeOfLock == ILockManager.LockType.TimeLock) image = string.concat(image, '<svg id="Default" width = "15" x = "81%" y= "-190" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 576"><defs><style></style></defs><path class="cls-1" d="M306,108C147.09,108,18,237.09,18,396S147.09,684,306,684,594,554.91,594,396,464.91,108,306,108Zm0,521.6C177.1,629.6,72.4,524.9,72.4,396S177.1,162.4,306,162.4,539.6,267.1,539.6,396,434.9,629.6,306,629.6Z" transform="translate(-18 -108)"/><path class="cls-1" d="M419.75,469,334.8,384.07V223.2a28.8,28.8,0,0,0-57.6,0V396a28.75,28.75,0,0,0,8.44,20.36L379,509.75A28.8,28.8,0,0,0,419.75,469" transform="translate(-18 -108)"/></svg>');
+            else image = string.concat(image, '<svg id="Default" width = "15" x = "81%" y= "-190" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 576"><defs><style></style></defs><path class="cls-2" d="M449.42,254.32l-.51-.51" transform="translate(-18 -108)"/><path class="cls-1" d="M306,108C147.09,108,18,237.09,18,396S147.09,684,306,684,594,554.91,594,396,464.91,108,306,108Zm0,521.6C177.1,629.6,72.4,524.9,72.4,396S177.1,162.4,306,162.4,539.6,267.1,539.6,396,434.9,629.6,306,629.6Z" transform="translate(-18 -108)"/><path class="cls-1" d="M226.14,416.62l-87.57,95.31a203.68,203.68,0,0,1-30.43-164.15l118,68.84" transform="translate(-18 -108)"/><path class="cls-1" d="M159.84,537.8l95.63-104.08L306,463.2l50.53-29.48L452.16,537.8a203.62,203.62,0,0,1-292.32,0" transform="translate(-18 -108)"/><path class="cls-1" d="M473.43,511.93l-87.57-95.31,118-68.84a203.68,203.68,0,0,1-30.43,164.15" transform="translate(-18 -108)"/><path class="cls-1" d="M118.88,315.64,306,424.8,493.12,315.64a203.64,203.64,0,0,0-374.24,0" transform="translate(-18 -108)"/></svg>');
+            
+            //The Flip-Over Icon
+            image = string.concat(image, '<svg xmlns="http://www.w3.org/2000/svg"  width = "15" x = "14%" y= "-190" viewBox="0 0 1000 1000" enable-background="new 0 0 1000 1000" xml:space="preserve" class="cls-3"> <g><path d="M174,535.4c-23.5-147,57.2-295.5,201.4-351.7c106.8-41.7,222-21.7,303.6,37.8L609.6,334l311.3-1.2L809.6,10l-57,92.3C632.4,24.5,468.6-1,325.1,54.9C126.4,132.4,12,332.8,34.5,535.4H174L174,535.4z"/><path d="M826.1,455c23.5,147-57.2,295.5-201.4,351.7c-98.3,38.3-206.6,23.9-289.9-27.8c15.9-25.7,62.7-101.6,62.7-101.6L62.8,657.6L204.5,990l59.4-96.2c120.2,77.8,267.6,97.6,411,41.7C873.6,858,988,657.6,965.5,455L826.1,455L826.1,455z"/></g> </svg>');
+            
+            //The Circle around the lock
+            image = string.concat(image, '<svg width = "200" x = "50" y = "-80" id="Default" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576.01 575.06"> <defs> <style>.cls-2</style> </defs> <path class="cls-2" d="M287.62,676a4.72,4.72,0,0,0-4.33-4.7C135.92,659.1,24.4,532.85,30.49,385.11S158.13,120.73,306,120.73,575.42,237.36,581.51,385.11s-105.43,274-252.8,286.17a4.72,4.72,0,0,0-4.33,4.7v2.84a4.74,4.74,0,0,0,1.52,3.46,4.68,4.68,0,0,0,3.58,1.23c154-12.59,270.59-144.43,264.28-298.79S460.49,108.47,306,108.47,24.54,230.36,18.24,384.72s110.31,286.2,264.28,298.79a4.71,4.71,0,0,0,5.1-4.69V676" transform="translate(-18 -108.47)"/> </svg>');
 
-        uint256 depositAmount = IRevest(revest).getValue(salt);
-        image =
-            string.concat(image, amountToDecimal(depositAmount, config.asset), " ", getTicker(config.asset), "</text>");
+            // This Controls the center Lock Image Itself
+            if (isUnlocked) image = string.concat(image, '<svg width = "40" x = "130" y = "-80" id="Default" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 615.77"><defs><style></style></defs><path class="cls-2" d="M182.57,662.74a41.18,41.18,0,0,0,41.14,41.15H552.86A41.18,41.18,0,0,0,594,662.74V457a41.17,41.17,0,0,0-41.14-41.14H223.71A41.17,41.17,0,0,0,182.57,457V662.74" transform="translate(-18 -88.11)"/><path class="cls-2" d="M244.29,374.74H306V232.11a144,144,0,0,0-288,0V333.6H79.71V232.11a82.29,82.29,0,0,1,164.58,0V374.74" transform="translate(-18 -88.11)"/></svg>');
+            else image = string.concat(image, '<svg width = "30" x = "135"   y = "-80" id="Default" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 549.88 768"><defs><style></style></defs><path class="cls-2" d="M196,340.1H113.54V204.46C113.54,98.26,199.8,12,306,12S498.46,98.26,498.46,204.46V340.1H416V204.46a110,110,0,0,0-220,0V340.1" transform="translate(-31.06 -12)"/><path class="cls-2" d="M31.06,725a55,55,0,0,0,55,55H526a55,55,0,0,0,55-55V450.07a55,55,0,0,0-55-55H86.05a55,55,0,0,0-55,55V725" transform="translate(-31.06 -12)"/></svg>');
 
-        image = string.concat(image, ILockManager(config.lockManager).lockDescription(lockId));
+            //Displays the camera bevel around the lock
+            image = string.concat(image, '<svg width = "180" version="1.1" id="Default" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="60px" y="-80" viewBox="0 0 514.7 514.7" style="enable-background:new 0 0 514.7 514.7;" xml:space="preserve"> <style type="text/css"> .st0{fill:#7d7d7d;} </style> <path class="st0" d="M0.7,276.9c-6.3-83,27.9-163.9,91.8-217.2l142.2,82.1L0.7,276.9"/> <path class="st0" d="M146,489.4c-75-36-128-106.1-142.2-188.2L146,219.1V489.4"/> <path class="st0" d="M112.1,44.9c68.7-47,155.9-57.8,234-29.1V180L112.1,44.9"/> <path class="st0" d="M368.8,25.4c75,36,128,106.1,142.2,188.1l-142.2,82.1V25.4"/> <path class="st0" d="M514,237.8c6.3,83-27.9,163.9-91.8,217.2L280,372.9L514,237.8"/> <path class="st0" d="M402.6,469.8c-68.7,47-155.9,57.8-234,29.1V334.7L402.6,469.8"/> </svg>');
+            
 
-        image = string.concat(image, "</svg>");
+            image = string.concat(image, '<text x="50%" y="310" dominant-baseline="middle" text-anchor="middle" class="fee" fill="#fff">');
+
+            image = string.concat(image, getName(config.asset));
+            image = string.concat(
+                image,
+                '</text> <text x="50%" y="310" dy= "30" dominant-baseline="middle" text-anchor="middle" class="amount" fill="#fff"> '
+            );
+        }
+        uint depositAmount;
+        {
+            depositAmount = IRevest(revest).getValue(salt);
+            image =
+                string.concat(image, amountToDecimal(depositAmount, config.asset), " ", getTicker(config.asset), "</text>");
+
+            image = string.concat(image, ILockManager(config.lockManager).lockDescription(lockId));
+
+            image = string.concat(image, "</svg>");
+        }
+        
 
         string memory description =
             renderDescription(assetName, assetSymbol, depositAmount, lockType, config.lockManager);
@@ -194,61 +240,7 @@ contract MetadataHandler is IMetadataHandler {
         );
     }
 
-    // function renderBackground(
-    //     // address unlockAddress
-    // ) internal pure returns (string memory background) {
-    //     // bytes32 key = keccack256(abi.encodepacked(owner));
-    //     // uint256 hue = uint256(key) % 360;
-
-    //     // string memory addressString = Strings.toHexString(unlockAddress);
-
-    //     background =
-    //         '<rect width="300" height="480" fill="hsl(0,0%,100%)" /> <rect x="30" y="30" width="240" height="420" rx="15" ry="15" fill="hsl(0,0%,18%)" stroke="#000" /> '
-    //     ;
-    //     background = string.concat(background,'<svg xmlns="http://www.w3.org/2000/svg" width="100" x="100" id="Default" viewBox="0 0 576.01 575.06"><defs><style>.cls-1{fill:#ffa800;}</style></defs><path class="cls-1" d="M287.62,676a4.72,4.72,0,0,0-4.33-4.7C135.92,659.1,24.4,532.85,30.49,385.11S158.13,120.73,306,120.73,575.42,237.36,581.51,385.11s-105.43,274-252.8,286.17a4.72,4.72,0,0,0-4.33,4.7v2.84a4.74,4.74,0,0,0,1.52,3.46,4.68,4.68,0,0,0,3.58,1.23c154-12.59,270.59-144.43,264.28-298.79S460.49,108.47,306,108.47,24.54,230.36,18.24,384.72s110.31,286.2,264.28,298.79a4.71,4.71,0,0,0,5.1-4.69V676" transform="translate(-18 -108.47)"/></svg>');
-    //     background = string.concat(background, '<svg width = "10" x = "145" id="Default" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 549.88 768"><defs><style>.cls-1{fill:#ccc;}</style></defs><path class="cls-1" d="M196,340.1H113.54V204.46C113.54,98.26,199.8,12,306,12S498.46,98.26,498.46,204.46V340.1H416V204.46a110,110,0,0,0-220,0V340.1" transform="translate(-31.06 -12)"/><path class="cls-1" d="M31.06,725a55,55,0,0,0,55,55H526a55,55,0,0,0,55-55V450.07a55,55,0,0,0-55-55H86.05a55,55,0,0,0-55,55V725" transform="translate(-31.06 -12)"/></svg>');
-    //     background =  string.concat(background, '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="90" version="1.1" id="Default" x="105px" y="0px" viewBox="0 0 514.7 514.7" style="enable-background:new 0 0 514.7 514.7;" xml:space="preserve">   <style type="text/css">     .st0{fill:#7d7d7d;}   </style>   <path class="st0" d="M0.7,276.9c-6.3-83,27.9-163.9,91.8-217.2l142.2,82.1L0.7,276.9"/>   <path class="st0" d="M146,489.4c-75-36-128-106.1-142.2-188.2L146,219.1V489.4"/>   <path class="st0" d="M112.1,44.9c68.7-47,155.9-57.8,234-29.1V180L112.1,44.9"/>   <path class="st0" d="M368.8,25.4c75,36,128,106.1,142.2,188.1l-142.2,82.1V25.4"/>   <path class="st0" d="M514,237.8c6.3,83-27.9,163.9-91.8,217.2L280,372.9L514,237.8"/>   <path class="st0" d="M402.6,469.8c-68.7,47-155.9,57.8-234,29.1V334.7L402.6,469.8"/>   </svg> ');
-    //     background = string.concat(background, ' <style>     .tokens {       font: bold 30px sans-serif;     }      .fee {       font: normal 26px sans-serif;     }      .tick {       font: normal 18px sans-serif;     }   </style>');
-    // }
-
-    // function renderTop(
-    //     string memory assetName,
-    //     string memory assetTicker
-    // ) internal pure returns (string memory top) {
-    //     top = string.concat(
-    //         '<rect x="30" y="87" width="240" height="42"/>',
-    //         '<text x="39" y="120" class="tokens" fill="#fff">',
-    //         assetName,
-    //         "</text>"
-    //         '<rect x="30" y="132" width="240" height="30"/>',
-    //         '<text x="39" y="120" dy="36" class="fee" fill="#fff">',
-    //         assetTicker,
-    //         "</text>"
-    //     );
-    // }
-
-    // function renderBottom(
-    //     uint256 amount,
-    //     string memory lockType,
-    //     address unlockAddress
-    // ) internal pure returns (string memory bottom) {
-    //     bottom = string.concat(
-    //         '<rect x="30" y="342" width="240" height="24"/>',
-    //         '<text x="39" y="360" class="tick" fill="#fff">',
-    //         Strings.toString(amount),
-    //         "</text>",
-    //         '<rect x="30" y="372" width="240" height="24"/>',
-    //         '<text x="39" y="360" dy="30" class="tick" fill="#fff">',
-    //         lockType,
-    //         "</text>"
-    //         '<rect x="30" y="402" width="240" height="24"/>',
-    //         '<text x="39" y="360" dy="60" class="tick" fill="#fff">UnlockAddress: ',
-    //         Strings.toHexString(uint256(uint160(unlockAddress)), 20),
-    //         "</text>"
-    //     );
-    // }
-
-    function getImage(bytes32) private pure returns (string memory image) {
+    function getImage(address _controller, bytes32) public  returns (string memory image) {
         //TODO: Implement as SVG
         image = "https://revest.mypinata.cloud/ipfs/QmW8BHSTMzV892N6i9qT79QC45MftxrvDti7JDHD56BS38";
     }

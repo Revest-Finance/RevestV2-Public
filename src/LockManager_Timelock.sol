@@ -65,7 +65,7 @@ contract LockManager_Timelock is LockManager_Base {
 
     function extendLockMaturity(bytes32 salt, bytes calldata args) external {
         //NOTE - It will let you extend the maturity date to whenever you want so its up to you to validate before calling
-        
+
         bytes32 lockId = keccak256(abi.encode(salt, msg.sender));
         
         ILockManager.Lock storage lock = locks[lockId];
@@ -85,6 +85,7 @@ contract LockManager_Timelock is LockManager_Base {
 
         string memory hour;
         if (_hour > 12) hour = (_hour % 12).toString();
+        else if (_hour == 0) hour = "12";
         else hour = _hour.toString();
 
         string memory description = string.concat(
