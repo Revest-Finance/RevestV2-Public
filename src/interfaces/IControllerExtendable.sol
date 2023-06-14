@@ -24,5 +24,5 @@ interface IControllerExtendable {
         bytes calldata _signature
     ) external returns (uint256);
 
-    function extendFNFTMaturity(bytes32 salt, uint256 endTime) external returns (bytes32);
+    function extendFNFTMaturity(bytes32 salt, uint256 endTime) external ;
 }

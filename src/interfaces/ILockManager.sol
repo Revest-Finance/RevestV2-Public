@@ -29,6 +29,8 @@ interface ILockManager {
 
     function lockExists(bytes32 lockSalt) external view returns (bool);
 
+    function extendLockMaturity(bytes32 salt, bytes calldata args) external;
+
     function proxyCallisApproved(
         address token,
         address[] memory targets,

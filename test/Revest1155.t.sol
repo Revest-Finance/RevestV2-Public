@@ -126,14 +126,14 @@ contract Revest1155Tests is Test {
             lockManager: address(lockManager_timelock),
             nonce: 0,
             fnftId: 0,
-            lockId: bytes32(0),
             maturityExtension: false
         });
 
         config.handler = address(fnftHandler);
 
         uint256 currentTime = block.timestamp;
-        (bytes32 salt, bytes32 lockId) = revest.mintTimeLock(block.timestamp + 1 weeks, recipients, supplies, amount, config);
+        (bytes32 salt, bytes32 lockId) =
+            revest.mintTimeLock(block.timestamp + 1 weeks, recipients, supplies, amount, config);
 
         assertEq(revest.fnftIdToRevestId(id), salt, "salt was not calculated correctly");
         assertEq(revest.fnftIdToLockId(id), lockId, "lockId was not calculated correctly");
@@ -238,14 +238,13 @@ contract Revest1155Tests is Test {
             lockManager: address(lockManager_timelock),
             nonce: 0,
             fnftId: 0,
-            lockId: bytes32(0),
             maturityExtension: false
         });
 
-
         config.handler = address(fnftHandler);
 
-        (bytes32 salt, bytes32 lockId) = revest.mintTimeLock(block.timestamp + 1 weeks, recipients, amounts, amount, config);
+        (bytes32 salt, bytes32 lockId) =
+            revest.mintTimeLock(block.timestamp + 1 weeks, recipients, amounts, amount, config);
 
         address walletAddr = revest.getAddressForFNFT(salt);
 
@@ -295,7 +294,6 @@ contract Revest1155Tests is Test {
         assertEq(
             fnftHandler.balanceOf(bob, id), fnftHandler.totalSupply(id), "expected and actual FNFT supply do not match"
         );
-
     }
 
     function testMintAddressLock(uint8 supply, uint256 amount) public {
@@ -318,11 +316,8 @@ contract Revest1155Tests is Test {
             lockManager: address(lockManager_addresslock),
             nonce: 0,
             fnftId: 0,
-            lockId: bytes32(0),
             maturityExtension: false
         });
-
-    
 
         config.handler = address(fnftHandler);
         (bytes32 salt, bytes32 lockId) = revest.mintAddressLock("", recipients, amounts, amount, config);
@@ -378,7 +373,6 @@ contract Revest1155Tests is Test {
             lockManager: address(lockManager_timelock),
             nonce: 0,
             fnftId: 0,
-            lockId: bytes32(0),
             maturityExtension: false
         });
 
@@ -411,9 +405,7 @@ contract Revest1155Tests is Test {
                 "alice balance did not decrease by expected amount"
             );
 
-            assertEq(
-                revest.getValue(salt), amount + additionalDepositAmount, "deposit amount was not updated"
-            );
+            assertEq(revest.getValue(salt), amount + additionalDepositAmount, "deposit amount was not updated");
 
             skip(1 weeks);
 
@@ -425,9 +417,7 @@ contract Revest1155Tests is Test {
         }
 
         assertEq(
-            USDC.balanceOf(bob),
-            revest.getValue(salt) * tempSupply,
-            "alice balance did not increase by expected amount"
+            USDC.balanceOf(bob), revest.getValue(salt) * tempSupply, "alice balance did not increase by expected amount"
         );
 
         assertEq(
@@ -462,11 +452,11 @@ contract Revest1155Tests is Test {
             lockManager: address(lockManager_timelock),
             nonce: 0,
             fnftId: 0,
-            lockId: bytes32(0),
             maturityExtension: true
         });
 
-        (bytes32 salt, bytes32 lockId) = revest.mintTimeLock(block.timestamp + 1 weeks, recipients, amounts, amount, config);
+        (bytes32 salt, bytes32 lockId) =
+            revest.mintTimeLock(block.timestamp + 1 weeks, recipients, amounts, amount, config);
         address walletAddr;
 
         {
@@ -500,9 +490,9 @@ contract Revest1155Tests is Test {
             revest.extendFNFTMaturity(salt, block.timestamp + 1 days);
 
             uint256 currTime = block.timestamp;
-            bytes32 newLockId = revest.extendFNFTMaturity(salt, block.timestamp + 2 weeks); //Extend a week beyond the current endDate
+            revest.extendFNFTMaturity(salt, block.timestamp + 2 weeks); //Extend a week beyond the current endDate
 
-            uint256 newEndTime = lockManager_timelock.getLock(newLockId).timeLockExpiry;
+            uint256 newEndTime = lockManager_timelock.getLock(lockId).timeLockExpiry;
             assertEq(newEndTime, currTime + 2 weeks, "lock did not extend maturity by expected amount");
 
             skip(2 weeks);
@@ -548,7 +538,6 @@ contract Revest1155Tests is Test {
             lockManager: address(lockManager_timelock),
             nonce: 0,
             fnftId: id,
-            lockId: bytes32(0),
             maturityExtension: true
         });
 
@@ -572,7 +561,8 @@ contract Revest1155Tests is Test {
 
         preBal = alice.balance;
         uint256 wethPreBal = WETH.balanceOf(alice);
-        (salt,) = revest.mintTimeLock{value: amount * supply}(block.timestamp + 1 weeks, recipients, amounts, amount, config);
+        (salt,) =
+            revest.mintTimeLock{value: amount * supply}(block.timestamp + 1 weeks, recipients, amounts, amount, config);
 
         vm.expectRevert(bytes("E027"));
         revest.depositAdditionalToFNFT{value: 1 ether}(salt, 1 ether);
@@ -618,7 +608,6 @@ contract Revest1155Tests is Test {
             lockManager: address(lockManager_timelock),
             nonce: 0,
             fnftId: id,
-            lockId: bytes32(0),
             maturityExtension: true
         });
 
@@ -688,7 +677,6 @@ contract Revest1155Tests is Test {
             lockManager: address(lockManager_timelock),
             nonce: 0,
             fnftId: id,
-            lockId: bytes32(0),
             maturityExtension: true
         });
 
@@ -768,15 +756,17 @@ contract Revest1155Tests is Test {
                 lockManager: address(lockManager_timelock),
                 nonce: 0,
                 fnftId: id,
-                lockId: bytes32(0),
                 maturityExtension: true
             });
 
             vm.expectRevert(bytes("E024"));
-            revest.mintTimeLockWithPermit(block.timestamp + 1 weeks, recipients, amounts, uint256(amount), config, permit, "");
+            revest.mintTimeLockWithPermit(
+                block.timestamp + 1 weeks, recipients, amounts, uint256(amount), config, permit, ""
+            );
 
-            (salt, lockId) =
-                revest.mintTimeLockWithPermit(block.timestamp + 1 weeks, recipients, amounts, uint256(amount), config, permit, signature);
+            (salt, lockId) = revest.mintTimeLockWithPermit(
+                block.timestamp + 1 weeks, recipients, amounts, uint256(amount), config, permit, signature
+            );
         }
 
         assertEq(fnftHandler.balanceOf(alice, id), 1, "FNFT not minted");
@@ -813,7 +803,6 @@ contract Revest1155Tests is Test {
             lockManager: address(lockManager_addresslock),
             nonce: 0,
             fnftId: 0,
-            lockId: bytes32(0),
             maturityExtension: false
         });
 
@@ -875,7 +864,6 @@ contract Revest1155Tests is Test {
                 lockManager: address(lockManager_timelock),
                 nonce: 0,
                 fnftId: 0,
-                lockId: bytes32(0),
                 maturityExtension: false
             });
 
@@ -910,9 +898,7 @@ contract Revest1155Tests is Test {
                 "alice balance did not decrease by expected amount"
             );
 
-            assertEq(
-                revest.getValue(salt), amount + additionalDepositAmount, "deposit amount was not updated"
-            );
+            assertEq(revest.getValue(salt), amount + additionalDepositAmount, "deposit amount was not updated");
         }
 
         uint256 tempSupply = supply / 2;
@@ -963,7 +949,6 @@ contract Revest1155Tests is Test {
             lockManager: address(lockManager_timelock),
             nonce: 0,
             fnftId: 0,
-            lockId: bytes32(0),
             maturityExtension: false
         });
 

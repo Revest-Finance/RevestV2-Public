@@ -39,9 +39,13 @@ contract Revest_1155 is Revest_base {
     /**
      * @dev Primary constructor to create the Revest controller contract
      */
-    constructor(string memory tokenURI, address weth, address _tokenVault, address _metadataHandler, address govController)
-        Revest_base(weth, _tokenVault, _metadataHandler, govController)
-    {
+    constructor(
+        string memory tokenURI,
+        address weth,
+        address _tokenVault,
+        address _metadataHandler,
+        address govController
+    ) Revest_base(weth, _tokenVault, _metadataHandler, govController) {
         fnftHandler = new FNFTHandler(address(this), tokenURI);
     }
 
@@ -56,11 +60,10 @@ contract Revest_1155 is Revest_base {
         uint256 endTime,
         address[] memory recipients,
         uint256[] memory quantities,
-        uint depositAmount,
+        uint256 depositAmount,
         IRevest.FNFTConfig memory fnftConfig,
         bool usePermit2
     ) internal override returns (bytes32 salt, bytes32 lockId) {
-
         //You can safely cast this since getNextId is an incrementing variable
         fnftConfig.fnftId = fnftHandler.getNextId();
 
@@ -70,7 +73,6 @@ contract Revest_1155 is Revest_base {
             salt = keccak256(abi.encode(fnftConfig.fnftId));
 
             lockId = ILockManager(fnftConfig.lockManager).createLock(salt, abi.encode(endTime));
-           
         }
 
         //Stack Too Deep Fixer
@@ -83,11 +85,10 @@ contract Revest_1155 is Revest_base {
         bytes memory arguments,
         address[] memory recipients,
         uint256[] memory quantities,
-        uint depositAmount,
+        uint256 depositAmount,
         IRevest.FNFTConfig memory fnftConfig,
         bool usePermit2
     ) internal override returns (bytes32 salt, bytes32 lockId) {
-
         //Get the ID of the next to-be-minted FNFT
         fnftConfig.fnftId = fnftHandler.getNextId();
 
@@ -128,7 +129,6 @@ contract Revest_1155 is Revest_base {
         external
         override
         nonReentrant
-        returns (bytes32 newLockId)
     {
         IRevest.FNFTConfig memory fnft = fnfts[salt];
         uint256 fnftId = fnft.fnftId;
@@ -159,9 +159,9 @@ contract Revest_1155 is Revest_base {
 
         bytes memory creationData = abi.encode(endTime);
 
-        newLockId = manager.createLock(salt, creationData);
+        manager.extendLockMaturity(salt, creationData);
 
-        emit FNFTMaturityExtended(newLockId, msg.sender, fnftId, endTime);
+        emit FNFTMaturityExtended(salt, msg.sender, fnftId, endTime);
     }
 
     /**
@@ -214,8 +214,7 @@ contract Revest_1155 is Revest_base {
     // INTERNAL FUNCTIONS
     //
     function doMint(IRevest.MintParameters memory params) internal {
-        bytes32 salt =
-            keccak256(abi.encode(params.fnftConfig.fnftId));
+        bytes32 salt = keccak256(abi.encode(params.fnftConfig.fnftId));
 
         bool isSingular;
         uint256 totalQuantity;
@@ -244,7 +243,6 @@ contract Revest_1155 is Revest_base {
 
             IWETH(WETH).deposit{value: msg.value}(); //Convert it to WETH and send it back to this
             IWETH(WETH).transfer(smartWallet, msg.value); //Transfer it to the smart wallet
-
         } else if (params.usePermit2) {
             PERMIT2.transferFrom(
                 msg.sender,
@@ -260,9 +258,7 @@ contract Revest_1155 is Revest_base {
 
         //Mint FNFTs but only if the handler is the Revest FNFT Handler
         if (isSingular) {
-            fnftHandler.mint(
-                params.recipients[0], params.fnftConfig.fnftId, params.quantities[0], ""
-            );
+            fnftHandler.mint(params.recipients[0], params.fnftConfig.fnftId, params.quantities[0], "");
         } else {
             fnftHandler.mint(address(this), params.fnftConfig.fnftId, totalQuantity, "");
             for (uint256 x = 0; x < params.recipients.length;) {
@@ -293,7 +289,7 @@ contract Revest_1155 is Revest_base {
 
         uint256 supplyBefore = fnftHandler.totalSupply(fnftId) + quantity;
 
-        uint depositAmount = IERC20(transferAsset).balanceOf(smartWalletAddr);
+        uint256 depositAmount = IERC20(transferAsset).balanceOf(smartWalletAddr);
 
         amountToWithdraw = quantity.mulDivDown(depositAmount, supplyBefore);
 
@@ -335,15 +331,14 @@ contract Revest_1155 is Revest_base {
         smartWallet = tokenVault.getAddress(salt, address(this));
     }
 
-
     function getValue(bytes32 fnftId) external view virtual returns (uint256) {
         IRevest.FNFTConfig memory fnft = fnfts[fnftId];
 
-        uint supply = fnftHandler.totalSupply(fnft.fnftId);
+        uint256 supply = fnftHandler.totalSupply(fnft.fnftId);
         if (supply == 0) return 0;
 
         address asset = fnft.asset == ETH_ADDRESS ? WETH : fnft.asset;
-        uint balanceOf = IERC20(asset).balanceOf(getAddressForFNFT(fnftId));
+        uint256 balanceOf = IERC20(asset).balanceOf(getAddressForFNFT(fnftId));
 
         return balanceOf / supply;
     }

@@ -80,7 +80,7 @@ abstract contract Revest_base is IRevest, IControllerExtendable, ERC1155Holder, 
         uint256 endTime,
         address[] memory recipients,
         uint256[] memory quantities,
-        uint depositAmount,
+        uint256 depositAmount,
         IRevest.FNFTConfig memory fnftConfig,
         IAllowanceTransfer.PermitBatch calldata permits,
         bytes calldata _signature
@@ -95,7 +95,7 @@ abstract contract Revest_base is IRevest, IControllerExtendable, ERC1155Holder, 
         uint256 endTime,
         address[] memory recipients,
         uint256[] memory quantities,
-        uint depositAmount,
+        uint256 depositAmount,
         IRevest.FNFTConfig memory fnftConfig
     ) external payable virtual nonReentrant returns (bytes32 salt, bytes32 lockId) {
         return _mintTimeLock(endTime, recipients, quantities, depositAmount, fnftConfig, false);
@@ -105,7 +105,7 @@ abstract contract Revest_base is IRevest, IControllerExtendable, ERC1155Holder, 
         bytes memory arguments,
         address[] memory recipients,
         uint256[] memory quantities,
-        uint depositAmount,
+        uint256 depositAmount,
         IRevest.FNFTConfig memory fnftConfig,
         IAllowanceTransfer.PermitBatch calldata permits,
         bytes calldata _signature
@@ -120,7 +120,7 @@ abstract contract Revest_base is IRevest, IControllerExtendable, ERC1155Holder, 
         bytes memory arguments,
         address[] memory recipients,
         uint256[] memory quantities,
-        uint depositAmount,
+        uint256 depositAmount,
         IRevest.FNFTConfig memory fnftConfig
     ) external payable virtual nonReentrant returns (bytes32 salt, bytes32 lockId) {
         return _mintAddressLock(arguments, recipients, quantities, depositAmount, fnftConfig, false);
@@ -130,7 +130,7 @@ abstract contract Revest_base is IRevest, IControllerExtendable, ERC1155Holder, 
         bytes memory arguments,
         address[] memory recipients,
         uint256[] memory quantities,
-        uint depositAmount,
+        uint256 depositAmount,
         IRevest.FNFTConfig memory fnftConfig,
         bool usePermit2
     ) internal virtual returns (bytes32 salt, bytes32 lockId);
@@ -139,7 +139,7 @@ abstract contract Revest_base is IRevest, IControllerExtendable, ERC1155Holder, 
         uint256 endTime,
         address[] memory recipients,
         uint256[] memory quantities,
-        uint depositAmount,
+        uint256 depositAmount,
         IRevest.FNFTConfig memory fnftConfig,
         bool usePermit2
     ) internal virtual returns (bytes32 salt, bytes32 lockId);
@@ -197,7 +197,6 @@ abstract contract Revest_base is IRevest, IControllerExtendable, ERC1155Holder, 
     function getAsset(bytes32 fnftId) external view virtual returns (address) {
         return fnfts[fnftId].asset;
     }
-
 
     /*//////////////////////////////////////////////////////////////
                         Metadata

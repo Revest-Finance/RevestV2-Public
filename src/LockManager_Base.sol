@@ -14,7 +14,6 @@ import "./lib/IWETH.sol";
 
 import "@openzeppelin/contracts/utils/Strings.sol";
 
-
 /**
  * @title LockManager_Base
  * @author 0xTraub

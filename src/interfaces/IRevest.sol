@@ -23,7 +23,7 @@ interface IRevest is IController {
         uint256 endTime,
         address[] memory recipients,
         uint256[] memory quantities,
-        uint depositAmount,
+        uint256 depositAmount,
         IRevest.FNFTConfig memory fnftConfig,
         IAllowanceTransfer.PermitBatch calldata permits,
         bytes calldata _signature
@@ -33,7 +33,7 @@ interface IRevest is IController {
         uint256 endTime,
         address[] memory recipients,
         uint256[] memory quantities,
-        uint depositAmount,
+        uint256 depositAmount,
         IRevest.FNFTConfig memory fnftConfig
     ) external payable returns (bytes32, bytes32);
 
@@ -41,7 +41,7 @@ interface IRevest is IController {
         bytes memory arguments,
         address[] memory recipients,
         uint256[] memory quantities,
-        uint depositAmount,
+        uint256 depositAmount,
         IRevest.FNFTConfig memory fnftConfig
     ) external payable returns (bytes32, bytes32);
 
@@ -49,7 +49,7 @@ interface IRevest is IController {
         bytes memory arguments,
         address[] memory recipients,
         uint256[] memory quantities,
-        uint depositAmount,
+        uint256 depositAmount,
         IRevest.FNFTConfig memory fnftConfig,
         IAllowanceTransfer.PermitBatch calldata permits,
         bytes calldata _signature

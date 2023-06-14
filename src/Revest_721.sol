@@ -51,7 +51,7 @@ contract Revest_721 is Revest_base {
         uint256 endTime,
         address[] memory recipients,
         uint256[] memory quantities,
-        uint depositAmount,
+        uint256 depositAmount,
         IRevest.FNFTConfig memory fnftConfig,
         bool usePermit2
     ) internal override returns (bytes32 salt, bytes32 lockId) {
@@ -64,14 +64,8 @@ contract Revest_721 is Revest_base {
         {
             salt = keccak256(abi.encode(fnftConfig.fnftId, fnftConfig.handler, fnftConfig.nonce));
 
-            if (!ILockManager(fnftConfig.lockManager).lockExists(fnftConfig.lockId)) {
-                lockId = ILockManager(fnftConfig.lockManager).createLock(salt, abi.encode(endTime));
-
-                fnftConfig.lockId = lockId;
-            }
+            lockId = ILockManager(fnftConfig.lockManager).createLock(salt, abi.encode(endTime));
         }
-
-        lockId = fnftConfig.lockId;
 
         //Stack Too Deep Fixer
         doMint(MintParameters(endTime, recipients, quantities, depositAmount, fnftConfig, usePermit2));
@@ -83,7 +77,7 @@ contract Revest_721 is Revest_base {
         bytes memory arguments,
         address[] memory recipients,
         uint256[] memory quantities,
-        uint depositAmount,
+        uint256 depositAmount,
         IRevest.FNFTConfig memory fnftConfig,
         bool usePermit2
     ) internal override returns (bytes32 salt, bytes32 lockId) {
@@ -95,15 +89,9 @@ contract Revest_721 is Revest_base {
         {
             salt = keccak256(abi.encode(fnftConfig.fnftId, fnftConfig.handler, fnftConfig.nonce));
 
-            if (!ILockManager(fnftConfig.lockManager).lockExists(fnftConfig.lockId)) {
-                //Return the ID of the lock
-                lockId = ILockManager(fnftConfig.lockManager).createLock(salt, arguments);
-
-                fnftConfig.lockId = lockId;
-            }
+            lockId = ILockManager(fnftConfig.lockManager).createLock(salt, arguments);
         }
 
-        lockId = fnftConfig.lockId;
 
         //Stack Too Deep Fixer
         doMint(MintParameters(0, recipients, quantities, depositAmount, fnftConfig, usePermit2));
@@ -117,15 +105,16 @@ contract Revest_721 is Revest_base {
         address currentOwner = IERC721(fnft.handler).ownerOf(fnft.fnftId);
         require(msg.sender == currentOwner, "E023");
 
-        ILockManager(fnft.lockManager).unlockFNFT(fnft.lockId, fnft.fnftId);
+        bytes32 lockId = keccak256(abi.encode(salt, address(this)));
+
+        ILockManager(fnft.lockManager).unlockFNFT(lockId, fnft.fnftId);
 
         withdrawToken(salt, fnft.fnftId, currentOwner);
 
         emit FNFTWithdrawn(currentOwner, fnft.fnftId, 1);
     }
 
-    /// @return the FNFT ID
-    function extendFNFTMaturity(bytes32 salt, uint256 endTime) external override nonReentrant returns (bytes32) {
+    function extendFNFTMaturity(bytes32 salt, uint256 endTime) external override nonReentrant {
         IRevest.FNFTConfig storage fnft = fnfts[salt];
         uint256 fnftId = fnft.fnftId;
         address handler = fnft.handler;
@@ -142,21 +131,19 @@ contract Revest_721 is Revest_base {
         // Will also return false on non-time lock locks
         require(fnft.maturityExtension && manager.lockType() == ILockManager.LockType.TimeLock, "E009");
 
+        bytes32 lockId = keccak256(abi.encode(salt, address(this)));
+
         // If desired maturity is below existing date or already unlocked, reject operation
-        ILockManager.Lock memory lockParam = manager.getLock(fnft.lockId);
+        ILockManager.Lock memory lockParam = manager.getLock(lockId);
 
         require(!lockParam.unlocked && lockParam.timeLockExpiry > block.timestamp, "E007");
 
         require(lockParam.timeLockExpiry < endTime, "E010");
 
         //Just pick a salt, it doesn't matter as long as it's unique
-        bytes32 newLockId =
-            manager.createLock(keccak256(abi.encode(block.timestamp, endTime, msg.sender)), abi.encode(endTime));
-        fnft.lockId = newLockId;
+        manager.extendLockMaturity(salt, abi.encode(endTime));
 
-        emit FNFTMaturityExtended(newLockId, msg.sender, fnftId, endTime);
-
-        return newLockId;
+        emit FNFTMaturityExtended(salt, msg.sender, fnftId, endTime);
     }
 
     /**
@@ -219,7 +206,6 @@ contract Revest_721 is Revest_base {
         */
         bytes32 WalletSalt = keccak256(abi.encode(params.fnftConfig.fnftId, params.fnftConfig.handler));
 
-
         // Create the FNFT and update accounting within TokenVault
         // Now, we move the funds to token vault from the message sender
         address smartWallet = tokenVault.getAddress(WalletSalt, address(this));
@@ -229,9 +215,7 @@ contract Revest_721 is Revest_base {
             IWETH(WETH).deposit{value: msg.value}(); //Convert it to WETH and send it back to this
             IWETH(WETH).transfer(smartWallet, msg.value); //Transfer it to the smart wallet
         } else if (params.usePermit2) {
-            PERMIT2.transferFrom(
-                msg.sender, smartWallet, (params.depositAmount).toUint160(), params.fnftConfig.asset
-            );
+            PERMIT2.transferFrom(msg.sender, smartWallet, (params.depositAmount).toUint160(), params.fnftConfig.asset);
         } else {
             ERC20(params.fnftConfig.asset).safeTransferFrom(msg.sender, smartWallet, params.depositAmount);
         }
@@ -290,8 +274,6 @@ contract Revest_721 is Revest_base {
         address asset = fnft.asset == ETH_ADDRESS ? WETH : fnft.asset;
 
         return IERC20(asset).balanceOf(getAddressForFNFT(fnftId));
-
-       
     }
 
     function getSaltFromId(address handler, uint256 fnftId, uint256 nonce) public pure returns (bytes32) {

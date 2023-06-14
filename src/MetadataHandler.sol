@@ -73,7 +73,8 @@ contract MetadataHandler is IMetadataHandler {
 
         ILockManager lockManager = ILockManager(fnft.lockManager);
 
-        ILockManager.Lock memory lock = lockManager.getLock(fnft.lockId);
+        bytes32 lockId = keccak256(abi.encodePacked(fnftSalt, _controller));
+        ILockManager.Lock memory lock = lockManager.getLock(lockId);
 
         output = string(abi.encodePacked('"properties":{ \n "asset_ticker":', getTicker(fnft.asset), ",\n"));
         output = string(abi.encodePacked(output, '"handler":"', toAsciiString(fnft.handler), '",\n'));
@@ -87,7 +88,7 @@ contract MetadataHandler is IMetadataHandler {
             )
         );
 
-        uint depositAmount = controller.getValue(fnftSalt);
+        uint256 depositAmount = controller.getValue(fnftSalt);
 
         output = string(abi.encodePacked(output, '"amount":"', amountToDecimal(depositAmount, fnft.asset), '",\n'));
         output = string(abi.encodePacked(output, '"lock_type":"', getLockType(lockManager.lockType()), '",\n'));
@@ -106,7 +107,7 @@ contract MetadataHandler is IMetadataHandler {
             );
 
             output = string(
-                abi.encodePacked(output, '"address_metadata":"', string(lockManager.getMetadata(fnft.lockId)), '"')
+                abi.encodePacked(output, '"address_metadata":"', string(lockManager.getMetadata(lockId)), '"')
             );
 
             output = string(abi.encodePacked(output, "\n},\n"));
@@ -127,6 +128,8 @@ contract MetadataHandler is IMetadataHandler {
         string memory assetName = getName(config.asset);
         string memory assetSymbol = getTicker(config.asset);
 
+        bytes32 lockId = keccak256(abi.encodePacked(salt, revest));
+
         string memory lockType = string.concat(
             "Lock Type: ",
             ILockManager(config.lockManager).lockType() == ILockManager.LockType.TimeLock ? "Time" : "Address"
@@ -141,13 +144,13 @@ contract MetadataHandler is IMetadataHandler {
             '</text> <text x="50%" y="310" dy= "30" dominant-baseline="middle" text-anchor="middle" class="amount" fill="#fff"> '
         );
 
-        uint depositAmount = IRevest(revest).getValue(salt);
-        image = string.concat(image, amountToDecimal(depositAmount, config.asset), " ", getTicker(config.asset), '</text>');
-     
-        image = string.concat(image, ILockManager(config.lockManager).lockDescription(config.lockId));
+        uint256 depositAmount = IRevest(revest).getValue(salt);
+        image =
+            string.concat(image, amountToDecimal(depositAmount, config.asset), " ", getTicker(config.asset), "</text>");
 
-        
-        image = string.concat(image, '</svg>');
+        image = string.concat(image, ILockManager(config.lockManager).lockDescription(lockId));
+
+        image = string.concat(image, "</svg>");
 
         string memory description =
             renderDescription(assetName, assetSymbol, depositAmount, lockType, config.lockManager);

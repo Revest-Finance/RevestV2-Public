@@ -135,7 +135,6 @@ contract Revest721Tests is Test {
             lockManager: address(lockManager_timelock),
             nonce: nonce,
             fnftId: tokenId,
-            lockId: bytes32(0),
             maturityExtension: false
         });
 
@@ -144,7 +143,8 @@ contract Revest721Tests is Test {
         revest.mintTimeLock(block.timestamp + 1 weeks, recipients, amounts, amount, config);
 
         config.handler = address(boredApe);
-        (bytes32 salt, bytes32 lockId) = revest.mintTimeLock(block.timestamp + 1 weeks, recipients, amounts, amount, config);
+        (bytes32 salt, bytes32 lockId) =
+            revest.mintTimeLock(block.timestamp + 1 weeks, recipients, amounts, amount, config);
 
         address walletAddr = revest.getAddressForFNFT(salt);
 
@@ -209,7 +209,6 @@ contract Revest721Tests is Test {
             lockManager: address(lockManager_addresslock),
             nonce: nonce,
             fnftId: id,
-            lockId: bytes32(0),
             maturityExtension: false
         });
 
@@ -275,11 +274,11 @@ contract Revest721Tests is Test {
             lockManager: address(lockManager_timelock),
             nonce: 0,
             fnftId: tokenId,
-            lockId: bytes32(0),
             maturityExtension: false
         });
 
-        (bytes32 salt, bytes32 lockId) = revest.mintTimeLock(block.timestamp + 1 weeks, recipients, amounts, amount, config);
+        (bytes32 salt, bytes32 lockId) =
+            revest.mintTimeLock(block.timestamp + 1 weeks, recipients, amounts, amount, config);
 
         address walletAddr = revest.getAddressForFNFT(salt);
 
@@ -368,7 +367,6 @@ contract Revest721Tests is Test {
             lockManager: address(lockManager_timelock),
             nonce: 0,
             fnftId: 1,
-            lockId: bytes32(0),
             maturityExtension: false
         });
 
@@ -376,11 +374,11 @@ contract Revest721Tests is Test {
         bytes32 salt2;
 
         {
-            (salt1, ) = revest.mintTimeLock(block.timestamp + 1 weeks, recipients, amounts, amount, config);
+            (salt1,) = revest.mintTimeLock(block.timestamp + 1 weeks, recipients, amounts, amount, config);
 
             config.asset = address(WETH);
 
-            (salt2, ) = revest.mintTimeLock(block.timestamp + 2 weeks, recipients, amounts, wethAmount, config);
+            (salt2,) = revest.mintTimeLock(block.timestamp + 2 weeks, recipients, amounts, wethAmount, config);
         }
 
         {
@@ -437,7 +435,6 @@ contract Revest721Tests is Test {
             lockManager: address(lockManager_timelock),
             nonce: nonce,
             fnftId: 1,
-            lockId: bytes32(0),
             maturityExtension: false
         });
 
@@ -447,7 +444,7 @@ contract Revest721Tests is Test {
         uint256 balanceBefore = USDC.balanceOf(walletAddr);
         uint256 aliceBalanceBeforeAdditionalDeposit = USDC.balanceOf(alice);
 
-        uint valueBeforeDestruction;
+        uint256 valueBeforeDestruction;
         {
             revest.depositAdditionalToFNFT(salt, additionalDepositAmount);
 
@@ -468,9 +465,7 @@ contract Revest721Tests is Test {
                 "alice balance did not decrease by expected amount"
             );
 
-            assertEq(
-                revest.getValue(salt), amount + additionalDepositAmount, "deposit amount was not updated"
-            );
+            assertEq(revest.getValue(salt), amount + additionalDepositAmount, "deposit amount was not updated");
 
             valueBeforeDestruction = revest.getValue(salt);
 
@@ -484,11 +479,7 @@ contract Revest721Tests is Test {
             boredApe.transferFrom(bob, alice, 1);
         }
 
-        assertEq(
-            USDC.balanceOf(bob),
-             valueBeforeDestruction,
-            "bob balance did not increase by expected amount"
-        );
+        assertEq(USDC.balanceOf(bob), valueBeforeDestruction, "bob balance did not increase by expected amount");
 
         assertEq(USDC.balanceOf(bob), supply * (amount + additionalDepositAmount), "full amount not transfered to bob");
 
@@ -542,11 +533,11 @@ contract Revest721Tests is Test {
             lockManager: address(lockManager_timelock),
             nonce: nonce,
             fnftId: 1,
-            lockId: bytes32(0),
             maturityExtension: true
         });
 
-        (bytes32 salt, bytes32 lockId) = revest.mintTimeLock(block.timestamp + 1 weeks, recipients, amounts, amount, config);
+        (bytes32 salt, bytes32 lockId) =
+            revest.mintTimeLock(block.timestamp + 1 weeks, recipients, amounts, amount, config);
         address walletAddr;
 
         {
@@ -577,9 +568,9 @@ contract Revest721Tests is Test {
             vm.expectRevert(bytes("E010"));
             revest.extendFNFTMaturity(salt, block.timestamp + 1 weeks); //Extend a week beyond the current endDate
 
-            bytes32 newLockId = revest.extendFNFTMaturity(salt, block.timestamp + 2 weeks); //Extend a week beyond the current endDate
+            revest.extendFNFTMaturity(salt, block.timestamp + 2 weeks); //Extend a week beyond the current endDate
 
-            uint256 newEndTime = lockManager_timelock.getLock(newLockId).timeLockExpiry;
+            uint256 newEndTime = lockManager_timelock.getLock(lockId).timeLockExpiry;
             assertEq(newEndTime, block.timestamp + 2 weeks, "lock did not extend maturity by expected amount");
 
             skip(2 weeks);
@@ -622,11 +613,11 @@ contract Revest721Tests is Test {
             lockManager: address(lockManager_timelock),
             nonce: nonce,
             fnftId: id,
-            lockId: bytes32(0),
             maturityExtension: false
         });
 
-        (bytes32 salt,) = revest.mintTimeLock{value: amount}(block.timestamp + 1 weeks, recipients, amounts, amount, config);
+        (bytes32 salt,) =
+            revest.mintTimeLock{value: amount}(block.timestamp + 1 weeks, recipients, amounts, amount, config);
 
         address walletAddr = revest.getAddressForFNFT(salt);
         assertEq(ERC20(WETH).balanceOf(walletAddr), amount, "vault balance did not increase by expected amount");
@@ -667,12 +658,12 @@ contract Revest721Tests is Test {
                 lockManager: address(lockManager_timelock),
                 nonce: 0,
                 fnftId: id,
-                lockId: bytes32(0),
                 maturityExtension: true
             });
 
-            (salt, lockId) =
-                revest.mintTimeLockWithPermit(block.timestamp + 1 weeks, recipients, amounts, amount, config, permit, signature);
+            (salt, lockId) = revest.mintTimeLockWithPermit(
+                block.timestamp + 1 weeks, recipients, amounts, amount, config, permit, signature
+            );
         }
 
         assertEq(USDC.balanceOf(revest.getAddressForFNFT(salt)), amount, "USDC not deposited into vault");
@@ -723,9 +714,7 @@ contract Revest721Tests is Test {
                 "alice balance did not decrease by expected amount"
             );
 
-            assertEq(
-                revest.getValue(salt), amount + additionalDepositAmount, "deposit amount was not updated"
-            );
+            assertEq(revest.getValue(salt), amount + additionalDepositAmount, "deposit amount was not updated");
         }
 
         skip(1 weeks);
