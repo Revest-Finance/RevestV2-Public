@@ -158,7 +158,7 @@ contract MetadataHandler is IMetadataHandler {
             if (isUnlocked) image = string.concat(image, isUnlockedColor);
             else image = string.concat(image, isLockedColor);
 
-            image = string.concat(image, ';} .cls-3{fill: #e4a238} .interest { font: bold 12px sans-serif; } .tick { font: normal 18px sans-serif; } .button { fill: #007bbf; pointer: cursor; } .button:hover { fill: #0069d9; } </style> <rect width="300" height="480" fill="hsl(0,0%,100%)" /> <rect x="30" y="30" width="240" height="420" rx="15" ry="15" fill="hsl(0,0%,18%)" stroke="#000" />');
+            image = string.concat(image, ';} .cls-3{fill: #e4a238} .interest { font: bold 12px sans-serif; } .tick { font: normal 18px sans-serif; } .button { fill: #007bbf; pointer: cursor; } .button:hover { fill: #0069d9; } </style> <rect width="300" height="480" fill="hsl(0,0%,100%)" /> <rect x="30" y="30" width="240" height="388.32" rx="15" ry="15" fill="hsl(0,0%,18%)" stroke="#000" />');
             
             // The Little Icon in the top-right Corner
             if (typeOfLock == ILockManager.LockType.TimeLock) image = string.concat(image, '<svg id="Default" width = "15" x = "81%" y= "-190" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 576"><defs><style></style></defs><path class="cls-1" d="M306,108C147.09,108,18,237.09,18,396S147.09,684,306,684,594,554.91,594,396,464.91,108,306,108Zm0,521.6C177.1,629.6,72.4,524.9,72.4,396S177.1,162.4,306,162.4,539.6,267.1,539.6,396,434.9,629.6,306,629.6Z" transform="translate(-18 -108)"/><path class="cls-1" d="M419.75,469,334.8,384.07V223.2a28.8,28.8,0,0,0-57.6,0V396a28.75,28.75,0,0,0,8.44,20.36L379,509.75A28.8,28.8,0,0,0,419.75,469" transform="translate(-18 -108)"/></svg>');

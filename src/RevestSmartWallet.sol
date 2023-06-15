@@ -3,6 +3,7 @@
 import "@solmate/utils/SafeTransferLib.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
+
 pragma solidity ^0.8.19;
 
 /**
@@ -14,6 +15,8 @@ contract RevestSmartWallet is ReentrancyGuard {
 
     address private immutable MASTER;
 
+    bytes4 public constant WITHDRAW_SELECTOR = bytes4(keccak256("implementSmartWalletWithdrawal(bytes)"));
+
     constructor() {
         MASTER = msg.sender;
     }
@@ -23,8 +26,10 @@ contract RevestSmartWallet is ReentrancyGuard {
         _;
     }
 
-    function withdraw(address token, uint256 value, address recipient) external nonReentrant onlyMaster {
-        ERC20(token).safeTransfer(recipient, value);
+    function withdraw(address controller, bytes calldata data) external nonReentrant onlyMaster {
+        (bool success, ) = controller.delegatecall(abi.encodeWithSelector(WITHDRAW_SELECTOR, data));
+        require(success);
+
         cleanMemory();
     }
 

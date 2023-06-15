@@ -89,7 +89,7 @@ contract LockManager_Timelock is LockManager_Base {
         else hour = _hour.toString();
 
         string memory description = string.concat(
-            '<text x="50%" y="210" dy= "210" dominant-baseline="middle" text-anchor="middle" class="underLine" fill="#fff"> ',
+            '<text x="50%" y="180" dy= "210" dominant-baseline="middle" text-anchor="middle" class="underLine" fill="#fff"> ',
             "Unlocks: ",
             month.getMonthName(),
             " ",

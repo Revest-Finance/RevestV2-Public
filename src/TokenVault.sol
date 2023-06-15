@@ -26,16 +26,16 @@ contract TokenVault is ITokenVault, ReentrancyGuard {
 
     function withdrawToken(
         bytes32 salt,
-        address token,
-        uint256 quantity,
-        address recipient //TODO: Can replace user with just send back to msg.sender but less optimized
+        bytes calldata data
     ) external override nonReentrant {
         address payable walletAddr =
             payable(Clones.cloneDeterministic(TEMPLATE, keccak256(abi.encode(salt, msg.sender))));
 
         //Withdraw the token, selfDestructs itself after
-        RevestSmartWallet(walletAddr).withdraw(token, quantity, recipient);
-        emit WithdrawERC20(token, recipient, salt, quantity, walletAddr);
+        RevestSmartWallet(walletAddr).withdraw(msg.sender, data);
+        
+        //TODO: Better Event Handling
+        // emit WithdrawERC20(token, recipient, salt, quantity, walletAddr);
     }
 
     function proxyCall(bytes32 salt, address[] memory targets, uint256[] memory values, bytes[] memory calldatas)

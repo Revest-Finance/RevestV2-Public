@@ -240,7 +240,8 @@ contract Revest_721 is Revest_base {
         amountToWithdraw = IERC20(transferAsset).balanceOf(smartWallAdd);
 
         // Deploy the smart wallet object
-        tokenVault.withdrawToken(walletSalt, transferAsset, amountToWithdraw, address(this));
+        bytes memory delegateCallData = abi.encode(transferAsset, amountToWithdraw, address(this));
+        tokenVault.withdrawToken(walletSalt, delegateCallData);
 
         if (fnft.asset == ETH_ADDRESS) {
             IWETH(WETH).withdraw(amountToWithdraw);

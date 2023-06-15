@@ -55,6 +55,10 @@ interface IController {
         view
         returns (string memory baseRenderURI, string[] memory parameters);
 
+    function implementSmartWalletWithdrawal(
+        bytes calldata data
+    ) external;
+
     //They're public variables in Revest_base but its useful to define it in the interface also
     function numfnfts(address, uint256) external view returns (uint32);
 }

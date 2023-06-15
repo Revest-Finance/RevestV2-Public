@@ -43,6 +43,8 @@ abstract contract Revest_base is IRevest, IControllerExtendable, ERC1155Holder, 
     ITokenVault immutable tokenVault;
     IMetadataHandler public metadataHandler;
 
+    address public immutable ADDRESS_THIS;
+
     //Was deployed to same address on every chain
     IAllowanceTransfer constant PERMIT2 = IAllowanceTransfer(0x000000000022D473030F116dDEE9F6B43aC78BA3);
 
@@ -55,6 +57,8 @@ abstract contract Revest_base is IRevest, IControllerExtendable, ERC1155Holder, 
         metadataHandler = IMetadataHandler(_metadataHandler);
 
         _transferOwnership(govController);
+
+        ADDRESS_THIS = address(this);
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -183,6 +187,20 @@ abstract contract Revest_base is IRevest, IControllerExtendable, ERC1155Holder, 
         require(ILockManager(lockManager).proxyCallisApproved(asset, targets, values, calldatas), "E013");
 
         return tokenVault.proxyCall(salt, targets, values, calldatas);
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                    Smart Wallet DelegateCall Functions
+    //////////////////////////////////////////////////////////////*/
+
+    function implementSmartWalletWithdrawal(bytes calldata data) external {
+        //Function is only callable via delegate-call from smart wallet
+        require(address(this) != ADDRESS_THIS);
+
+        (address transferAsset, uint amountToWithdraw, address recipient) =
+            abi.decode(data, (address, uint256, address));
+
+        ERC20(transferAsset).safeTransfer(recipient, amountToWithdraw);
     }
 
     /*//////////////////////////////////////////////////////////////
