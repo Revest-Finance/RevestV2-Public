@@ -24,15 +24,16 @@ contract TokenVault is ITokenVault, ReentrancyGuard {
 
     //You can get rid of the deposit function and just have the controller send tokens there directly
 
-    function withdrawToken(
+    function invokeSmartWallet(
         bytes32 salt,
+        bytes4 selector,
         bytes calldata data
     ) external override nonReentrant {
         address payable walletAddr =
             payable(Clones.cloneDeterministic(TEMPLATE, keccak256(abi.encode(salt, msg.sender))));
 
         //Withdraw the token, selfDestructs itself after
-        RevestSmartWallet(walletAddr).withdraw(msg.sender, data);
+        RevestSmartWallet(walletAddr).withdraw(msg.sender, selector, data);
         
         //TODO: Better Event Handling
         // emit WithdrawERC20(token, recipient, salt, quantity, walletAddr);

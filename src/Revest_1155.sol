@@ -295,7 +295,7 @@ contract Revest_1155 is Revest_base {
 
         // Deploy the smart wallet object
         bytes memory delegateCallData = abi.encode(transferAsset, amountToWithdraw, address(this));
-        tokenVault.withdrawToken(salt, delegateCallData);
+        tokenVault.invokeSmartWallet(salt, WITHDRAW_SELECTOR, delegateCallData);
 
         //Return ETH to the user or WETH
         if (fnft.asset == ETH_ADDRESS) {

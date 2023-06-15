@@ -15,8 +15,6 @@ contract RevestSmartWallet is ReentrancyGuard {
 
     address private immutable MASTER;
 
-    bytes4 public constant WITHDRAW_SELECTOR = bytes4(keccak256("implementSmartWalletWithdrawal(bytes)"));
-
     constructor() {
         MASTER = msg.sender;
     }
@@ -26,9 +24,9 @@ contract RevestSmartWallet is ReentrancyGuard {
         _;
     }
 
-    function withdraw(address controller, bytes calldata data) external nonReentrant onlyMaster {
-        (bool success, ) = controller.delegatecall(abi.encodeWithSelector(WITHDRAW_SELECTOR, data));
-        require(success);
+    function withdraw(address controller, bytes4 selector, bytes calldata data) external nonReentrant onlyMaster {
+        (bool success, ) = controller.delegatecall(abi.encodeWithSelector(selector, data));
+        require(success, "Smart Wallet Action Failed");
 
         cleanMemory();
     }
