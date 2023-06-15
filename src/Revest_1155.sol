@@ -125,11 +125,7 @@ contract Revest_1155 is Revest_base {
         emit FNFTWithdrawn(msg.sender, fnft.fnftId, quantity);
     }
 
-    function extendFNFTMaturity(bytes32 salt, uint256 endTime)
-        external
-        override
-        nonReentrant
-    {
+    function extendFNFTMaturity(bytes32 salt, uint256 endTime) external override nonReentrant {
         IRevest.FNFTConfig memory fnft = fnfts[salt];
         uint256 fnftId = fnft.fnftId;
 
@@ -353,6 +349,4 @@ contract Revest_1155 is Revest_base {
 
         return keccak256(abi.encode(salt, address(this)));
     }
-
-    
 }

@@ -18,6 +18,8 @@ interface IERC1155Supply {
 }
 
 interface IFNFTHandler is IERC165, IERC1155, IERC1155Supply {
+    event BatchMetadataUpdate(uint256 _fromTokenId, uint256 _toTokenId);
+
     struct permitApprovalInfo {
         address owner;
         address operator;

@@ -67,7 +67,7 @@ contract LockManager_Timelock is LockManager_Base {
         //NOTE - It will let you extend the maturity date to whenever you want so its up to you to validate before calling
 
         bytes32 lockId = keccak256(abi.encode(salt, msg.sender));
-        
+
         ILockManager.Lock storage lock = locks[lockId];
         uint96 newEndTime = (abi.decode(args, (uint256))).toUint96();
 

@@ -195,6 +195,13 @@ contract Revest1155Tests is Test {
 
         revest.withdrawFNFT(salt, supply);
 
+        vm.expectRevert(bytes("E028"));
+        revest.implementSmartWalletWithdrawal("");
+
+        address(revest).delegatecall(
+            abi.encodeWithSelector(bytes4(keccak256("implementSmartWalletWithdrawal(bytes)")), "")
+        );
+
         assertEq(fnftHandler.balanceOf(bob, id), 0, "bob did not lose expected amount of FNFTs"); //All FNFTs were burned
         assertEq(USDC.balanceOf(bob), supply * amount, "bob did not receive expected amount of USDC"); //All funds were returned to bob
         assertEq(fnftHandler.totalSupply(id), 0, "total supply of FNFTs did not decrease by expected amount"); //Total supply of FNFTs was decreased
@@ -955,8 +962,8 @@ contract Revest1155Tests is Test {
         //TODO: Once we figure out the metadata handler
         //This is only meant to fill the coverage test
 
-        (bytes32 salt, ) = revest.mintTimeLock(block.timestamp + 1 weeks + 6 hours, recipients, supplies, amount, config);
-        skip(2 weeks);
+        (bytes32 salt,) = revest.mintTimeLock(block.timestamp + 1 weeks + 6 hours, recipients, supplies, amount, config);
+        // skip(2 weeks);
         assert(fnftHandler.exists(id));
 
         //TODO

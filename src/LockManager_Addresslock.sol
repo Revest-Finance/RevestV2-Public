@@ -34,9 +34,7 @@ contract LockManager_Addresslock is LockManager_Base {
         locks[lockId] = newLock;
     }
 
-    function extendLockMaturity(bytes32, bytes calldata) external {
-
-    }
+    function extendLockMaturity(bytes32, bytes calldata) external {}
 
     /**
      * Return whether a lock of any type is mature. Use this for all locktypes.

@@ -25,7 +25,7 @@ interface IController {
         address lockManager;
         bool maturityExtension; // Maturity extensions remaining
         //A storage slot can be saved by reducing this to a uint88 and casting when needed
-        uint256 fnftId; //type(uint88).max = 3.1e23 
+        uint256 fnftId; //type(uint88).max = 3.1e23
         //2 Slots but only Used by the Revest-721 -> Are left empty at the end for 1155 to save ~40k gas
         address handler;
     }
@@ -55,9 +55,7 @@ interface IController {
         view
         returns (string memory baseRenderURI, string[] memory parameters);
 
-    function implementSmartWalletWithdrawal(
-        bytes calldata data
-    ) external;
+    function implementSmartWalletWithdrawal(bytes calldata data) external;
 
     //They're public variables in Revest_base but its useful to define it in the interface also
     function numfnfts(address, uint256) external view returns (uint32);

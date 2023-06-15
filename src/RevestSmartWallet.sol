@@ -3,7 +3,6 @@
 import "@solmate/utils/SafeTransferLib.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-
 pragma solidity ^0.8.19;
 
 /**
@@ -25,7 +24,7 @@ contract RevestSmartWallet is ReentrancyGuard {
     }
 
     function withdraw(address controller, bytes4 selector, bytes calldata data) external nonReentrant onlyMaster {
-        (bool success, ) = controller.delegatecall(abi.encodeWithSelector(selector, data));
+        (bool success,) = controller.delegatecall(abi.encodeWithSelector(selector, data));
         require(success, "Smart Wallet Action Failed");
 
         cleanMemory();

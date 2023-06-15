@@ -92,7 +92,6 @@ contract Revest_721 is Revest_base {
             lockId = ILockManager(fnftConfig.lockManager).createLock(salt, arguments);
         }
 
-
         //Stack Too Deep Fixer
         doMint(MintParameters(0, recipients, quantities, depositAmount, fnftConfig, usePermit2));
 

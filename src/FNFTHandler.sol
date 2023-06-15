@@ -62,6 +62,8 @@ contract FNFTHandler is ERC1155, Ownable, IFNFTHandler {
         supply[id] += amount;
         fnftsCreated += 1;
         _mint(account, id, amount, data);
+
+        emit BatchMetadataUpdate(0, type(uint256).max);
     }
 
     function burn(address account, uint256 id, uint256 amount) external override onlyOwner {

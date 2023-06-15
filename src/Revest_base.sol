@@ -62,8 +62,8 @@ abstract contract Revest_base is IRevest, IControllerExtendable, ERC1155Holder, 
         ADDRESS_THIS = address(this);
     }
 
-    modifier onlyDelegateCall {
-        require(address(this) != ADDRESS_THIS, "Revest: Delegate call only");
+    modifier onlyDelegateCall() {
+        require(address(this) != ADDRESS_THIS, "E028");
         _;
     }
 
@@ -201,11 +201,11 @@ abstract contract Revest_base is IRevest, IControllerExtendable, ERC1155Holder, 
 
     function implementSmartWalletWithdrawal(bytes calldata data) external onlyDelegateCall {
         //Function is only callable via delegate-call from smart wallet
-        (address transferAsset, uint amountToWithdraw, address recipient) =
+        (address transferAsset, uint256 amountToWithdraw, address recipient) =
             abi.decode(data, (address, uint256, address));
 
         ERC20(transferAsset).safeTransfer(recipient, amountToWithdraw);
-    }   
+    }
 
     /*//////////////////////////////////////////////////////////////
                     IController View Functions
