@@ -177,6 +177,8 @@ contract Revest1155Tests is Test {
             assertEq(fnftHandler.balanceOf(bob, id), supply, "bob did not receive expected amount of FNFTs");
         }
 
+
+
         changePrank(bob);
         vm.expectRevert(bytes("E006"));
         revest.unlockFNFT(salt);
@@ -198,9 +200,8 @@ contract Revest1155Tests is Test {
         vm.expectRevert(bytes("E028"));
         revest.implementSmartWalletWithdrawal("");
 
-        address(revest).delegatecall(
-            abi.encodeWithSelector(bytes4(keccak256("implementSmartWalletWithdrawal(bytes)")), "")
-        );
+        (bool success, ) = address(revest).delegatecall(abi.encodeWithSelector(bytes4(keccak256("implementSmartWalletWithdrawal(bytes)")), ""));
+        assertFalse(success);
 
         assertEq(fnftHandler.balanceOf(bob, id), 0, "bob did not lose expected amount of FNFTs"); //All FNFTs were burned
         assertEq(USDC.balanceOf(bob), supply * amount, "bob did not receive expected amount of USDC"); //All funds were returned to bob
@@ -217,7 +218,7 @@ contract Revest1155Tests is Test {
         vm.expectRevert(bytes("E012"));
         revest.mintTimeLock(block.timestamp + 1 weeks, recipients, supplies, amount, config);
 
-        supplies = new uint[](2);
+        supplies = new uint[](2);   
         vm.expectRevert(bytes("E011"));
         revest.mintTimeLock(block.timestamp + 1 weeks, recipients, supplies, amount, config);
     }
@@ -962,7 +963,7 @@ contract Revest1155Tests is Test {
         //TODO: Once we figure out the metadata handler
         //This is only meant to fill the coverage test
 
-        (bytes32 salt,) = revest.mintTimeLock(block.timestamp + 1 weeks + 6 hours, recipients, supplies, amount, config);
+        (bytes32 salt, ) = revest.mintTimeLock(block.timestamp + 1 weeks + 6 hours, recipients, supplies, amount, config);
         // skip(2 weeks);
         assert(fnftHandler.exists(id));
 

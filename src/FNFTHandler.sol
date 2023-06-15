@@ -122,7 +122,7 @@ contract FNFTHandler is ERC1155, Ownable, IFNFTHandler {
         bytes32 salt = keccak256(abi.encode(fnftId, address(this), 0));
         return IRevest(owner()).getTokenURI(salt);
     }
-
+    
     function renderTokenURI(uint256 tokenId, address _owner)
         external
         view

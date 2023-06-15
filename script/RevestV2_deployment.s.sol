@@ -47,12 +47,12 @@ contract RevestV2_deployment is Script {
 
         //Deploy Metadata Handler
         bytes memory MetadataHandler_creationCode =
-            abi.encodePacked(type(MetadataHandler).creationCode, abi.encode(tokenVault, URI_BASE_METADATA_HANDLER));
+            abi.encodePacked(type(MetadataHandler).creationCode, abi.encode(URI_BASE_METADATA_HANDLER));
         address metadataHandler = factory.deploy(keccak256(abi.encode("MetadataHandler")), MetadataHandler_creationCode);
 
         //Deploy Revest 1155
         bytes memory Revest_1155_creationCode = abi.encodePacked(
-            type(Revest_1155).creationCode, abi.encode(WETH, tokenVault, metadataHandler, govController)
+            type(Revest_1155).creationCode, abi.encode(URI_BASE_FNFT_HANDLER, WETH, tokenVault, metadataHandler, govController)
         );
         address revest_1155 = factory.deploy(keccak256(abi.encode("Revest_1155")), Revest_1155_creationCode);
 
@@ -60,16 +60,10 @@ contract RevestV2_deployment is Script {
         bytes memory Revest_721_creationCode = abi.encodePacked(
             type(Revest_721).creationCode, abi.encode(WETH, tokenVault, metadataHandler, govController)
         );
+        
         address revest_721 = factory.deploy(keccak256(abi.encode("Revest_721")), Revest_721_creationCode);
 
-        //Deploy FNFT Handler
-        bytes memory FNFTHandler_creationCode =
-            abi.encodePacked(type(FNFTHandler).creationCode, abi.encode(revest_1155, URI_BASE_FNFT_HANDLER));
-        address fnftHandler = factory.deploy(keccak256(abi.encode("FNFTHandler")), FNFTHandler_creationCode);
-
-        //Transfer Ownership of FNFTHandler to 1155
-        require(FNFTHandler(fnftHandler).owner() == revest_1155, "Ownership Transfer Failed");
-        console.log("---FNFT Handler Ownership Transfered to Revest 1155---");
+        address handler = address(Revest_1155(payable(revest_1155)).fnftHandler());
 
         vm.stopBroadcast();
 
@@ -78,6 +72,6 @@ contract RevestV2_deployment is Script {
         console.log("Metadata Handler: %s: ", metadataHandler);
         console.log("Revest 1155: %s: ", revest_1155);
         console.log("Revest 721: %s: ", revest_721);
-        console.log("FNFT Handler: %s: ", fnftHandler);
+        console.log("FNFT Handler: %s: ", handler);
     }
 }
