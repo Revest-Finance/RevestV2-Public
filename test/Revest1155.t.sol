@@ -969,7 +969,7 @@ contract Revest1155Tests is Test {
 
         //TODO
         string memory uri = fnftHandler.uri(id);
-        (string memory baseRenderURI,) = fnftHandler.renderTokenURI(id, alice);
+        (string memory baseRenderURI,) = fnftHandler.renderTokenURI(id);
 
         string memory metadata = metadataHandler.generateMetadata(address(revest), salt);
 
@@ -977,7 +977,7 @@ contract Revest1155Tests is Test {
         console.log("------------------");
         console.log("baseRenderURI: %s", baseRenderURI);
         console.log("------------------");
-        console.log("metadata: %s", metadata);
+        console.log("%s", metadata);
 
         changePrank(revest.owner());
         revest.changeMetadataHandler(address(0xdead));

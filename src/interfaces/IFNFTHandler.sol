@@ -37,7 +37,7 @@ interface IFNFTHandler is IERC165, IERC1155, IERC1155Supply {
 
     function uri(uint256 fnftId) external view returns (string memory);
 
-    function renderTokenURI(uint256 tokenId, address owner)
+    function renderTokenURI(uint256 tokenId)
         external
         view
         returns (string memory baseRenderURI, string[] memory parameters);

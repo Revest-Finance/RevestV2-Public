@@ -63,12 +63,16 @@ contract FNFTHandler is ERC1155, Ownable, IFNFTHandler {
         fnftsCreated += 1;
         _mint(account, id, amount, data);
 
+        //Trigger Opensea Caching
         emit BatchMetadataUpdate(0, type(uint256).max);
     }
 
     function burn(address account, uint256 id, uint256 amount) external override onlyOwner {
         supply[id] -= amount;
         _burn(account, id, amount);
+
+        //Trigger Opensea Caching
+        emit BatchMetadataUpdate(0, type(uint256).max);
     }
 
     function totalSupply(uint256 fnftId) public view override returns (uint256) {
@@ -123,12 +127,13 @@ contract FNFTHandler is ERC1155, Ownable, IFNFTHandler {
         return IRevest(owner()).getTokenURI(salt);
     }
     
-    function renderTokenURI(uint256 tokenId, address _owner)
+    function renderTokenURI(uint256 tokenId)
         external
         view
         returns (string memory baseRenderURI, string[] memory parameters)
     {
+        address _owner = owner();
         bytes32 salt = keccak256(abi.encode(tokenId, address(this), 0));
-        return IRevest(owner()).renderTokenURI(salt, _owner);
+        return IRevest(_owner).renderTokenURI(salt, _owner);
     }
 }

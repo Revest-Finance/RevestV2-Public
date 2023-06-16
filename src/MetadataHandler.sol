@@ -78,10 +78,12 @@ contract MetadataHandler is IMetadataHandler {
 
         ILockManager lockManager = ILockManager(fnft.lockManager);
 
-        bytes32 lockId = keccak256(abi.encodePacked(fnftSalt, _controller));
+        bytes32 lockId = keccak256(abi.encode(fnftSalt, _controller));
         ILockManager.Lock memory lock = lockManager.getLock(lockId);
+            console.log("-----------------TIMELOCK EXPIRY: %i", lock.timeLockExpiry);
 
-        output = string(abi.encodePacked('"properties":{ \n "asset_ticker":', getTicker(fnft.asset), ",\n"));
+
+        output = string(abi.encodePacked('"properties":{ \n "asset_ticker": \"', getTicker(fnft.asset), "\",\n"));
         output = string(abi.encodePacked(output, '"handler":"', toAsciiString(fnft.handler), '",\n'));
         output = string(abi.encodePacked(output, '"nonce":"', fnft.nonce.toString(), '",\n'));
 
@@ -99,10 +101,15 @@ contract MetadataHandler is IMetadataHandler {
         output = string(abi.encodePacked(output, '"lock_type":"', getLockType(lockManager.lockType()), '",\n'));
 
         if (lockManager.lockType() == ILockManager.LockType.TimeLock) {
+
+
             // Handle time lock encoding
             output = string(
-                abi.encodePacked(output, '"time_lock":{ \n "maturity_date":', lock.timeLockExpiry.toString(), "\n },\n")
+                abi.encodePacked(output, '"time_lock":{ \n "maturity_date":', lock.timeLockExpiry.toString(), ",\n ")
             );
+
+            output = string(abi.encodePacked(output, '"maturity_extensions":', boolToString(fnft.maturityExtension), "\n }, \n"));
+
         } else if (lockManager.lockType() == ILockManager.LockType.AddressLock) {
             // Handle address lock encoding
             output = string(
@@ -117,13 +124,12 @@ contract MetadataHandler is IMetadataHandler {
             output = string(abi.encodePacked(output, "\n},\n"));
         }
 
-        output = string(abi.encodePacked(output, '"maturity_extensions":', boolToString(fnft.maturityExtension), ",\n"));
 
-        output = string(abi.encodePacked(output, '"salt":', bytes32ToLiteralString(fnftSalt), ",\n"));
+        output = string(abi.encodePacked(output, '"salt": \"0x', bytes32ToLiteralString(fnftSalt), "\",\n"));
         output = string(abi.encodePacked(output, '"fnft_id":', fnft.fnftId.toString(), ",\n"));
 
-        output = string(abi.encodePacked(output, '"network":', block.chainid.toString(), ",\n"));
-        output = string(abi.encodePacked(output, '"image":', renderFNFT(_controller, fnftSalt), "\n }"));
+        output = string(abi.encodePacked(output, '"network":', block.chainid.toString(), "\n } \n }"));
+        // output = string(abi.encodePacked(output, '"image":', renderFNFT(_controller, fnftSalt), "\n }"));
     }
 
     function renderFNFT(address revest, bytes32 salt) internal view returns (string memory) {
@@ -231,17 +237,10 @@ contract MetadataHandler is IMetadataHandler {
         string memory description =
             renderDescription(assetName, assetSymbol, depositAmount, lockType, config.lockManager);
 
-        string memory json = string.concat(
-            '{"name" : "Time Lock FNFT - RVST",',
-            '"description":"',
-            description,
-            '",',
-            '"image":"data:image/svg+xml;base64,',
-            Base64.encode(bytes(image)),
-            '"}'
-        );
+        string memory json = 
+            Base64.encode(bytes(image));
 
-        return string.concat("data:application/json;base64,", Base64.encode(bytes(json)));
+        return string.concat("data:image/svg+xml;base64,", json);
     }
 
     ////////////////////////////////////////////////////////////////////////////
