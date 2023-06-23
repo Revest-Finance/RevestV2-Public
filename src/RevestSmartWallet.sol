@@ -23,7 +23,7 @@ contract RevestSmartWallet is ReentrancyGuard {
         _;
     }
 
-    function withdraw(address controller, bytes4 selector, bytes calldata data) external nonReentrant onlyMaster {
+    function takeAction(address controller, bytes4 selector, bytes calldata data) external nonReentrant onlyMaster {
         (bool success,) = controller.delegatecall(abi.encodeWithSelector(selector, data));
         require(success, "Smart Wallet Action Failed");
 

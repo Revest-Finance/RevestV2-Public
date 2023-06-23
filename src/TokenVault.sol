@@ -29,7 +29,7 @@ contract TokenVault is ITokenVault, ReentrancyGuard {
             payable(Clones.cloneDeterministic(TEMPLATE, keccak256(abi.encode(salt, msg.sender))));
 
         //Withdraw the token, selfDestructs itself after
-        RevestSmartWallet(walletAddr).withdraw(msg.sender, selector, data);
+        RevestSmartWallet(walletAddr).takeAction(msg.sender, selector, data);
 
         //TODO: Better Event Handling
         // emit WithdrawERC20(token, recipient, salt, quantity, walletAddr);
