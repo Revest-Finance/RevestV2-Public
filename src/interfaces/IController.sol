@@ -2,6 +2,8 @@
 
 pragma solidity ^0.8.12;
 
+import "./ILockManager.sol";
+
 interface IController {
     event FNFTWithdrawn(address indexed from, uint256 indexed fnftId, uint256 indexed quantity);
     event FNFTUnlocked(address indexed from, uint256 indexed fnftId);
@@ -47,6 +49,7 @@ interface IController {
     function getValue(bytes32 fnftId) external view returns (uint256);
     function getAsset(bytes32 fnftId) external view returns (address);
     function getFNFT(bytes32 salt) external view returns (FNFTConfig memory);
+    function getLock(bytes32 fnftId) external view returns (ILockManager.Lock memory);
 
     //Metadata Functions
     function getTokenURI(bytes32 fnftId) external view returns (string memory);

@@ -220,6 +220,12 @@ abstract contract Revest_base is IRevest, IControllerExtendable, ERC1155Holder, 
         return fnfts[fnftId].asset;
     }
 
+    function getLock(bytes32 fnftId) external view virtual returns (ILockManager.Lock memory) {
+        bytes32 lockId = keccak256(abi.encode(fnftId, address(this)));
+
+        return ILockManager(fnfts[fnftId].lockManager).getLock(lockId);
+    }
+
     /*//////////////////////////////////////////////////////////////
                         Metadata
     //////////////////////////////////////////////////////////////*/

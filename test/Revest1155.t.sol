@@ -270,7 +270,7 @@ contract Revest1155Tests is Test {
             assertEq(fnftHandler.totalSupply(id), supply, "total supply of FNFTs did not increase by expected amount");
 
             //Lock was created
-            ILockManager.Lock memory lock = lockManager_timelock.getLock(lockId);
+            ILockManager.Lock memory lock = revest.getLock(salt);
             assertEq(
                 uint256(lockManager_timelock.lockType()),
                 uint256(ILockManager.LockType.TimeLock),
