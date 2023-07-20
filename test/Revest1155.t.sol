@@ -49,6 +49,9 @@ contract Revest1155Tests is Test {
 
     string baseURI = "https://ipfs.io/ipfs/";
 
+    error ERC1155InsufficientBalance(address sender, uint256 balance, uint256 needed, uint256 tokenId);
+
+
     constructor() {
         vault = new TokenVault();
         metadataHandler = new MetadataHandler(baseURI);
@@ -280,7 +283,8 @@ contract Revest1155Tests is Test {
             assertEq(lock.unlocked, false);
         }
 
-        vm.expectRevert("ERC1155: burn amount exceeds balance");
+
+        vm.expectRevert(abi.encodeWithSelector(ERC1155InsufficientBalance.selector, alice, supply / 2, supply, id));
         revest.withdrawFNFT(salt, supply); //Should Revert for trying to burn more than balance
 
         vm.expectRevert(bytes("E006"));

@@ -52,12 +52,10 @@ abstract contract Revest_base is IRevest, IControllerExtendable, ERC1155Holder, 
     mapping(bytes32 => FNFTConfig) public fnfts;
     mapping(address handler => mapping(uint256 nftId => uint32 numfnfts)) public override numfnfts;
 
-    constructor(address weth, address _tokenVault, address _metadataHandler, address govController) Ownable() {
+    constructor(address weth, address _tokenVault, address _metadataHandler, address govController) Ownable(govController) {
         WETH = weth;
         tokenVault = ITokenVault(_tokenVault);
         metadataHandler = IMetadataHandler(_metadataHandler);
-
-        _transferOwnership(govController);
 
         ADDRESS_THIS = address(this);
     }
@@ -204,6 +202,7 @@ abstract contract Revest_base is IRevest, IControllerExtendable, ERC1155Holder, 
         (address transferAsset, uint256 amountToWithdraw, address recipient) =
             abi.decode(data, (address, uint256, address));
 
+        if (amountToWithdraw != 0)
         ERC20(transferAsset).safeTransfer(recipient, amountToWithdraw);
     }
 

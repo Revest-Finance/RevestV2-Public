@@ -15,7 +15,7 @@ import "./interfaces/ILockManager.sol";
 import "./interfaces/ITokenVault.sol";
 import "./interfaces/IAllowanceTransfer.sol";
 
-import "./FNFTHandler.sol";
+import { FNFTHandler } from "./FNFTHandler.sol";
 
 import "./Revest_base.sol";
 
@@ -46,7 +46,8 @@ contract Revest_1155 is Revest_base {
         address _metadataHandler,
         address govController
     ) Revest_base(weth, _tokenVault, _metadataHandler, govController) {
-        fnftHandler = new FNFTHandler(address(this), tokenURI);
+        fnftHandler = new 
+        FNFTHandler(tokenURI);
     }
 
     /**
@@ -197,9 +198,9 @@ contract Revest_1155 is Revest_base {
             depositAsset = WETH;
         }
 
-        if (usePermit2) {
+        if (usePermit2 && deposit != 0) {
             PERMIT2.transferFrom(msg.sender, smartWallet, deposit.toUint160(), depositAsset);
-        } else {
+        } else if (deposit != 0){
             ERC20(depositAsset).safeTransferFrom(msg.sender, smartWallet, deposit);
         }
 
@@ -239,14 +240,14 @@ contract Revest_1155 is Revest_base {
 
             IWETH(WETH).deposit{value: msg.value}(); //Convert it to WETH and send it back to this
             IWETH(WETH).transfer(smartWallet, msg.value); //Transfer it to the smart wallet
-        } else if (params.usePermit2) {
+        } else if (params.usePermit2 && params.depositAmount != 0) {
             PERMIT2.transferFrom(
                 msg.sender,
                 smartWallet,
                 (totalQuantity * params.depositAmount).toUint160(), //permit2 uses a uint160 for the amount
                 params.fnftConfig.asset
             );
-        } else {
+        } else if (params.depositAmount != 0) {
             ERC20(params.fnftConfig.asset).safeTransferFrom(
                 msg.sender, smartWallet, totalQuantity * params.depositAmount
             );
@@ -294,10 +295,10 @@ contract Revest_1155 is Revest_base {
         tokenVault.invokeSmartWallet(salt, WITHDRAW_SELECTOR, delegateCallData);
 
         //Return ETH to the user or WETH
-        if (fnft.asset == ETH_ADDRESS) {
+        if (fnft.asset == ETH_ADDRESS && amountToWithdraw != 0) {
             IWETH(WETH).withdraw(amountToWithdraw);
             destination.safeTransferETH(amountToWithdraw);
-        } else {
+        } else if (amountToWithdraw != 0) {
             ERC20(fnft.asset).safeTransfer(destination, amountToWithdraw);
         }
 

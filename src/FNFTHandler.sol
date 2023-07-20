@@ -42,11 +42,9 @@ contract FNFTHandler is ERC1155, Ownable, IFNFTHandler {
      * @dev Primary constructor to create an instance of NegativeEntropy
      * Grants ADMIN and MINTER_ROLE to whoever creates the contract
      */
-    constructor(address _revest, string memory _uri) ERC1155(_uri) Ownable() {
+    constructor(string memory _uri) ERC1155(_uri) Ownable(msg.sender) {
         DOMAIN_SEPARATOR =
             keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes("Revest_FNFTHandler")), block.chainid, address(this)));
-
-        _transferOwnership(_revest);
     }
 
     /**
@@ -112,7 +110,7 @@ contract FNFTHandler is ERC1155, Ownable, IFNFTHandler {
             )
         );
 
-        (address signer,) = digest.tryRecover(signature);
+        (address signer,,) = digest.tryRecover(signature);
 
         require(signer != address(0) && signer == info.owner, "E018");
         require(block.timestamp < info.deadline, "ERC1155: signature expired");
