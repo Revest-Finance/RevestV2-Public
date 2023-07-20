@@ -2,6 +2,7 @@
 
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import "@openzeppelin/contracts/access/IAccessControl.sol";
 
 pragma solidity ^0.8.19;
 
@@ -17,7 +18,7 @@ interface IERC1155Supply {
     function totalSupply(uint256 id) external view returns (uint256);
 }
 
-interface IFNFTHandler is IERC165, IERC1155, IERC1155Supply {
+interface IFNFTHandler is IAccessControl, IERC165, IERC1155, IERC1155Supply {
     event BatchMetadataUpdate(uint256 _fromTokenId, uint256 _toTokenId);
 
     struct permitApprovalInfo {

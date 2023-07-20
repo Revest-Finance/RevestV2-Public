@@ -46,8 +46,7 @@ contract Revest_1155 is Revest_base {
         address _metadataHandler,
         address govController
     ) Revest_base(weth, _tokenVault, _metadataHandler, govController) {
-        fnftHandler = new 
-        FNFTHandler(tokenURI);
+        fnftHandler = new FNFTHandler(tokenURI, govController);
     }
 
     /**
@@ -71,7 +70,7 @@ contract Revest_1155 is Revest_base {
         // Get or create lock based on time, assign lock to ID
         {
             //Salt = kecccak256(fnftID)
-            salt = keccak256(abi.encode(fnftConfig.fnftId));
+            salt = keccak256(abi.encode(address(this), fnftConfig.fnftId));
 
             lockId = ILockManager(fnftConfig.lockManager).createLock(salt, abi.encode(endTime));
         }
@@ -95,7 +94,7 @@ contract Revest_1155 is Revest_base {
 
         {
             //Salt = kecccak256(fnftID || handler || nonce (which is always zero))
-            salt = keccak256(abi.encode(fnftConfig.fnftId));
+            salt = keccak256(abi.encode(address(this), fnftConfig.fnftId));
 
             //Return the ID of the lock
             lockId = ILockManager(fnftConfig.lockManager).createLock(salt, arguments);
@@ -211,7 +210,7 @@ contract Revest_1155 is Revest_base {
     // INTERNAL FUNCTIONS
     //
     function doMint(IRevest.MintParameters memory params) internal {
-        bytes32 salt = keccak256(abi.encode(params.fnftConfig.fnftId));
+        bytes32 salt = keccak256(abi.encode(address(this), params.fnftConfig.fnftId));
 
         bool isSingular;
         uint256 totalQuantity;
@@ -341,12 +340,12 @@ contract Revest_1155 is Revest_base {
         return balanceOf / supply;
     }
 
-    function fnftIdToRevestId(uint256 fnftId) public pure returns (bytes32 salt) {
-        salt = keccak256(abi.encode(fnftId));
+    function fnftIdToRevestId(uint256 fnftId) public view returns (bytes32 salt) {
+        salt = keccak256(abi.encode(address(this), fnftId));
     }
 
     function fnftIdToLockId(uint256 fnftId) public view returns (bytes32 lockId) {
-        bytes32 salt = keccak256(abi.encode(fnftId));
+        bytes32 salt = keccak256(abi.encode(address(this), fnftId));
 
         return keccak256(abi.encode(salt, address(this)));
     }
