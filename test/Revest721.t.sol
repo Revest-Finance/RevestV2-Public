@@ -634,7 +634,8 @@ contract Revest721Tests is Test {
     }
 
     function testMintFNFTWithPermit2(uint256 amount, uint256 additionalDepositAmount) public {
-        vm.assume(amount >= 1e6 && amount <= 1e12);
+        // vm.assume(amount >= 1e6 && amount <= 1e12);
+        amount = bound(amount, 1e6, 1e12);
         vm.assume(additionalDepositAmount >= 1e6 && additionalDepositAmount <= 1e12);
 
         startHoax(alice, alice);

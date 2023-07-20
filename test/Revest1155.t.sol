@@ -530,7 +530,9 @@ contract Revest1155Tests is Test {
 
     function testMintFNFTWithEth(uint256 supply, uint256 amount) public {
         vm.assume(amount >= 1 ether && amount <= 100 ether);
-        vm.assume(supply > 1 && supply <= 1e6);
+
+        supply = bound(supply, 2, 1e6);
+        // vm.assume(supply > 1 && supply <= 1e6);
 
         startHoax(alice, alice);
 
