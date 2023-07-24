@@ -39,7 +39,7 @@ contract FNFTHandler is IFNFTHandler, ERC1155, AccessControl  {
 
     struct ids {
         address controller;
-        uint96 supply;
+        uint256 supply;
     }
 
     mapping(uint256 => ids) private supply;
