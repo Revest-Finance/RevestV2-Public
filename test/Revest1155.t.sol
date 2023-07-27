@@ -248,8 +248,7 @@ contract Revest1155Tests is Test {
 
         config.handler = address(fnftHandler);
 
-        (uint id, bytes32 lockId) =
-            revest.mintTimeLock(block.timestamp + 1 weeks, recipients, amounts, amount, config);
+        (uint id,) = revest.mintTimeLock(block.timestamp + 1 weeks, recipients, amounts, amount, config);
 
         address walletAddr = revest.getAddressForFNFT(id);
 
@@ -614,7 +613,7 @@ contract Revest1155Tests is Test {
             maturityExtension: true
         });
 
-        (uint id, bytes32 lockId) = revest.mintTimeLock(block.timestamp + 1 weeks, recipients, amounts, 1e6, config);
+        (uint id, ) = revest.mintTimeLock(block.timestamp + 1 weeks, recipients, amounts, 1e6, config);
 
         bytes32 SET_APPROVALFORALL_TYPEHASH = keccak256(
             "transferFromWithPermit(address owner,address operator, bool approved, uint id, uint amount, uint256 deadline, uint nonce, bytes data)"
@@ -951,7 +950,7 @@ contract Revest1155Tests is Test {
         //This is only meant to fill the coverage test
 
         (uint id, ) = revest.mintTimeLock(block.timestamp + 1 weeks + 6 hours, recipients, supplies, amount, config);
-        // skip(2 weeks);
+        skip(2 weeks);
         assert(fnftHandler.exists(id));
 
         //TODO

@@ -79,8 +79,6 @@ contract MetadataHandler is IMetadataHandler {
 
         bytes32 lockId = keccak256(abi.encode(fnftId, _controller));
         ILockManager.Lock memory lock = lockManager.getLock(lockId);
-            console.log("-----------------TIMELOCK EXPIRY: %i", lock.timeLockExpiry);
-
 
         output = string(abi.encodePacked('"properties":{ \n "asset_ticker": \"', getTicker(fnft.asset), "\",\n"));
         output = string(abi.encodePacked(output, '"handler":"', toAsciiString(fnft.handler), '",\n'));
@@ -136,7 +134,7 @@ contract MetadataHandler is IMetadataHandler {
         string memory assetName = getName(config.asset);
         string memory assetSymbol = getTicker(config.asset);
 
-        bytes32 lockId = keccak256(abi.encode(fnftId, revest));
+        bytes32 lockId = IRevest(revest).fnftIdToLockId(fnftId);
 
         bool isUnlocked = ILockManager(config.lockManager).getLockMaturity(lockId, fnftId);
         console.log("is unlocked: %s", isUnlocked);
@@ -232,7 +230,7 @@ contract MetadataHandler is IMetadataHandler {
             image = string.concat(image, "</svg>");
         }
 
-        string memory description =
+        // string memory description =
             renderDescription(assetName, assetSymbol, depositAmount, lockType, config.lockManager);
 
         string memory json = 
@@ -267,7 +265,8 @@ contract MetadataHandler is IMetadataHandler {
         );
     }
 
-    function getImage(address _controller, bytes32) public returns (string memory image) {
+    //TODO: Implement as SVG
+    function getImage(address, bytes32) public returns (string memory image) {
         //TODO: Implement as SVG
         image = "https://revest.mypinata.cloud/ipfs/QmW8BHSTMzV892N6i9qT79QC45MftxrvDti7JDHD56BS38";
     }

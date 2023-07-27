@@ -53,6 +53,7 @@ interface IController {
     function getAsset(uint fnftId) external view returns (address);
     function getFNFT(uint salt) external view returns (FNFTConfig memory);
     function getLock(uint fnftId) external view returns (ILockManager.Lock memory);
+    function fnftIdToLockId(uint256 fnftId) external view returns (bytes32 lockId);
 
     //Metadata Functions
     function getTokenURI(uint fnftId) external view returns (string memory);
