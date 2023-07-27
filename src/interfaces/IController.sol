@@ -28,9 +28,9 @@ interface IController {
         bool maturityExtension; // Maturity extensions remaining
         
         //A storage slot can be saved by reducing this to a uint88 and casting when needed
-        // uint256 fnftId; //type(uint88).max = 3.1e23
 
         //2 Slots but only Used by the Revest-721 -> Are left empty at the end for 1155 to save ~40k gas
+        uint256 fnftId; //type(uint88).max = 3.1e23
         address handler;
     }
 

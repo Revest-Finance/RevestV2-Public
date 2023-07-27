@@ -126,6 +126,7 @@ contract Revest1155Tests is Test {
             asset: address(USDC),
             lockManager: address(lockManager_timelock),
             nonce: 0,
+            fnftId: 0,
             maturityExtension: false
         });
 
@@ -241,6 +242,7 @@ contract Revest1155Tests is Test {
             asset: address(USDC),
             lockManager: address(lockManager_timelock),
             nonce: 0,
+            fnftId: 0,
             maturityExtension: false
         });
 
@@ -316,6 +318,7 @@ contract Revest1155Tests is Test {
         IController.FNFTConfig memory config = IController.FNFTConfig({
             handler: address(0),
             asset: address(USDC),
+            fnftId: 0,
             lockManager: address(lockManager_addresslock),
             nonce: 0,
             maturityExtension: false
@@ -372,6 +375,7 @@ contract Revest1155Tests is Test {
             handler: address(0),
             asset: address(USDC),
             lockManager: address(lockManager_timelock),
+            fnftId: 0,
             nonce: 0,
             maturityExtension: false
         });
@@ -449,6 +453,7 @@ contract Revest1155Tests is Test {
             handler: address(fnftHandler),
             asset: address(USDC),
             lockManager: address(lockManager_timelock),
+            fnftId: 0,
             nonce: 0,
             maturityExtension: true
         });
@@ -535,6 +540,7 @@ contract Revest1155Tests is Test {
             handler: address(fnftHandler),
             asset: address(0),
             lockManager: address(lockManager_timelock),
+            fnftId: 0,
             nonce: 0,
             maturityExtension: true
         });
@@ -603,6 +609,7 @@ contract Revest1155Tests is Test {
             handler: address(fnftHandler),
             asset: address(USDC),
             lockManager: address(lockManager_timelock),
+            fnftId: 0,
             nonce: 0,
             maturityExtension: true
         });
@@ -670,6 +677,7 @@ contract Revest1155Tests is Test {
             handler: address(fnftHandler),
             asset: address(USDC),
             lockManager: address(lockManager_timelock),
+            fnftId: 0,
             nonce: 0,
             maturityExtension: true
         });
@@ -746,6 +754,7 @@ contract Revest1155Tests is Test {
                 handler: address(fnftHandler),
                 asset: address(USDC),
                 lockManager: address(lockManager_timelock),
+                fnftId: 0,
                 nonce: 0,
                 maturityExtension: true
             });
@@ -790,6 +799,7 @@ contract Revest1155Tests is Test {
         IController.FNFTConfig memory config = IController.FNFTConfig({
             handler: address(fnftHandler),
             asset: address(USDC),
+            fnftId: 0,
             lockManager: address(lockManager_addresslock),
             nonce: 0,
             maturityExtension: false
@@ -848,6 +858,7 @@ contract Revest1155Tests is Test {
             IController.FNFTConfig memory config = IController.FNFTConfig({
                 handler: address(fnftHandler),
                 asset: address(USDC),
+                fnftId: 0,
                 lockManager: address(lockManager_timelock),
                 nonce: 0,
                 maturityExtension: false
@@ -930,6 +941,7 @@ contract Revest1155Tests is Test {
         IController.FNFTConfig memory config = IController.FNFTConfig({
             handler: address(fnftHandler),
             asset: address(USDC),
+            fnftId: 0,
             lockManager: address(lockManager_timelock),
             nonce: 0,
             maturityExtension: false
