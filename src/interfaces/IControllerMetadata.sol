@@ -9,8 +9,8 @@ interface IControllerMetadata {
     //You cannot declare an empty enum in Solidity, so we use this as a placeholder
     enum triggerUpdateType {NONE}
 
-    function triggerUpdate(bytes32 fnftId, triggerUpdateType updateType) external;
+    function triggerUpdate(uint fnftId, triggerUpdateType updateType) external;
 
-    function getCustomMetadata(bytes32 fnftId) external view returns (string memory);
-    function getCustomMetadataJSON(bytes32 fnftId) external view returns (bytes memory);
+    function getCustomMetadata(uint fnftId) external view returns (string memory);
+    function getCustomMetadataJSON(uint fnftId) external view returns (bytes memory);
 }

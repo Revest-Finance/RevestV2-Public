@@ -14,6 +14,8 @@ import "./lib/IWETH.sol";
 
 import "@openzeppelin/contracts/utils/Strings.sol";
 
+import { console2 } from "forge-std/console2.sol";
+
 /**
  * @title LockManager_Base
  * @author 0xTraub
@@ -47,6 +49,9 @@ abstract contract LockManager_Base is ILockManager, ReentrancyGuard {
      * lockId - the ID of the FNFT to unlock
      */
     function unlockFNFT(bytes32 lockId, uint256 fnftId) external virtual nonReentrant {
+        console2.log("unlock fnft id");
+        console2.logBytes32(lockId);
+
         //Allows reduction to 1 SSTORE at the end as opposed to many
         ILockManager.Lock memory tempLock = locks[lockId];
 

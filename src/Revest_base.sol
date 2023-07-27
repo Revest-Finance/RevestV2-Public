@@ -49,7 +49,7 @@ abstract contract Revest_base is IRevest, IControllerExtendable, ERC1155Holder, 
     //Was deployed to same address on every chain
     IAllowanceTransfer constant PERMIT2 = IAllowanceTransfer(0x000000000022D473030F116dDEE9F6B43aC78BA3);
 
-    mapping(bytes32 => FNFTConfig) public fnfts;
+    mapping(uint => FNFTConfig) public fnfts;
     mapping(address handler => mapping(uint256 nftId => uint32 numfnfts)) public override numfnfts;
 
     constructor(address weth, address _tokenVault, address _metadataHandler, address govController) Ownable(govController) {
@@ -69,15 +69,17 @@ abstract contract Revest_base is IRevest, IControllerExtendable, ERC1155Holder, 
                     IResonate Functions
     //////////////////////////////////////////////////////////////*/
 
-    function unlockFNFT(bytes32 salt) external override nonReentrant {
-        IRevest.FNFTConfig memory fnft = fnfts[salt];
+    function unlockFNFT(uint fnftId) external override nonReentrant {
+        IRevest.FNFTConfig memory fnft = fnfts[fnftId];
 
-        bytes32 lockId = keccak256(abi.encode(salt, address(this)));
+        bytes32 lockSalt = keccak256(abi.encode(fnftId));
+
+        bytes32 lockId = keccak256(abi.encode(lockSalt, address(this)));
 
         // Works for all lock types
-        ILockManager(fnft.lockManager).unlockFNFT(lockId, fnft.fnftId);
+        ILockManager(fnft.lockManager).unlockFNFT(lockId, fnftId);
 
-        emit FNFTUnlocked(msg.sender, fnft.fnftId);
+        emit FNFTUnlocked(msg.sender, fnftId);
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -92,7 +94,7 @@ abstract contract Revest_base is IRevest, IControllerExtendable, ERC1155Holder, 
         IRevest.FNFTConfig memory fnftConfig,
         IAllowanceTransfer.PermitBatch calldata permits,
         bytes calldata _signature
-    ) external payable nonReentrant returns (bytes32 salt, bytes32 lockId) {
+    ) external payable nonReentrant returns (uint fnftId, bytes32 lockId) {
         //Length check means to use permit2 for allowance but allowance has already been granted
         require(_signature.length != 0, "E024");
         PERMIT2.permit(msg.sender, permits, _signature);
@@ -105,7 +107,7 @@ abstract contract Revest_base is IRevest, IControllerExtendable, ERC1155Holder, 
         uint256[] memory quantities,
         uint256 depositAmount,
         IRevest.FNFTConfig memory fnftConfig
-    ) external payable virtual nonReentrant returns (bytes32 salt, bytes32 lockId) {
+    ) external payable virtual nonReentrant returns (uint fnftId, bytes32 lockId) {
         return _mintTimeLock(endTime, recipients, quantities, depositAmount, fnftConfig, false);
     }
 
@@ -117,7 +119,7 @@ abstract contract Revest_base is IRevest, IControllerExtendable, ERC1155Holder, 
         IRevest.FNFTConfig memory fnftConfig,
         IAllowanceTransfer.PermitBatch calldata permits,
         bytes calldata _signature
-    ) external payable virtual nonReentrant returns (bytes32 salt, bytes32 lockId) {
+    ) external payable virtual nonReentrant returns (uint fnftId, bytes32 lockId) {
         //Length check means to use permit2 for allowance but allowance has already been granted
         require(_signature.length != 0, "E024");
         PERMIT2.permit(msg.sender, permits, _signature);
@@ -130,7 +132,7 @@ abstract contract Revest_base is IRevest, IControllerExtendable, ERC1155Holder, 
         uint256[] memory quantities,
         uint256 depositAmount,
         IRevest.FNFTConfig memory fnftConfig
-    ) external payable virtual nonReentrant returns (bytes32 salt, bytes32 lockId) {
+    ) external payable virtual nonReentrant returns (uint fnftId, bytes32 lockId) {
         return _mintAddressLock(arguments, recipients, quantities, depositAmount, fnftConfig, false);
     }
 
@@ -141,7 +143,7 @@ abstract contract Revest_base is IRevest, IControllerExtendable, ERC1155Holder, 
         uint256 depositAmount,
         IRevest.FNFTConfig memory fnftConfig,
         bool usePermit2
-    ) internal virtual returns (bytes32 salt, bytes32 lockId);
+    ) internal virtual returns (uint fnftId, bytes32 lockId);
 
     function _mintTimeLock(
         uint256 endTime,
@@ -150,27 +152,27 @@ abstract contract Revest_base is IRevest, IControllerExtendable, ERC1155Holder, 
         uint256 depositAmount,
         IRevest.FNFTConfig memory fnftConfig,
         bool usePermit2
-    ) internal virtual returns (bytes32 salt, bytes32 lockId);
+    ) internal virtual returns (uint fnftId, bytes32 lockId);
 
     /*//////////////////////////////////////////////////////////////
                     IController Extendable Functions
     //////////////////////////////////////////////////////////////*/
-    function depositAdditionalToFNFT(bytes32 salt, uint256 amount) external payable virtual returns (uint256 deposit) {
-        return _depositAdditionalToFNFT(salt, amount, false);
+    function depositAdditionalToFNFT(uint fnftId, uint256 amount) external payable virtual returns (uint256 deposit) {
+        return _depositAdditionalToFNFT(fnftId, amount, false);
     }
 
     function depositAdditionalToFNFTWithPermit(
-        bytes32 salt,
+        uint fnftId,
         uint256 amount,
         IAllowanceTransfer.PermitBatch calldata permits,
         bytes calldata _signature
     ) external virtual returns (uint256 deposit) {
         require(_signature.length != 0, "E024");
         PERMIT2.permit(msg.sender, permits, _signature);
-        return _depositAdditionalToFNFT(salt, amount, true);
+        return _depositAdditionalToFNFT(fnftId, amount, true);
     }
 
-    function _depositAdditionalToFNFT(bytes32 salt, uint256 amount, bool usePermit2)
+    function _depositAdditionalToFNFT(uint fnftId, uint256 amount, bool usePermit2)
         internal
         virtual
         returns (uint256 deposit);
@@ -180,7 +182,7 @@ abstract contract Revest_base is IRevest, IControllerExtendable, ERC1155Holder, 
     //////////////////////////////////////////////////////////////*/
 
     function _proxyCall(
-        bytes32 salt,
+        uint fnftId,
         address[] memory targets,
         uint256[] memory values,
         bytes[] memory calldatas,
@@ -189,6 +191,8 @@ abstract contract Revest_base is IRevest, IControllerExtendable, ERC1155Holder, 
     ) internal returns (bytes[] memory) {
         require(targets.length == values.length && targets.length == calldatas.length, "E026");
         require(ILockManager(lockManager).proxyCallisApproved(asset, targets, values, calldatas), "E013");
+
+        bytes32 salt = keccak256(abi.encode(fnftId));
 
         return tokenVault.proxyCall(salt, targets, values, calldatas);
     }
@@ -211,16 +215,17 @@ abstract contract Revest_base is IRevest, IControllerExtendable, ERC1155Holder, 
     //////////////////////////////////////////////////////////////*/
 
     //You don't need this but it makes it a little easier to return an object and not a bunch of variables from a mapping
-    function getFNFT(bytes32 fnftId) external view virtual returns (IRevest.FNFTConfig memory) {
+    function getFNFT(uint fnftId) external view virtual returns (IRevest.FNFTConfig memory) {
         return fnfts[fnftId];
     }
 
-    function getAsset(bytes32 fnftId) external view virtual returns (address) {
+    function getAsset(uint fnftId) external view virtual returns (address) {
         return fnfts[fnftId].asset;
     }
 
-    function getLock(bytes32 fnftId) external view virtual returns (ILockManager.Lock memory) {
-        bytes32 lockId = keccak256(abi.encode(fnftId, address(this)));
+    function getLock(uint fnftId) external view virtual returns (ILockManager.Lock memory) {
+        bytes32 lockSalt = keccak256(abi.encode(fnftId));
+        bytes32 lockId = keccak256(abi.encode(lockSalt, address(this)));
 
         return ILockManager(fnfts[fnftId].lockManager).getLock(lockId);
     }
@@ -228,11 +233,11 @@ abstract contract Revest_base is IRevest, IControllerExtendable, ERC1155Holder, 
     /*//////////////////////////////////////////////////////////////
                         Metadata
     //////////////////////////////////////////////////////////////*/
-    function getTokenURI(bytes32 fnftId) public view returns (string memory) {
+    function getTokenURI(uint fnftId) public view returns (string memory) {
         return metadataHandler.getTokenURI(fnftId);
     }
 
-    function renderTokenURI(bytes32 tokenId, address owner)
+    function renderTokenURI(uint tokenId, address owner)
         public
         view
         returns (string memory baseRenderURI, string[] memory parameters)
