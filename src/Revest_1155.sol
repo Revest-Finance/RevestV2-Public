@@ -307,23 +307,6 @@ contract Revest_1155 is Revest_base {
         emit RedeemFNFT(salt, fnftId, destination);
     }
 
-    function proxyCall(bytes32 salt, address[] memory targets, uint256[] memory values, bytes[] memory calldatas)
-        external
-        returns (bytes[] memory)
-    {
-        /*
-        * You inherit the actual proxyCall implementation from the revest_base and then only need to override
-        * the functionality to determine if the user is allowed to call the function on the FNFT
-        */
-
-        IRevest.FNFTConfig memory fnft = fnfts[salt];
-
-        //You Must own the entire supply to call a function on the FNFT
-        uint256 supply = fnftHandler.totalSupply(fnft.fnftId);
-        require(supply != 0 && fnftHandler.balanceOf(msg.sender, fnft.fnftId) == supply, "E007");
-
-        return _proxyCall(salt, targets, values, calldatas, fnft.lockManager, fnft.asset);
-    }
 
     function getAddressForFNFT(bytes32 salt) public view virtual returns (address smartWallet) {
         smartWallet = tokenVault.getAddress(salt, address(this));

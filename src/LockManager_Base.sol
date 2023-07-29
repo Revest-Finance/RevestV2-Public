@@ -69,33 +69,6 @@ abstract contract LockManager_Base is ILockManager, ReentrancyGuard {
         return locks[lockSalt].creationTime != 0;
     }
 
-    function proxyCallisApproved(
-        address token,
-        address[] memory targets,
-        uint256[] memory, //We don't need values but its in the interface and good for users who want to bring their own lockManager
-        bytes[] memory calldatas
-    ) external view virtual returns (bool) {
-        for (uint256 x = 0; x < calldatas.length;) {
-            //Restriction only enabled when the target is the token and not unlocked
-            if (targets[x] == token && blacklistedSelector[bytes4(calldatas[x])]) {
-                return false;
-            }
-            //Revest uses address(0) for asset when it is ETH, but stores WETH in the vault.
-            //This prevents the edge case for that
-            else if (targets[x] == WETH && token == ETH_ADDRESS) {
-                if (bytes4(calldatas[x]) == IWETH.withdraw.selector) {
-                    return false;
-                }
-            }
-
-            unchecked {
-                ++x;
-            }
-        }
-
-        return true;
-    }
-
     function getMetadata(bytes32) external view returns (string memory) {
         return "TODO";
     }

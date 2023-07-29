@@ -176,24 +176,6 @@ abstract contract Revest_base is IRevest, IControllerExtendable, ERC1155Holder, 
         returns (uint256 deposit);
 
     /*//////////////////////////////////////////////////////////////
-                    Proxy Call Internal Functions
-    //////////////////////////////////////////////////////////////*/
-
-    function _proxyCall(
-        bytes32 salt,
-        address[] memory targets,
-        uint256[] memory values,
-        bytes[] memory calldatas,
-        address lockManager,
-        address asset
-    ) internal returns (bytes[] memory) {
-        require(targets.length == values.length && targets.length == calldatas.length, "E026");
-        require(ILockManager(lockManager).proxyCallisApproved(asset, targets, values, calldatas), "E013");
-
-        return tokenVault.proxyCall(salt, targets, values, calldatas);
-    }
-
-    /*//////////////////////////////////////////////////////////////
                     Smart Wallet DelegateCall Functions
     //////////////////////////////////////////////////////////////*/
 

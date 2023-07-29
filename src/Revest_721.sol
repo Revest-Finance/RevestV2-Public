@@ -254,20 +254,6 @@ contract Revest_721 is Revest_base {
         emit RedeemFNFT(salt, fnftId, user);
     }
 
-    function proxyCall(bytes32 salt, address[] memory targets, uint256[] memory values, bytes[] memory calldatas)
-        external
-        returns (bytes[] memory)
-    {
-        IRevest.FNFTConfig memory fnft = fnfts[salt];
-
-        //Only the NFT owner can call a function on the NFT
-        require(IERC721(fnft.handler).ownerOf(fnft.fnftId) == msg.sender, "E023");
-
-        bytes32 walletSalt = keccak256(abi.encode(fnft.fnftId, fnft.handler));
-
-        return _proxyCall(walletSalt, targets, values, calldatas, fnft.lockManager, fnft.asset);
-    }
-
     function getValue(bytes32 fnftId) external view virtual returns (uint256) {
         IRevest.FNFTConfig memory fnft = fnfts[fnftId];
 

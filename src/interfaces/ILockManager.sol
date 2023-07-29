@@ -31,13 +31,6 @@ interface ILockManager {
 
     function extendLockMaturity(bytes32 salt, bytes calldata args) external;
 
-    function proxyCallisApproved(
-        address token,
-        address[] memory targets,
-        uint256[] memory values,
-        bytes[] memory calldatas
-    ) external view returns (bool);
-
     function getMetadata(bytes32 lockId) external view returns (string memory);
     function lockDescription(bytes32 lockId) external view returns (string memory);
 }
