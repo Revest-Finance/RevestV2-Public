@@ -26,7 +26,7 @@ contract LockManager_Timelock is LockManager_Base {
 
     ILockManager.LockType public constant override lockType = ILockManager.LockType.TimeLock;
 
-    constructor(address _WETH) LockManager_Base(_WETH) {}
+    constructor() LockManager_Base() {}
 
     function createLock(bytes32 salt, bytes calldata args) external override nonReentrant returns (bytes32 lockId) {
         lockId = keccak256(abi.encode(salt, msg.sender));

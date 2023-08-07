@@ -23,17 +23,10 @@ abstract contract LockManager_Base is ILockManager, ReentrancyGuard {
 
     mapping(bytes32 => ILockManager.Lock) public locks; // maps lockId to locks
 
-    mapping(bytes4 selector => bool) public blacklistedSelector;
-
-    address public immutable WETH;
-
     address public constant ETH_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
-    constructor(address _WETH) {
-        blacklistedSelector[IERC20.transfer.selector] = true;
-        blacklistedSelector[IERC20.approve.selector] = true;
-        blacklistedSelector[IERC20.transferFrom.selector] = true;
-        WETH = _WETH;
+    constructor() {
+       
     }
 
     function getLock(bytes32 salt) external view virtual returns (ILockManager.Lock memory) {
