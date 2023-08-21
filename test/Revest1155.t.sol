@@ -53,6 +53,8 @@ contract Revest1155Tests is Test {
 
 
     constructor() {
+        vm.createSelectFork("mainnet");
+
         vault = new TokenVault();
         metadataHandler = new MetadataHandler(baseURI);
         revest = new Revest_1155("", address(WETH), address(vault), address(metadataHandler), govController);
