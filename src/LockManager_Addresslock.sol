@@ -2,13 +2,6 @@
 
 pragma solidity ^0.8.19;
 
-import "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
-
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-
-import "./interfaces/IRevest.sol";
-import "./lib/IWETH.sol";
-
 import "./LockManager_Base.sol";
 
 /**
@@ -16,8 +9,6 @@ import "./LockManager_Base.sol";
  * @author 0xTraub
  */
 contract LockManager_Addresslock is LockManager_Base {
-    using ERC165Checker for address;
-
     ILockManager.LockType public constant override lockType = ILockManager.LockType.AddressLock;
 
     constructor() LockManager_Base() {}

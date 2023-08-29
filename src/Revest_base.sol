@@ -2,27 +2,26 @@
 
 pragma solidity <=0.8.19;
 
-import "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/interfaces/IERC721.sol";
-import "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { ERC165Checker } from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
+import { ReentrancyGuard } from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import { IERC721 } from "@openzeppelin/contracts/interfaces/IERC721.sol";
+import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { ERC1155Holder } from "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
 
-import "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
+import { SafeTransferLib, ERC20 } from "@solmate/utils/SafeTransferLib.sol";
+import { FixedPointMathLib } from "@solmate/utils/FixedPointMathLib.sol";
 
-import "@solmate/utils/SafeTransferLib.sol";
-import "@solmate/utils/FixedPointMathLib.sol";
+import { IRevest } from "./interfaces/IRevest.sol";
+import { ILockManager } from "./interfaces/ILockManager.sol";
+import { ITokenVault } from "./interfaces/ITokenVault.sol";
+import { IFNFTHandler } from "./interfaces/IFNFTHandler.sol";
+import { IAllowanceTransfer } from "./interfaces/IAllowanceTransfer.sol";
+import { IMetadataHandler } from "./interfaces/IMetadataHandler.sol";
+import { IControllerExtendable } from "./interfaces/IControllerExtendable.sol";
 
-import "./interfaces/IRevest.sol";
-import "./interfaces/ILockManager.sol";
-import "./interfaces/ITokenVault.sol";
-import "./interfaces/IFNFTHandler.sol";
-import "./interfaces/IAllowanceTransfer.sol";
-import "./interfaces/IMetadataHandler.sol";
-import "./interfaces/IControllerExtendable.sol";
-
-import "./lib/IWETH.sol";
+import { IWETH } from "./lib/IWETH.sol";
 
 /**
  * @title Revest_base

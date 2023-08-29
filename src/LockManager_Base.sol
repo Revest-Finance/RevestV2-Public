@@ -2,24 +2,18 @@
 
 pragma solidity ^0.8.19;
 
-import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
+import { ReentrancyGuard } from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { IRevest } from "./interfaces/IRevest.sol";
+import { ILockManager } from "./interfaces/ILockManager.sol";
 
-import "./interfaces/IRevest.sol";
-import "./interfaces/ILockManager.sol";
-import "./lib/IWETH.sol";
-
-import "@openzeppelin/contracts/utils/Strings.sol";
+import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 
 /**
  * @title LockManager_Base
  * @author 0xTraub
  */
 abstract contract LockManager_Base is ILockManager, ReentrancyGuard {
-    using ERC165Checker for address;
 
     mapping(bytes32 => ILockManager.Lock) public locks; // maps lockId to locks
 

@@ -2,16 +2,15 @@
 
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
+import { IERC20Metadata } from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import { ERC165Checker } from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
+import { Base64 } from "@openzeppelin/contracts/utils/Base64.sol";
+import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 
-import "@openzeppelin/contracts/utils/Base64.sol";
-import "@openzeppelin/contracts/utils/Strings.sol";
-
-import "./interfaces/IMetadataHandler.sol";
-import "./interfaces/ILockManager.sol";
-import "./interfaces/IRevest.sol";
-import "./interfaces/ILockManager.sol";
+import { IMetadataHandler } from "./interfaces/IMetadataHandler.sol";
+import { ILockManager } from "./interfaces/ILockManager.sol";
+import { IRevest, IController } from "./interfaces/IRevest.sol";
+import { ILockManager } from "./interfaces/ILockManager.sol";
 
 import "forge-std/console.sol";
 

@@ -2,26 +2,9 @@
 
 pragma solidity ^0.8.19;
 
-import "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
-import "@openzeppelin/contracts/interfaces/IERC721.sol";
-import "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-
-import "@solmate/utils/SafeTransferLib.sol";
-import "@solmate/utils/FixedPointMathLib.sol";
-
-import "./interfaces/IRevest.sol";
-import "./interfaces/ILockManager.sol";
-import "./interfaces/ITokenVault.sol";
-import "./interfaces/IAllowanceTransfer.sol";
-
 import { FNFTHandler } from "./FNFTHandler.sol";
 
 import "./Revest_base.sol";
-
-import "./lib/IWETH.sol";
-
-import "forge-std/console.sol";
 
 /**
  * @title Revest_1155

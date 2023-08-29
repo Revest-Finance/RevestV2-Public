@@ -2,17 +2,15 @@
 
 pragma solidity ^0.8.19;
 
-import "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
-import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import { IERC165, ERC165Checker } from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
+import { ReentrancyGuard } from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import { ERC1155 } from "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
+import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 
-import "./interfaces/IRevest.sol";
-import "./interfaces/IFNFTHandler.sol";
-import "./interfaces/IMetadataHandler.sol";
-
-import "forge-std/console.sol";
+import { IRevest } from "./interfaces/IRevest.sol";
+import { IFNFTHandler, IERC1155Supply } from "./interfaces/IFNFTHandler.sol";
+import { IMetadataHandler } from "./interfaces/IMetadataHandler.sol";
 
 /**
  * @title FNFTHandler
