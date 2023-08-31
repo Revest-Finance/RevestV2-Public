@@ -221,11 +221,23 @@ contract MetadataHandler is IMetadataHandler {
                 '</text> <text x="50%" y="260" dy= "30" dominant-baseline="middle" text-anchor="middle" class="amount" fill="#fff"> '
             );
 
-            //Display ETH Reward
+            //TODO: Add amount of stake revest
+            image = string.concat(image, 1000000); //100000 can be replace with a query value later
 
+            //TODO: Display ETH Reward
+            image = string.concat(
+                image,
+                '</text> <text x="50%" y="260" dy= "50" dominant-baseline="middle" text-anchor="middle" class="amount" fill="#fff"> '
+            );
+             image = string.concat(image, "Eth Rewards: 1");
 
-            //Display Unlock Address / Time Unlock
-            
+            //TODO: Display Unlock Address / Time Unlock
+            image = string.concat(
+                image,
+                '</text> <text x="50%" y="260" dy= "100" dominant-baseline="middle" text-anchor="middle" class="amount" fill="#fff"> '
+            );
+            image = string.concat(image, "Unlock Address: 0x8616...209 </text>");
+
         }
         uint256 depositAmount;
         {
