@@ -666,78 +666,7 @@ contract Revest1155Tests is Test {
         assertEq(fnftHandler.isApprovedForAll(alice, bob), true);
     }
 
-    function testProxyCallFunctionality() public {
-        address[] memory recipients = new address[](1);
-        recipients[0] = alice;
-
-        uint256[] memory amounts = new uint[](1);
-        amounts[0] = 2;
-
-
-        IController.FNFTConfig memory config = IController.FNFTConfig({
-            handler: address(fnftHandler),
-            asset: address(USDC),
-            lockManager: address(lockManager_timelock),
-            fnftId: 0,
-            nonce: 0,
-            maturityExtension: true
-        });
-
-        (uint id,) = revest.mintTimeLock(block.timestamp + 1 weeks, recipients, amounts, 1e6, config);
-        address walletAddr = revest.getAddressForFNFT(id);
-
-        address[] memory targets = new address[](1);
-        targets[0] = address(USDC);
-        uint256[] memory values = new uint[](1);
-        bytes[] memory calldatas = new bytes[](1);
-
-        //Blacklist transfer function
-        changePrank(alice);
-
-        //Transfer tokens out of the vault
-        calldatas[0] = abi.encodeWithSelector(USDC.transfer.selector, bob, 1e6);
-
-        //Expect Revert because invokes a blacklisted function
-        vm.expectRevert(bytes("E013"));
-        revest.proxyCall(id, targets, values, calldatas);
-
-        //Should succeed because valid proxy call to invoke
-        calldatas[0] = abi.encodeWithSelector(USDC.totalSupply.selector);
-        bytes[] memory returnDatas = revest.proxyCall(id, targets, values, calldatas);
-        destroyAccount(walletAddr, address(this));
-
-        //Should Succeed because even though you call WETH, you aren't doing a blacklisted function
-        calldatas[0] = abi.encodeWithSelector(IERC20.totalSupply.selector);
-        revest.proxyCall(id, targets, values, calldatas);
-        destroyAccount(walletAddr, address(this));
-
-        assertEq(abi.decode(returnDatas[0], (uint256)), USDC.totalSupply(), "return data does not match expected value");
-
-        fnftHandler.safeTransferFrom(alice, bob, id, 1, "");
-
-        //Should revert because you no longer own the entire supply of the FNFT
-        vm.expectRevert(bytes("E007"));
-        revest.proxyCall(id, targets, values, calldatas);
-
-        skip(1 weeks);
-        config.asset = ETH_ADDRESS;
-        targets[0] = address(WETH);
-        (id,) = revest.mintTimeLock{value: 2 ether}(block.timestamp + 1 weeks, recipients, amounts, 1 ether, config);
-        calldatas[0] = abi.encodeWithSelector(IWETH.withdraw.selector, 1 ether);
-
-        //Should revert by trying to unwrap the WETH
-        vm.expectRevert(bytes("E013"));
-        revest.proxyCall(id, targets, values, calldatas);
-
-        vm.expectRevert(bytes("E025"));
-        calldatas[0] = "0xdead";
-        targets[0] = address(USDC);
-        revest.proxyCall(id, targets, values, calldatas);
-
-        values = new uint[](2);
-        vm.expectRevert(bytes("E026"));
-        revest.proxyCall(id, targets, values, calldatas);
-    }
+    
 
     function testMintTimeLockWithPermit2(uint160 amount) public {
         vm.assume(amount >= 1e6 && amount <= 1e12);

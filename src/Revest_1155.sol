@@ -57,8 +57,6 @@ contract Revest_1155 is Revest_base {
             bytes32 salt = keccak256(abi.encode(fnftId));
 
             lockId = ILockManager(fnftConfig.lockManager).createLock(salt, abi.encode(endTime));
-            console2.log("returned lockID");
-            console2.logBytes32(lockId);
         }
 
         //Stack Too Deep Fixer

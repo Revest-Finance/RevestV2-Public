@@ -255,9 +255,6 @@ contract Revest_721 is Revest_base {
     function getAddressForFNFT(uint salt) public view virtual returns (address smartWallet) {
         IRevest.FNFTConfig memory fnft = fnfts[salt];
 
-        console2.log("fnftId: %s", fnft.fnftId);
-        console2.log("handler: %s", fnft.handler);
-
         bytes32 walletSalt = keccak256(abi.encode(fnft.fnftId, fnft.handler));
 
         smartWallet = tokenVault.getAddress(walletSalt, address(this));
