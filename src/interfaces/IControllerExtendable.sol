@@ -16,13 +16,13 @@ interface IControllerExtendable {
         address indexed from, uint256 indexed newFNFTId, uint256 indexed quantity, uint256 mount
     );
 
-    function depositAdditionalToFNFT(bytes32 salt, uint256 amount) external payable returns (uint256);
+    function depositAdditionalToFNFT(uint fnftId, uint256 amount) external payable returns (uint256);
     function depositAdditionalToFNFTWithPermit(
-        bytes32 salt,
+        uint fnftId,
         uint256 amount,
         IAllowanceTransfer.PermitBatch calldata permits,
         bytes calldata _signature
     ) external returns (uint256);
 
-    function extendFNFTMaturity(bytes32 salt, uint256 endTime) external;
+    function extendFNFTMaturity(uint fnftId, uint256 endTime) external;
 }

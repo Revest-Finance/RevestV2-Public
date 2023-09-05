@@ -119,8 +119,7 @@ contract FNFTHandler is ERC1155, Ownable, IFNFTHandler {
 
     // OVERIDDEN ERC-1155 METHODS
     function uri(uint256 fnftId) public view override(ERC1155, IFNFTHandler) returns (string memory) {
-        bytes32 salt = keccak256(abi.encode(fnftId, address(this), 0));
-        return IRevest(owner()).getTokenURI(salt);
+        return IRevest(owner()).getTokenURI(fnftId);
     }
     
     function renderTokenURI(uint256 tokenId)
@@ -129,7 +128,6 @@ contract FNFTHandler is ERC1155, Ownable, IFNFTHandler {
         returns (string memory baseRenderURI, string[] memory parameters)
     {
         address _owner = owner();
-        bytes32 salt = keccak256(abi.encode(tokenId, address(this), 0));
-        return IRevest(_owner).renderTokenURI(salt, _owner);
+        return IRevest(_owner).renderTokenURI(tokenId, _owner);
     }
 }

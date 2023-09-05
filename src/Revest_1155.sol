@@ -47,22 +47,22 @@ contract Revest_1155 is Revest_base {
         uint256 depositAmount,
         IRevest.FNFTConfig memory fnftConfig,
         bool usePermit2
-    ) internal override returns (bytes32 salt, bytes32 lockId) {
+    ) internal override returns (uint fnftId, bytes32 lockId) {
         //You can safely cast this since getNextId is an incrementing variable
-        fnftConfig.fnftId = fnftHandler.getNextId();
+        fnftId = fnftHandler.getNextId();
 
         // Get or create lock based on time, assign lock to ID
         {
             //Salt = kecccak256(fnftID)
-            salt = keccak256(abi.encode(fnftConfig.fnftId));
+            bytes32 salt = keccak256(abi.encode(fnftId));
 
             lockId = ILockManager(fnftConfig.lockManager).createLock(salt, abi.encode(endTime));
         }
 
         //Stack Too Deep Fixer
-        doMint(MintParameters(endTime, recipients, quantities, depositAmount, fnftConfig, usePermit2));
+        doMint(MintParameters(endTime, recipients, quantities, depositAmount, fnftId, fnftConfig, usePermit2));
 
-        emit FNFTTimeLockMinted(fnftConfig.asset, msg.sender, fnftConfig.fnftId, endTime, quantities, fnftConfig);
+        emit FNFTTimeLockMinted(fnftConfig.asset, msg.sender, fnftId, endTime, quantities, fnftConfig);
     }
 
     function _mintAddressLock(
@@ -72,46 +72,45 @@ contract Revest_1155 is Revest_base {
         uint256 depositAmount,
         IRevest.FNFTConfig memory fnftConfig,
         bool usePermit2
-    ) internal override returns (bytes32 salt, bytes32 lockId) {
+    ) internal override returns (uint fnftId, bytes32 lockId) {
         //Get the ID of the next to-be-minted FNFT
-        fnftConfig.fnftId = fnftHandler.getNextId();
+        fnftId = fnftHandler.getNextId();
 
         {
             //Salt = kecccak256(fnftID || handler || nonce (which is always zero))
-            salt = keccak256(abi.encode(fnftConfig.fnftId));
+            bytes32 salt = keccak256(abi.encode(fnftId));
 
             //Return the ID of the lock
             lockId = ILockManager(fnftConfig.lockManager).createLock(salt, arguments);
         }
 
         //Stack Too Deep Fixer
-        doMint(MintParameters(0, recipients, quantities, depositAmount, fnftConfig, usePermit2));
+        doMint(MintParameters(0, recipients, quantities, depositAmount, fnftId, fnftConfig, usePermit2));
 
-        emit FNFTAddressLockMinted(fnftConfig.asset, msg.sender, fnftConfig.fnftId, quantities, fnftConfig);
+        emit FNFTAddressLockMinted(fnftConfig.asset, msg.sender, fnftId, quantities, fnftConfig);
     }
 
-    function withdrawFNFT(bytes32 salt, uint256 quantity) external override nonReentrant {
-        IRevest.FNFTConfig memory fnft = fnfts[salt];
+    function withdrawFNFT(uint fnftId, uint256 quantity) external override nonReentrant {
+        IRevest.FNFTConfig memory fnft = fnfts[fnftId];
 
         // Check if FNFTs exist in the first place for the given ID
 
-        require(fnftHandler.totalSupply(fnft.fnftId) != 0, "E003");
+        require(fnftHandler.totalSupply(fnftId) != 0, "E003");
 
         // Burn the FNFTs being exchanged
-        fnftHandler.burn(msg.sender, fnft.fnftId, quantity);
+        fnftHandler.burn(msg.sender, fnftId, quantity);
 
-        bytes32 lockId = keccak256(abi.encode(salt, address(this)));
+        bytes32 lockId = fnftIdToLockId(fnftId);
 
-        ILockManager(fnft.lockManager).unlockFNFT(lockId, fnft.fnftId);
+        ILockManager(fnft.lockManager).unlockFNFT(lockId, fnftId);
 
-        withdrawToken(salt, fnft.fnftId, quantity, msg.sender);
+        withdrawToken(fnftId, quantity, msg.sender);
 
-        emit FNFTWithdrawn(msg.sender, fnft.fnftId, quantity);
+        emit FNFTWithdrawn(msg.sender, fnftId, quantity);
     }
 
-    function extendFNFTMaturity(bytes32 salt, uint256 endTime) external override nonReentrant {
-        IRevest.FNFTConfig memory fnft = fnfts[salt];
-        uint256 fnftId = fnft.fnftId;
+    function extendFNFTMaturity(uint fnftId, uint256 endTime) external override nonReentrant {
+        IRevest.FNFTConfig memory fnft = fnfts[fnftId];
 
         //Require that the FNFT exists
         require(fnftHandler.totalSupply(fnftId) != 0, "E003");
@@ -131,36 +130,37 @@ contract Revest_1155 is Revest_base {
         // Will also return false on non-time lock locks
         require(fnft.maturityExtension && manager.lockType() == ILockManager.LockType.TimeLock, "E009");
 
+        bytes32 lockId = fnftIdToLockId(fnftId);
+        
         // If desired maturity is below existing date, reject operation
-        bytes32 lockId = keccak256(abi.encode(salt, address(this)));
         ILockManager.Lock memory lockParam = manager.getLock(lockId);
         require(!lockParam.unlocked && lockParam.timeLockExpiry > block.timestamp, "E007");
         require(lockParam.timeLockExpiry < endTime, "E010");
 
         bytes memory creationData = abi.encode(endTime);
 
-        manager.extendLockMaturity(salt, creationData);
+        bytes32 lockSalt = keccak256(abi.encode(fnftId));
+        manager.extendLockMaturity(lockSalt, creationData);
 
-        emit FNFTMaturityExtended(salt, msg.sender, fnftId, endTime);
+        emit FNFTMaturityExtended(lockId, msg.sender, fnftId, endTime);
     }
 
     /**
      * Amount will be per FNFT. So total ERC20s needed is amount * quantity.
      * We don't charge an ETH fee on depositAdditional, but do take the erc20 percentage.
      */
-    function _depositAdditionalToFNFT(bytes32 salt, uint256 amount, bool usePermit2)
+    function _depositAdditionalToFNFT(uint fnftId, uint256 amount, bool usePermit2)
         internal
         override
         returns (uint256 deposit)
     {
-        IRevest.FNFTConfig storage fnft = fnfts[salt];
-        uint256 fnftId = fnft.fnftId;
+        IRevest.FNFTConfig storage fnft = fnfts[fnftId];
 
         require(fnftHandler.totalSupply(fnftId) != 0, "E003");
 
         uint256 supply = fnftHandler.totalSupply(fnftId);
 
-        address smartWallet = getAddressForFNFT(salt);
+        address smartWallet = getAddressForFNFT(fnftId);
 
         deposit = supply * amount;
 
@@ -194,7 +194,6 @@ contract Revest_1155 is Revest_base {
     // INTERNAL FUNCTIONS
     //
     function doMint(IRevest.MintParameters memory params) internal {
-        bytes32 salt = keccak256(abi.encode(params.fnftConfig.fnftId));
 
         bool isSingular;
         uint256 totalQuantity;
@@ -212,7 +211,7 @@ contract Revest_1155 is Revest_base {
             require(totalQuantity > 0, "E012");
         }
 
-        address smartWallet = getAddressForFNFT(salt);
+        address smartWallet = getAddressForFNFT(params.fnftId);
 
         //If user depositing ETH, wrap it to WETH first
         if (msg.value != 0) {
@@ -238,12 +237,12 @@ contract Revest_1155 is Revest_base {
 
         //Mint FNFTs but only if the handler is the Revest FNFT Handler
         if (isSingular) {
-            fnftHandler.mint(params.recipients[0], params.fnftConfig.fnftId, params.quantities[0], "");
+            fnftHandler.mint(params.recipients[0], params.fnftId, params.quantities[0], "");
         } else {
-            fnftHandler.mint(address(this), params.fnftConfig.fnftId, totalQuantity, "");
+            fnftHandler.mint(address(this), params.fnftId, totalQuantity, "");
             for (uint256 x = 0; x < params.recipients.length;) {
                 fnftHandler.safeTransferFrom(
-                    address(this), params.recipients[x], params.fnftConfig.fnftId, params.quantities[x], ""
+                    address(this), params.recipients[x], params.fnftId, params.quantities[x], ""
                 );
 
                 unchecked {
@@ -252,20 +251,21 @@ contract Revest_1155 is Revest_base {
             }
         }
 
-        fnfts[salt] = params.fnftConfig;
+        fnfts[params.fnftId] = params.fnftConfig;
 
-        emit CreateFNFT(salt, params.fnftConfig.fnftId, msg.sender);
+        emit CreateFNFT(params.fnftId, msg.sender);
     }
 
-    function withdrawToken(bytes32 salt, uint256 fnftId, uint256 quantity, address destination) internal {
+    function withdrawToken(uint256 fnftId, uint256 quantity, address destination) internal {
         // If the FNFT is an old one, this just assigns to zero-value
-        IRevest.FNFTConfig memory fnft = fnfts[salt];
+        IRevest.FNFTConfig memory fnft = fnfts[fnftId];
         uint256 amountToWithdraw;
 
         //When the user deposits Eth it stores the asset as the all E's address but actual WETH is kept in the vault
         address transferAsset = fnft.asset == ETH_ADDRESS ? WETH : fnft.asset;
 
-        address smartWalletAddr = getAddressForFNFT(salt);
+        bytes32 salt = keccak256(abi.encode(fnftId));
+        address smartWalletAddr = getAddressForFNFT(fnftId);
 
         uint256 supplyBefore = fnftHandler.totalSupply(fnftId) + quantity;
 
@@ -287,18 +287,18 @@ contract Revest_1155 is Revest_base {
 
         emit WithdrawERC20(transferAsset, destination, fnftId, amountToWithdraw, smartWalletAddr);
 
-        emit RedeemFNFT(salt, fnftId, destination);
+        emit RedeemFNFT(fnftId, destination);
     }
 
 
-    function getAddressForFNFT(bytes32 salt) public view virtual returns (address smartWallet) {
-        smartWallet = tokenVault.getAddress(salt, address(this));
+    function getAddressForFNFT(uint fnftId) public view virtual returns (address smartWallet) {
+        smartWallet = tokenVault.getAddress(keccak256(abi.encode(fnftId)), address(this));
     }
 
-    function getValue(bytes32 fnftId) external view virtual returns (uint256) {
+    function getValue(uint fnftId) external view virtual returns (uint256) {
         IRevest.FNFTConfig memory fnft = fnfts[fnftId];
 
-        uint256 supply = fnftHandler.totalSupply(fnft.fnftId);
+        uint256 supply = fnftHandler.totalSupply(fnftId);
         if (supply == 0) return 0;
 
         address asset = fnft.asset == ETH_ADDRESS ? WETH : fnft.asset;
@@ -307,13 +307,8 @@ contract Revest_1155 is Revest_base {
         return balanceOf / supply;
     }
 
-    function fnftIdToRevestId(uint256 fnftId) public pure returns (bytes32 salt) {
-        salt = keccak256(abi.encode(fnftId));
-    }
-
     function fnftIdToLockId(uint256 fnftId) public view returns (bytes32 lockId) {
-        bytes32 salt = keccak256(abi.encode(fnftId));
-
-        return keccak256(abi.encode(salt, address(this)));
+        bytes32 lockSalt = keccak256(abi.encode(fnftId));
+        return keccak256(abi.encode(lockSalt, address(this)));
     }
 }

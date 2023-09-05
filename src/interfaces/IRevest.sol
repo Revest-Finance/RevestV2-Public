@@ -27,7 +27,7 @@ interface IRevest is IController {
         IRevest.FNFTConfig memory fnftConfig,
         IAllowanceTransfer.PermitBatch calldata permits,
         bytes calldata _signature
-    ) external payable returns (bytes32, bytes32);
+    ) external payable returns (uint, bytes32);
 
     function mintTimeLock(
         uint256 endTime,
@@ -35,7 +35,7 @@ interface IRevest is IController {
         uint256[] memory quantities,
         uint256 depositAmount,
         IRevest.FNFTConfig memory fnftConfig
-    ) external payable returns (bytes32, bytes32);
+    ) external payable returns (uint, bytes32);
 
     function mintAddressLock(
         bytes memory arguments,
@@ -43,7 +43,7 @@ interface IRevest is IController {
         uint256[] memory quantities,
         uint256 depositAmount,
         IRevest.FNFTConfig memory fnftConfig
-    ) external payable returns (bytes32, bytes32);
+    ) external payable returns (uint, bytes32);
 
     function mintAddressLockWithPermit(
         bytes memory arguments,
@@ -53,5 +53,5 @@ interface IRevest is IController {
         IRevest.FNFTConfig memory fnftConfig,
         IAllowanceTransfer.PermitBatch calldata permits,
         bytes calldata _signature
-    ) external payable returns (bytes32, bytes32);
+    ) external payable returns (uint, bytes32);
 }

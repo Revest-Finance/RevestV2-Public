@@ -16,8 +16,8 @@ interface IController {
         address indexed token, address indexed user, uint256 indexed fnftId, uint256 tokenAmount, address smartWallet
     );
 
-    event CreateFNFT(bytes32 salt, uint256 indexed fnftId, address indexed from);
-    event RedeemFNFT(bytes32 indexed salt, uint256 indexed fnftId, address indexed from);
+    event CreateFNFT(uint256 indexed fnftId, address indexed from);
+    event RedeemFNFT(uint256 indexed fnftId, address indexed from);
 
     struct FNFTConfig {
         //20 + 4 + 1 = 25 bytes -> 1 slot
@@ -26,9 +26,11 @@ interface IController {
         //20 + 1 + 11 = 32 bytes -> 1 slot
         address lockManager;
         bool maturityExtension; // Maturity extensions remaining
+        
         //A storage slot can be saved by reducing this to a uint88 and casting when needed
-        uint256 fnftId; //type(uint88).max = 3.1e23
+
         //2 Slots but only Used by the Revest-721 -> Are left empty at the end for 1155 to save ~40k gas
+        uint256 fnftId; //type(uint88).max = 3.1e23
         address handler;
     }
 
@@ -38,22 +40,24 @@ interface IController {
         address[] recipients;
         uint256[] quantities;
         uint256 depositAmount;
+        uint fnftId;
         FNFTConfig fnftConfig;
         bool usePermit2;
     }
 
-    function withdrawFNFT(bytes32 salt, uint256 quantity) external;
-    function unlockFNFT(bytes32 salt) external;
+    function withdrawFNFT(uint fnftId, uint256 quantity) external;
+    function unlockFNFT(uint fnftId) external;
 
     //View Functions
-    function getValue(bytes32 fnftId) external view returns (uint256);
-    function getAsset(bytes32 fnftId) external view returns (address);
-    function getFNFT(bytes32 salt) external view returns (FNFTConfig memory);
-    function getLock(bytes32 fnftId) external view returns (ILockManager.Lock memory);
+    function getValue(uint fnftId) external view returns (uint256);
+    function getAsset(uint fnftId) external view returns (address);
+    function getFNFT(uint salt) external view returns (FNFTConfig memory);
+    function getLock(uint fnftId) external view returns (ILockManager.Lock memory);
+    function fnftIdToLockId(uint256 fnftId) external view returns (bytes32 lockId);
 
     //Metadata Functions
-    function getTokenURI(bytes32 fnftId) external view returns (string memory);
-    function renderTokenURI(bytes32 tokenId, address owner)
+    function getTokenURI(uint fnftId) external view returns (string memory);
+    function renderTokenURI(uint tokenId, address owner)
         external
         view
         returns (string memory baseRenderURI, string[] memory parameters);

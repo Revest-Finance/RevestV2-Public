@@ -3,6 +3,8 @@
 import "@solmate/utils/SafeTransferLib.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
+import { console } from "forge-std/console.sol";
+
 pragma solidity ^0.8.19;
 
 /**
@@ -36,6 +38,7 @@ contract RevestSmartWallet is ReentrancyGuard {
         onlyMaster
         returns (bytes[] memory outputs)
     {
+        console.log("address of this: %s", address(this));
         outputs = new bytes[](targets.length);
 
         for (uint256 i = 0; i < targets.length; i++) {

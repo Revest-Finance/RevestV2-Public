@@ -9,6 +9,8 @@ import { ILockManager } from "./interfaces/ILockManager.sol";
 
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 
+import { console2 } from "forge-std/console2.sol";
+
 /**
  * @title LockManager_Base
  * @author 0xTraub
