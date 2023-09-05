@@ -3,12 +3,12 @@
 pragma solidity ^0.8.19;
 pragma experimental ABIEncoderV2;
 
-import "./RevestSmartWallet.sol";
-import "./interfaces/ITokenVault.sol";
+import { RevestSmartWallet } from "./RevestSmartWallet.sol";
+import { ITokenVault } from "./interfaces/ITokenVault.sol";
 
-import "@openzeppelin/contracts/proxy/Clones.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import { Clones } from "@openzeppelin/contracts/proxy/Clones.sol";
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { ReentrancyGuard } from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 /**
  * @title TokenVault

@@ -2,26 +2,9 @@
 
 pragma solidity ^0.8.19;
 
-import "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
-import "@openzeppelin/contracts/interfaces/IERC721.sol";
-import "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-
-import "@solmate/utils/SafeTransferLib.sol";
-import "@solmate/utils/FixedPointMathLib.sol";
-
-import "./interfaces/IRevest.sol";
-import "./interfaces/ILockManager.sol";
-import "./interfaces/ITokenVault.sol";
-import "./interfaces/IAllowanceTransfer.sol";
-
 import { FNFTHandler } from "./FNFTHandler.sol";
 
 import "./Revest_base.sol";
-
-import "./lib/IWETH.sol";
-
-import { console2 } from "forge-std/console2.sol";
 
 /**
  * @title Revest_1155
@@ -309,28 +292,6 @@ contract Revest_1155 is Revest_base {
         emit RedeemFNFT(fnftId, destination);
     }
 
-    function proxyCall(uint fnftId, address[] memory targets, uint256[] memory values, bytes[] memory calldatas)
-        external
-        returns (bytes[] memory)
-    {
-        IRevest.FNFTConfig memory fnft = fnfts[fnftId];
-        
-        require(targets.length == values.length && targets.length == calldatas.length, "E026");
-        require(ILockManager(fnft.lockManager).proxyCallisApproved(fnft.asset, targets, values, calldatas), "E013");
-
-        /*
-        * You inherit the actual proxyCall implementation from the revest_base and then only need to override
-        * the functionality to determine if the user is allowed to call the function on the FNFT
-        */
-
-        bytes32 salt = keccak256(abi.encode(fnftId));
-
-        //You Must own the entire supply to call a function on the FNFT
-        uint256 supply = fnftHandler.totalSupply(fnftId);
-        require(supply != 0 && fnftHandler.balanceOf(msg.sender, fnftId) == supply, "E007");
-
-        return tokenVault.proxyCall(salt, targets, values, calldatas);
-    }
 
     function getAddressForFNFT(uint fnftId) public view virtual returns (address smartWallet) {
         smartWallet = tokenVault.getAddress(keccak256(abi.encode(fnftId)), address(this));

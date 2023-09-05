@@ -2,26 +2,7 @@
 
 pragma solidity ^0.8.19;
 
-import "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/interfaces/IERC721.sol";
-import "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-
-import "@solmate/utils/SafeTransferLib.sol";
-import "@solmate/utils/FixedPointMathLib.sol";
-
-import "./interfaces/IRevest.sol";
-import "./interfaces/ILockManager.sol";
-import "./interfaces/ITokenVault.sol";
-import "./interfaces/IFNFTHandler.sol";
-import "./interfaces/IAllowanceTransfer.sol";
-
 import "./Revest_base.sol";
-
-import "./lib/IWETH.sol";
-import { console2 } from "forge-std/console2.sol";
 
 /**
  * @title Revest_721
@@ -251,23 +232,6 @@ contract Revest_721 is Revest_base {
         emit WithdrawERC20(transferAsset, user, fnftId, amountToWithdraw, smartWallAdd);
 
         emit RedeemFNFT(salt, user);
-    }
-
-    function proxyCall(uint salt, address[] memory targets, uint256[] memory values, bytes[] memory calldatas)
-        external
-        returns (bytes[] memory)
-    {
-        IRevest.FNFTConfig memory fnft = fnfts[salt];
-
-        require(targets.length == values.length && targets.length == calldatas.length, "E026");
-        require(ILockManager(fnft.lockManager).proxyCallisApproved(fnft.asset, targets, values, calldatas), "E013");
-
-        //Only the NFT owner can call a function on the NFT
-        require(IERC721(fnft.handler).ownerOf(fnft.fnftId) == msg.sender, "E023");
-
-        bytes32 walletSalt = keccak256(abi.encode(fnft.fnftId, fnft.handler));
-
-        return tokenVault.proxyCall(walletSalt, targets, values, calldatas);
     }
 
 

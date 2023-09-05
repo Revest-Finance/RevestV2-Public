@@ -1,7 +1,24 @@
 [profile.default]
 src = 'src'
 out = 'out'
-libs = ['lib']
-eth-rpc-url = "https://eth-mainnet.alchemyapi.io/v2/zOVFUzSEld1v_MuTOqGPYkTYttwBUrmF"
+libs = ['lib', 'node_modules']
+test = 'test/'
+script = 'scripts'
+cache_path = 'forge-cache'
+solc_version = '0.8.19'
 
-# See more config options https://github.com/foundry-rs/foundry/tree/master/config
+[fuzz]
+runs = 256
+
+[rpc_endpoints]
+mainnet = "https://eth-mainnet.alchemyapi.io/v2/zOVFUzSEld1v_MuTOqGPYkTYttwBUrmF"
+optimism = "https://opt-mainnet.g.alchemy.com/v2/ZKd9Q4Jm6JdtzHEPy_3wB77PnJqM7fvm"
+polygon = "https://polygon-mainnet.g.alchemy.com/v2/XZF2U-6qLByJKH9OVsB8rflwSYaZRQaq"
+arbitrum = "https://arb-mainnet.g.alchemy.com/v2/fmrqiiCFFjJ_nyF3ItEflVVJ3LF-HBz_"
+fantom = "https://twilight-delicate-wildflower.fantom.quiknode.pro/e17ae5b40af70a5e7db66cbf8b9ec7474893fdc3/"
+
+[etherscan]
+mainnet = { key = "7XTZXCQH8I5S9TT6AZCSFQT64I3YTK6E8S" }
+optimism = { key = "41ISCN2G8ENPIFRC246DCYPH1GX2CWRBSU" }
+arbitrum = { key = "5E7276WS4NQGRMMQ43YGVEDN83VQCXAGF5" }
+polygon = { key = "8D8PEFUW8PAXWFUMFAZFXJPQ8DCM1BGEV9"}

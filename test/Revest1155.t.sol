@@ -53,12 +53,14 @@ contract Revest1155Tests is Test {
 
 
     constructor() {
+        vm.createSelectFork("mainnet");
+
         vault = new TokenVault();
         metadataHandler = new MetadataHandler(baseURI);
         revest = new Revest_1155("", address(WETH), address(vault), address(metadataHandler), govController);
 
-        lockManager_timelock = new LockManager_Timelock(address(WETH));
-        lockManager_addresslock = new LockManager_Addresslock(address(WETH));
+        lockManager_timelock = new LockManager_Timelock();
+        lockManager_addresslock = new LockManager_Addresslock();
 
         fnftHandler = FNFTHandler(address(revest.fnftHandler()));
 
