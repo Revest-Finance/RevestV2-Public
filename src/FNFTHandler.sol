@@ -6,8 +6,7 @@ import { IERC165, ERC165Checker } from "@openzeppelin/contracts/utils/introspect
 import { ReentrancyGuard } from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import { ERC1155 } from "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-
+import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol";
 import { IRevest } from "./interfaces/IRevest.sol";
 import { IFNFTHandler, IERC1155Supply } from "./interfaces/IFNFTHandler.sol";
 import { IMetadataHandler } from "./interfaces/IMetadataHandler.sol";
@@ -16,7 +15,7 @@ import { IMetadataHandler } from "./interfaces/IMetadataHandler.sol";
  * @title FNFTHandler
  * @author 0xTraub
  */
-contract FNFTHandler is ERC1155, Ownable, IFNFTHandler {
+contract FNFTHandler is IFNFTHandler, ERC1155, AccessControl  {
     using ERC165Checker for address;
     using ECDSA for bytes32;
 
@@ -28,10 +27,17 @@ contract FNFTHandler is ERC1155, Ownable, IFNFTHandler {
         "transferFromWithPermit(address owner,address operator, bool approved, uint id, uint amount, uint256 deadline, uint nonce, bytes data)"
     );
 
+    bytes32 public constant CONTROLLER_ROLE = keccak256("CONTROLLER_ROLE");
+
     bytes32 public immutable DOMAIN_SEPARATOR;
     mapping(address signer => uint256 nonce) public nonces;
 
-    mapping(uint256 => uint256) private supply;
+    struct ids {
+        address controller;
+        uint256 supply;
+    }
+
+    mapping(uint256 => ids) private supply;
 
     // Modified to start at 1 to make use of TokenVaultV2 far simpler
     uint256 public fnftsCreated = 1;
@@ -40,22 +46,36 @@ contract FNFTHandler is ERC1155, Ownable, IFNFTHandler {
      * @dev Primary constructor to create an instance of NegativeEntropy
      * Grants ADMIN and MINTER_ROLE to whoever creates the contract
      */
-    constructor(string memory _uri) ERC1155(_uri) Ownable(msg.sender) {
+    constructor(string memory _uri, address govController) ERC1155(_uri) {
         DOMAIN_SEPARATOR =
             keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes("Revest_FNFTHandler")), block.chainid, address(this)));
+
+        //Grant Minting Power to the Revest Controller
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _grantRole(CONTROLLER_ROLE, msg.sender);
+
+        //Grant Ability to grant minting power to the Governance Controller
+        _grantRole(DEFAULT_ADMIN_ROLE, govController);
     }
 
     /**
      * @dev See {IERC165-supportsInterface}.
      */
-    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC1155, IERC165) returns (bool) {
+    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC1155, IERC165, AccessControl) returns (bool) {
         return interfaceId == type(IFNFTHandler).interfaceId //IFNFTHandler
             || interfaceId == type(IERC1155Supply).interfaceId //IERC1155Supply
+            || interfaceId == type(AccessControl).interfaceId //IMetadataHandler
             || super.supportsInterface(interfaceId); //ERC1155
     }
 
-    function mint(address account, uint256 id, uint256 amount, bytes memory data) external override onlyOwner {
-        supply[id] += amount;
+    function mint(address account, uint256 id, uint256 amount, bytes memory data) external override onlyRole(CONTROLLER_ROLE) {
+        //If its a new ID then create a new struct, otherwise only increase supply
+        if (supply[id].supply == 0) {
+            supply[id] = ids({controller: msg.sender, supply: amount});
+        } else {
+            supply[id].supply += amount;
+        }
+
         fnftsCreated += 1;
         _mint(account, id, amount, data);
 
@@ -63,8 +83,12 @@ contract FNFTHandler is ERC1155, Ownable, IFNFTHandler {
         emit BatchMetadataUpdate(0, type(uint256).max);
     }
 
-    function burn(address account, uint256 id, uint256 amount) external override onlyOwner {
-        supply[id] -= amount;
+    function burn(address account, uint256 id, uint256 amount) external override onlyRole(CONTROLLER_ROLE) {
+        ids storage fnft = supply[id];
+        require(msg.sender == fnft.controller, "E017");
+
+        fnft.supply -= amount;
+        
         _burn(account, id, amount);
 
         //Trigger Opensea Caching
@@ -72,13 +96,13 @@ contract FNFTHandler is ERC1155, Ownable, IFNFTHandler {
     }
 
     function totalSupply(uint256 fnftId) public view override returns (uint256) {
-        return supply[fnftId];
+        return supply[fnftId].supply;
     }
 
     function exists(uint256 id) external view returns (bool) {
         //According to the spec this should return if a token id "exists, previously existed, or may exist"
         //It's unclear whether or not this should return true for a token that has been burned, so i went with "currently exists"
-        return supply[id] != 0;
+        return supply[id].supply != 0;
     }
 
     function getNextId() public view override returns (uint256) {
@@ -119,7 +143,8 @@ contract FNFTHandler is ERC1155, Ownable, IFNFTHandler {
 
     // OVERIDDEN ERC-1155 METHODS
     function uri(uint256 fnftId) public view override(ERC1155, IFNFTHandler) returns (string memory) {
-        return IRevest(owner()).getTokenURI(fnftId);
+        bytes32 salt = keccak256(abi.encode(fnftId, address(this), 0));
+        return IRevest(supply[fnftId].controller).getTokenURI(salt);
     }
     
     function renderTokenURI(uint256 tokenId)
@@ -127,7 +152,8 @@ contract FNFTHandler is ERC1155, Ownable, IFNFTHandler {
         view
         returns (string memory baseRenderURI, string[] memory parameters)
     {
-        address _owner = owner();
-        return IRevest(_owner).renderTokenURI(tokenId, _owner);
+        address controller = supply[tokenId].controller;
+        bytes32 salt = keccak256(abi.encode(tokenId, address(this), 0));
+        return IRevest(controller).renderTokenURI(salt, controller);
     }
 }

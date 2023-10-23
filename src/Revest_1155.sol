@@ -29,8 +29,7 @@ contract Revest_1155 is Revest_base {
         address _metadataHandler,
         address govController
     ) Revest_base(weth, _tokenVault, _metadataHandler, govController) {
-        fnftHandler = new 
-        FNFTHandler(tokenURI);
+        fnftHandler = new FNFTHandler(tokenURI, govController);
     }
 
     /**
@@ -194,6 +193,7 @@ contract Revest_1155 is Revest_base {
     // INTERNAL FUNCTIONS
     //
     function doMint(IRevest.MintParameters memory params) internal {
+        bytes32 salt = keccak256(abi.encode(params.fnftConfig.fnftId));
 
         bool isSingular;
         uint256 totalQuantity;
@@ -307,8 +307,13 @@ contract Revest_1155 is Revest_base {
         return balanceOf / supply;
     }
 
+    function fnftIdToRevestId(uint256 fnftId) public pure returns (bytes32 salt) {
+        salt = keccak256(abi.encode(fnftId));
+    }
+
     function fnftIdToLockId(uint256 fnftId) public view returns (bytes32 lockId) {
-        bytes32 lockSalt = keccak256(abi.encode(fnftId));
-        return keccak256(abi.encode(lockSalt, address(this)));
+        bytes32 salt = keccak256(abi.encode(fnftId));
+
+        return keccak256(abi.encode(salt, address(this)));
     }
 }
