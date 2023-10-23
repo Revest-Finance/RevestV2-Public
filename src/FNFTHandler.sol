@@ -143,8 +143,7 @@ contract FNFTHandler is IFNFTHandler, ERC1155, AccessControl  {
 
     // OVERIDDEN ERC-1155 METHODS
     function uri(uint256 fnftId) public view override(ERC1155, IFNFTHandler) returns (string memory) {
-        bytes32 salt = keccak256(abi.encode(fnftId, address(this), 0));
-        return IRevest(supply[fnftId].controller).getTokenURI(salt);
+        return IRevest(supply[fnftId].controller).getTokenURI(fnftId);
     }
     
     function renderTokenURI(uint256 tokenId)
@@ -153,7 +152,6 @@ contract FNFTHandler is IFNFTHandler, ERC1155, AccessControl  {
         returns (string memory baseRenderURI, string[] memory parameters)
     {
         address controller = supply[tokenId].controller;
-        bytes32 salt = keccak256(abi.encode(tokenId, address(this), 0));
-        return IRevest(controller).renderTokenURI(salt, controller);
+        return IRevest(controller).renderTokenURI(tokenId, controller);
     }
 }
