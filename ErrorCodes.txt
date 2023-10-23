@@ -1,0 +1,29 @@
+// SPDX-License-Identifier: GNU-GPL v3.0 or later
+
+E001 - Invalid FNFT Handler provided
+E002 - Time lock unlock time is in the past
+E003 – FNFT does not exist
+E004 - Transaction value not enought to cover deposit amount and fees
+E005 - FNFT already exists for given salt
+E006 - FNFT cannot be withdrawn because it is not unlockable
+E007 - FNFT maturity cannot be extended because unlock time has already passed
+E008 - User does not own entire supply of the FNFT ID or supply is zero
+E009 - Maturity can only be extended for timelocked FNFTs created as extendable
+E010 - New unlock date must be after current unlock date
+E011 - Array lengths do not match
+E012 - FNFT mint amounts must be greater than zero
+E013 - One or more of desired proxy call functions is not allowed
+E014 - Only the token vault may call this function
+E015 - Unlock date must be in the future
+E016 - Lock does not exist
+E017 - Invalid Lock-Type provided
+E018 - Invalid Signature provided
+E019 - Signature deadline must be in the future
+E020 - FNFT transfer amount must be non-zero
+E022 - FNFT is non-transferable, only burn transfers allowed
+E023 - Only the canonical NFT-owner can call this function
+E024 - Invalid signature length provided
+E025 - Proxy Call to external contract failed
+E026 - Invalid Proxy Call array lengths
+E027 - Invalid amount of eth sent with call
+E028 - Function can only be invoked via delegatecall
