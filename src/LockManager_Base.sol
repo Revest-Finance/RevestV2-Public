@@ -2,38 +2,27 @@
 
 pragma solidity ^0.8.19;
 
-import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
+import { ReentrancyGuard } from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { IRevest } from "./interfaces/IRevest.sol";
+import { ILockManager } from "./interfaces/ILockManager.sol";
 
-import "./interfaces/IRevest.sol";
-import "./interfaces/ILockManager.sol";
-import "./lib/IWETH.sol";
+import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 
-import "@openzeppelin/contracts/utils/Strings.sol";
+import { console2 } from "forge-std/console2.sol";
 
 /**
  * @title LockManager_Base
  * @author 0xTraub
  */
 abstract contract LockManager_Base is ILockManager, ReentrancyGuard {
-    using ERC165Checker for address;
 
     mapping(bytes32 => ILockManager.Lock) public locks; // maps lockId to locks
 
-    mapping(bytes4 selector => bool) public blacklistedSelector;
-
-    address public immutable WETH;
-
     address public constant ETH_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
-    constructor(address _WETH) {
-        blacklistedSelector[IERC20.transfer.selector] = true;
-        blacklistedSelector[IERC20.approve.selector] = true;
-        blacklistedSelector[IERC20.transferFrom.selector] = true;
-        WETH = _WETH;
+    constructor() {
+       
     }
 
     function getLock(bytes32 salt) external view virtual returns (ILockManager.Lock memory) {
@@ -67,33 +56,6 @@ abstract contract LockManager_Base is ILockManager, ReentrancyGuard {
 
     function lockExists(bytes32 lockSalt) external view virtual returns (bool) {
         return locks[lockSalt].creationTime != 0;
-    }
-
-    function proxyCallisApproved(
-        address token,
-        address[] memory targets,
-        uint256[] memory, //We don't need values but its in the interface and good for users who want to bring their own lockManager
-        bytes[] memory calldatas
-    ) external view virtual returns (bool) {
-        for (uint256 x = 0; x < calldatas.length;) {
-            //Restriction only enabled when the target is the token and not unlocked
-            if (targets[x] == token && blacklistedSelector[bytes4(calldatas[x])]) {
-                return false;
-            }
-            //Revest uses address(0) for asset when it is ETH, but stores WETH in the vault.
-            //This prevents the edge case for that
-            else if (targets[x] == WETH && token == ETH_ADDRESS) {
-                if (bytes4(calldatas[x]) == IWETH.withdraw.selector) {
-                    return false;
-                }
-            }
-
-            unchecked {
-                ++x;
-            }
-        }
-
-        return true;
     }
 
     function getMetadata(bytes32) external view returns (string memory) {

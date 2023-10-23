@@ -2,16 +2,15 @@
 
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
+import { IERC20Metadata } from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import { ERC165Checker } from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
+import { Base64 } from "@openzeppelin/contracts/utils/Base64.sol";
+import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 
-import "@openzeppelin/contracts/utils/Base64.sol";
-import "@openzeppelin/contracts/utils/Strings.sol";
-
-import "./interfaces/IMetadataHandler.sol";
-import "./interfaces/ILockManager.sol";
-import "./interfaces/IRevest.sol";
-import "./interfaces/ILockManager.sol";
+import { IMetadataHandler } from "./interfaces/IMetadataHandler.sol";
+import { ILockManager } from "./interfaces/ILockManager.sol";
+import { IRevest, IController } from "./interfaces/IRevest.sol";
+import { ILockManager } from "./interfaces/ILockManager.sol";
 
 import "forge-std/console.sol";
 
@@ -33,17 +32,17 @@ contract MetadataHandler is IMetadataHandler {
         animation_base = animBase;
     }
 
-    function getTokenURI(bytes32 fnftId) external view override returns (string memory) {
+    function getTokenURI(uint fnftId) external view override returns (string memory) {
         return string(
-            abi.encodePacked(animation_base, bytes32ToLiteralString(fnftId), "&chainId=", block.chainid.toString())
+            abi.encodePacked(animation_base, fnftId, "&chainId=", block.chainid.toString())
         );
     }
 
-    function setTokenURI(bytes32, string memory _uri) external override {
+    function setTokenURI(uint, string memory _uri) external override {
         animation_base = _uri;
     }
 
-    function getRenderTokenURI(bytes32, address)
+    function getRenderTokenURI(uint, address)
         external
         view
         override
@@ -53,11 +52,11 @@ contract MetadataHandler is IMetadataHandler {
         return (renderURI, arr);
     }
 
-    function setRenderTokenURI(bytes32, string memory baseRenderURI) external override {
+    function setRenderTokenURI(uint, string memory baseRenderURI) external override {
         renderURI = baseRenderURI;
     }
 
-    function generateMetadata(address controller, bytes32 fnftId) external view returns (string memory output) {
+    function generateMetadata(address controller, uint fnftId) external view returns (string memory output) {
         string memory properties = generateProperties(controller, fnftId);
         output = string(
             abi.encodePacked(
@@ -70,17 +69,15 @@ contract MetadataHandler is IMetadataHandler {
         output = string(abi.encodePacked(output, properties, "\n"));
     }
 
-    function generateProperties(address _controller, bytes32 fnftSalt) private view returns (string memory output) {
+    function generateProperties(address _controller, uint fnftId) private view returns (string memory output) {
         IController controller = IController(_controller);
 
-        IRevest.FNFTConfig memory fnft = controller.getFNFT(fnftSalt);
+        IRevest.FNFTConfig memory fnft = controller.getFNFT(fnftId);
 
         ILockManager lockManager = ILockManager(fnft.lockManager);
 
-        bytes32 lockId = keccak256(abi.encode(fnftSalt, _controller));
+        bytes32 lockId = keccak256(abi.encode(fnftId, _controller));
         ILockManager.Lock memory lock = lockManager.getLock(lockId);
-            console.log("-----------------TIMELOCK EXPIRY: %i", lock.timeLockExpiry);
-
 
         output = string(abi.encodePacked('"properties":{ \n "asset_ticker": \"', getTicker(fnft.asset), "\",\n"));
         output = string(abi.encodePacked(output, '"handler":"', toAsciiString(fnft.handler), '",\n'));
@@ -90,11 +87,11 @@ contract MetadataHandler is IMetadataHandler {
         output = string(abi.encodePacked(output, '"asset_address":"', toAsciiString(fnft.asset), '",\n'));
         output = string(
             abi.encodePacked(
-                output, '"currentValue":"', amountToDecimal(controller.getValue(fnftSalt), fnft.asset), '",\n'
+                output, '"currentValue":"', amountToDecimal(controller.getValue(fnftId), fnft.asset), '",\n'
             )
         );
 
-        uint256 depositAmount = controller.getValue(fnftSalt);
+        uint256 depositAmount = controller.getValue(fnftId);
 
         output = string(abi.encodePacked(output, '"amount":"', amountToDecimal(depositAmount, fnft.asset), '",\n'));
         output = string(abi.encodePacked(output, '"lock_type":"', getLockType(lockManager.lockType()), '",\n'));
@@ -124,22 +121,21 @@ contract MetadataHandler is IMetadataHandler {
         }
 
 
-        output = string(abi.encodePacked(output, '"salt": \"0x', bytes32ToLiteralString(fnftSalt), "\",\n"));
-        output = string(abi.encodePacked(output, '"fnft_id":', fnft.fnftId.toString(), ",\n"));
+        output = string(abi.encodePacked(output, '"fnft_id":', fnftId.toString(), ",\n"));
 
         output = string(abi.encodePacked(output, '"network":', block.chainid.toString(), "\n } \n }"));
         // output = string(abi.encodePacked(output, '"image":', renderFNFT(_controller, fnftSalt), "\n }"));
     }
 
-    function renderFNFT(address revest, bytes32 salt) internal view returns (string memory) {
-        IRevest.FNFTConfig memory config = IRevest(revest).getFNFT(salt);
+    function renderFNFT(address revest, uint fnftId) internal view returns (string memory) {
+        IRevest.FNFTConfig memory config = IRevest(revest).getFNFT(fnftId);
 
         string memory assetName = getName(config.asset);
         string memory assetSymbol = getTicker(config.asset);
 
-        bytes32 lockId = keccak256(abi.encode(salt, revest));
+        bytes32 lockId = IRevest(revest).fnftIdToLockId(fnftId);
 
-        bool isUnlocked = ILockManager(config.lockManager).getLockMaturity(lockId, config.fnftId);
+        bool isUnlocked = ILockManager(config.lockManager).getLockMaturity(lockId, fnftId);
         console.log("is unlocked: %s", isUnlocked);
 
         ILockManager.LockType typeOfLock = ILockManager(config.lockManager).lockType();
@@ -223,7 +219,7 @@ contract MetadataHandler is IMetadataHandler {
         }
         uint256 depositAmount;
         {
-            depositAmount = IRevest(revest).getValue(salt);
+            depositAmount = IRevest(revest).getValue(fnftId);
             image = string.concat(
                 image, amountToDecimal(depositAmount, config.asset), " ", getTicker(config.asset), "</text>"
             );
@@ -233,7 +229,7 @@ contract MetadataHandler is IMetadataHandler {
             image = string.concat(image, "</svg>");
         }
 
-        string memory description =
+        // string memory description =
             renderDescription(assetName, assetSymbol, depositAmount, lockType, config.lockManager);
 
         string memory json = 
@@ -268,7 +264,8 @@ contract MetadataHandler is IMetadataHandler {
         );
     }
 
-    function getImage(address _controller, bytes32) public returns (string memory image) {
+    //TODO: Implement as SVG
+    function getImage(address, bytes32) public returns (string memory image) {
         //TODO: Implement as SVG
         image = "https://revest.mypinata.cloud/ipfs/QmW8BHSTMzV892N6i9qT79QC45MftxrvDti7JDHD56BS38";
     }

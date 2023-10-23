@@ -18,3 +18,5 @@ lib/*
 
 #Coverage
 lcov.info
+
+forge-cache/*

@@ -2,18 +2,14 @@
 
 pragma solidity ^0.8.19;
 
-import "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
-import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import "@openzeppelin/contracts/access/AccessControl.sol";
-import "@openzeppelin/contracts/utils/math/SafeCast.sol";
-
-import "./interfaces/IRevest.sol";
-import "./interfaces/IFNFTHandler.sol";
-import "./interfaces/IMetadataHandler.sol";
-
-import "forge-std/console.sol";
+import { IERC165, ERC165Checker } from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
+import { ReentrancyGuard } from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import { ERC1155 } from "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
+import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol";
+import { IRevest } from "./interfaces/IRevest.sol";
+import { IFNFTHandler, IERC1155Supply } from "./interfaces/IFNFTHandler.sol";
+import { IMetadataHandler } from "./interfaces/IMetadataHandler.sol";
 
 /**
  * @title FNFTHandler
@@ -21,7 +17,6 @@ import "forge-std/console.sol";
  */
 contract FNFTHandler is IFNFTHandler, ERC1155, AccessControl  {
     using ERC165Checker for address;
-    using SafeCast for uint256;
     using ECDSA for bytes32;
 
     //Permit Signature Stuff
@@ -76,9 +71,9 @@ contract FNFTHandler is IFNFTHandler, ERC1155, AccessControl  {
     function mint(address account, uint256 id, uint256 amount, bytes memory data) external override onlyRole(CONTROLLER_ROLE) {
         //If its a new ID then create a new struct, otherwise only increase supply
         if (supply[id].supply == 0) {
-            supply[id] = ids({controller: msg.sender, supply: amount.toUint96()});
+            supply[id] = ids({controller: msg.sender, supply: amount});
         } else {
-            supply[id].supply += amount.toUint96();
+            supply[id].supply += amount;
         }
 
         fnftsCreated += 1;
@@ -92,7 +87,7 @@ contract FNFTHandler is IFNFTHandler, ERC1155, AccessControl  {
         ids storage fnft = supply[id];
         require(msg.sender == fnft.controller, "E017");
 
-        fnft.supply -= amount.toUint96();
+        fnft.supply -= amount;
         
         _burn(account, id, amount);
 
