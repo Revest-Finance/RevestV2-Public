@@ -33,7 +33,7 @@ contract Revest1155Tests is Test {
 
     address public constant govController = address(0xdead);
 
-    uint256 PRIVATE_KEY = vm.envUint("PRIVATE_KEY"); //Useful for EIP-712 Testing
+    uint256 PRIVATE_KEY = 0x7ad412da56ca959b758cf66340119a7e6e182e206ceb79735310b04142f3ee3d;//Useful for EIP-712 Testing
     address alice = vm.rememberKey(PRIVATE_KEY);
     address bob = makeAddr("bob");
     address carol = makeAddr("carol");
